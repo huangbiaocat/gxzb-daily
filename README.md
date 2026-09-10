@@ -152,6 +152,15 @@ rsync -az --delete --include='*.html' --exclude='*' "$SITE_DIR/" user@host:/var/
 
 `diff_missing.py` 输出「全量采集 / 页面展示 / 缺失 / 页面独有」四项口径，缺失明细含标题、地市、行业、业务环节、发布时间、infoid 与官方链接。
 
+缺失条目再按「页面已覆盖发布时间窗」（窗口 = 页面/入库数据中最早与最晚的 `pub_time`）自动分两类，判据可复现、不依赖人工记忆：
+
+| 分类 | 判据 | 含义 |
+| --- | --- | --- |
+| `stale_missed` 早前漏采 | `pub_time` ≤ 页面最新条目时间 | 页面快照生成时该公告在官方接口已存在却未入页，属采集遗漏，报告中单独列出并标注 |
+| `pending` 快照后新增 | `pub_time` > 页面最新条目时间 | 页面生成后新发布，等待下一次流水线采集入库，非漏采 |
+
+JSON 报告新增字段：`page_window`（时间窗）、`stale_missed_count`、`pending_count`、`stale_missed`（早前漏采子集）；`missing` 数组每条带 `miss_type` 与 `miss_reason`。`run_daily.py --strict` 仍以缺失总数判定退出码。
+
 ## 10. 安全与合规
 
 - `.env` 与一切凭证（推送 token、SSH、同步密码）**只放本地环境文件，绝不写进代码、绝不提交仓库**；`.gitignore` 已忽略 `.env`、`data/`、`logs/`、`reports/`、`dist/` 等运行产物。
@@ -161,4 +170,5 @@ rsync -az --delete --include='*.html' --exclude='*' "$SITE_DIR/" user@host:/var/
 ## 11. 变更记录
 
 - 废弃自造编号（`GX + 日期 + 序号`）：页面移除编号标签与编号检索，日志、台账、入库文件统一改以官方 `infoid` 为唯一识别码，同时保留重跑判重与失败重查能力。
+- 缺失核验增加「早前漏采 / 快照后新增」两类自动判定（基于页面已覆盖发布时间窗，判据可复现），报告中对早前漏采条目单独成区、特别标注；JSON 报告新增 `page_window`、`stale_missed_count`、`pending_count`、`stale_missed` 与每条 `miss_type` / `miss_reason` 字段。
 - 引入 `config.py` 配置化与 `run_daily.py` 编排，去除硬编码路径，支持脱离 AI 的定时调度。

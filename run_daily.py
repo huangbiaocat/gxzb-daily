@@ -177,8 +177,10 @@ def main(argv=None):
     res = {}
     try:
         res = diff_missing.diff(day)
-        print("   全量 %d 条 | 页面 %d 条 | 缺失 %d 条 | 页面独有 %d 条"
-              % (res["collect_unique"], res["page_total"], res["missing_count"], res["extra_count"]))
+        print("   全量 %d 条 | 页面 %d 条 | 缺失 %d 条（早前漏采 %d / 快照后新增 %d）| 页面独有 %d 条"
+              % (res["collect_unique"], res["page_total"], res["missing_count"],
+                 res.get("stale_missed_count", 0), res.get("pending_count", 0),
+                 res["extra_count"]))
         print("   报告：", res.get("report_md"))
     except Exception as exc:                                   # noqa: BLE001
         failed_steps.append("diff_missing")
@@ -201,6 +203,8 @@ def finish(day, failed_steps, args, res=None):
     missing = int(res.get("missing_count") or 0)
     summary = {"date": day, "finished_at": config.now_stamp(),
                "failed_steps": failed_steps, "missing_count": missing,
+               "stale_missed_count": int(res.get("stale_missed_count") or 0),
+               "pending_count": int(res.get("pending_count") or 0),
                "collect_total": res.get("collect_unique"), "page_total": res.get("page_total"),
                "report_md": res.get("report_md")}
     try:
