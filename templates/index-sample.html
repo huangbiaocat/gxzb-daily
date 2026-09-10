@@ -1,0 +1,4396 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>广西招投标监控看板 - 导航与历史中心</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+SC:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+        :root {
+            --primary: #0284c7;
+            --primary-light: #f0f9ff;
+            --primary-dark: #0369a1;
+            --primary-hover: #075985;
+            --primary-border: #bae6fd;
+            --accent: #0ea5e9;
+            --danger: #ef4444;
+            --danger-light: #fef2f2;
+            --danger-text: #dc2626;
+            --success: #10b981;
+            --warning-light: #fffbeb;
+            --warning-text: #b45309;
+            
+            --bg-body: #f4f7fb;
+            --card-bg: #ffffff;
+            --card-hover: #f8fafc;
+            --border-color: #e2e8f0;
+            --border-light: #f1f5f9;
+            
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+            --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.02);
+            --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -2px rgba(15, 23, 42, 0.03);
+            --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.08), 0 4px 8px -4px rgba(15, 23, 42, 0.04);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-xl: 18px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* Top Header */
+        .site-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 12px 0;
+        }
+
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+        }
+
+        .brand-text h1 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+        }
+
+        .brand-text p {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: -1px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-latest {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--primary);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 9999px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+            transition: all 0.2s ease;
+        }
+
+        .btn-latest:hover {
+            background: var(--primary-dark);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 9999px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-decoration: none;
+            background: #f1f5f9;
+            transition: all 0.2s ease;
+        }
+
+        .btn-back:hover {
+            background: #e2e8f0;
+            color: var(--text-primary);
+        }
+
+        /* Main Container */
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px 80px;
+        }
+
+        /* Hero / Overview Banner */
+        .hero-banner {
+            background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 50%, #e0f2fe 100%);
+            border: 1px solid #bae6fd;
+            border-radius: var(--radius-xl);
+            padding: 32px 36px;
+            color: var(--text-primary);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 28px;
+            box-shadow: 0 8px 24px -4px rgba(2, 132, 199, 0.08);
+        }
+
+        .hero-banner::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 360px;
+            height: 360px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.22) 0%, rgba(2, 132, 199, 0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #e0f2fe;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #0369a1;
+            margin-bottom: 12px;
+            border: 1px solid #bae6fd;
+        }
+
+        .hero-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+            color: #0f172a;
+        }
+
+        .hero-desc {
+            font-size: 0.95rem;
+            color: #475569;
+            max-width: 660px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .stat-box {
+            background: #ffffff;
+            border: 1px solid #e0f2fe;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+            border-radius: var(--radius-lg);
+            padding: 16px 20px;
+            transition: all 0.2s ease;
+        }
+
+        .stat-box:hover {
+            background: #f8fafc;
+            border-color: #bae6fd;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);
+        }
+
+        .stat-box .sb-label {
+            font-size: 0.8rem;
+            color: #64748b;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .stat-box .sb-value {
+            font-size: 1.65rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #0369a1;
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .stat-box .sb-value .sb-unit {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        /* Controls / Filter Bar */
+        .filter-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 14px 20px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .search-input-wrap {
+            position: relative;
+            flex: 1;
+            max-width: 380px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 9px 12px 9px 36px;
+            font-size: 0.88rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: #f8fafc;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .search-input:focus {
+            background: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .filter-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .density-legend {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            padding-right: 12px;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        /* View Mode Switcher */
+        .view-switcher {
+            display: flex;
+            align-items: center;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: var(--radius-md);
+            gap: 4px;
+        }
+
+        .view-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .view-btn.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Views Container */
+        .view-panel {
+            display: none;
+        }
+
+        .view-panel.active {
+            display: block;
+        }
+
+        /* Calendar View Styles */
+        .calendar-grid-container {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .month-calendar-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            transition: border-color 0.2s ease;
+        }
+
+        .month-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-light);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .month-title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .month-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--primary-light);
+            color: var(--primary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .month-heading {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .month-chip {
+            font-size: 0.75rem;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            background: #f1f5f9;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .month-stats-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-pill {
+            font-size: 0.82rem;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .stat-pill strong {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .stat-pill.alert-pill {
+            background: var(--danger-light);
+            border-color: #fecaca;
+            color: var(--danger-text);
+        }
+
+        .stat-pill.alert-pill strong {
+            color: var(--danger);
+        }
+
+        .cal-weekdays-row {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            padding: 0 4px;
+        }
+
+        .cal-weekdays-row span.wknd {
+            color: #cbd5e1;
+        }
+
+        .cal-grid-body {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .cal-cell {
+            min-height: 86px;
+            border-radius: var(--radius-md);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            text-decoration: none;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+        }
+
+        .cal-cell-empty {
+            background: transparent;
+            border: none;
+        }
+
+        .cal-cell-disabled {
+            background: #f8fafc;
+            border-color: #f1f5f9;
+            opacity: 0.6;
+        }
+
+        .cal-cell-disabled .cal-date-num {
+            color: #cbd5e1;
+        }
+
+        .cal-cell-active {
+            cursor: pointer;
+        }
+
+        .cal-cell-active:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-border);
+            z-index: 10;
+        }
+
+        /* Heatmap density levels */
+        .density-0 {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+        }
+        .density-1 {
+            background: #eff6ff;
+            border-color: #dbeafe;
+        }
+        .density-2 {
+            background: #dbeafe;
+            border-color: #bfdbfe;
+        }
+        .density-3 {
+            background: #bfdbfe;
+            border-color: #93c5fd;
+        }
+        .density-4 {
+            background: #93c5fd;
+            border-color: #60a5fa;
+        }
+
+        .density-0 .cal-count-badge { color: var(--text-muted); background: rgba(255,255,255,0.7); }
+        .density-1 .cal-count-badge { color: #1e40af; background: rgba(255,255,255,0.8); }
+        .density-2 .cal-count-badge { color: #1e3a8a; background: rgba(255,255,255,0.9); }
+        .density-3 .cal-count-badge { color: #172554; background: #ffffff; font-weight: 700; }
+        .density-4 .cal-count-badge { color: #0f172a; background: #ffffff; font-weight: 800; }
+
+        .cal-cell-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+        }
+
+        .cal-date-num {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .cal-pill-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .cal-pill-rest {
+            font-size: 0.65rem;
+            padding: 1px 4px;
+            background: rgba(148, 163, 184, 0.2);
+            color: #64748b;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .cal-pill-alert {
+            font-size: 0.65rem;
+            padding: 1px 5px;
+            background: var(--danger);
+            color: white;
+            border-radius: 4px;
+            font-weight: 700;
+            box-shadow: 0 1px 2px rgba(239, 68, 68, 0.3);
+        }
+
+        .cal-cell-body {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .cal-count-badge {
+            font-size: 0.78rem;
+            padding: 2px 7px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: baseline;
+            gap: 2px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+
+        .cal-count-badge .unit {
+            font-size: 0.65rem;
+            opacity: 0.8;
+        }
+
+        .cal-no-data {
+            font-size: 0.75rem;
+            color: #cbd5e1;
+        }
+
+        /* List View Styles */
+        .history-list-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-row-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 16px 20px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-xs);
+            gap: 20px;
+        }
+
+        .history-row-item:hover {
+            border-color: var(--primary-border);
+            transform: translateX(4px);
+            box-shadow: var(--shadow-md);
+            background: #ffffff;
+        }
+
+        .item-col-date {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex: 1;
+        }
+
+        .date-calendar-box {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%);
+            border: 1px solid var(--primary-border);
+            border-radius: var(--radius-md);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.05);
+        }
+
+        .date-calendar-box .dc-month {
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+
+        .date-calendar-box .dc-day {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.1;
+        }
+
+        .date-meta-box {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .dm-primary {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .dm-datestr {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .dm-weekday {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .status-chip {
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-weight: 600;
+        }
+
+        .chip-rest {
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
+        .chip-nonwork {
+            background: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #ffedd5;
+            font-weight: 600;
+        }
+
+        .cal-pill-nonwork {
+            display: inline-flex;
+            align-items: center;
+            background: #fff7ed;
+            color: #ea580c;
+            font-size: 0.68rem;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 9999px;
+            border: 1px solid #ffedd5;
+        }
+
+        .dm-secondary {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .item-col-metrics {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .chip-alert {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--danger-light);
+            border: 1px solid #fecaca;
+            color: var(--danger-text);
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            flex-shrink: 0;
+        }
+
+        .metrics-visual {
+            display: flex;
+            align-items: baseline;
+            justify-content: flex-end;
+            min-width: 90px;
+        }
+
+        .num-wrapper {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .count-value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .count-unit {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .progress-bar-track {
+            width: 100%;
+            height: 5px;
+            background: #f1f5f9;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 9999px;
+        }
+
+        .action-arrow {
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+            padding: 4px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .history-row-item:hover .action-arrow {
+            color: var(--primary);
+            transform: translateX(3px);
+        }
+
+        /* Empty state */
+        .empty-search-state {
+            display: none;
+            background: white;
+            border: 1px dashed var(--border-color);
+            border-radius: var(--radius-xl);
+            padding: 60px 24px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .empty-search-state svg {
+            margin-bottom: 12px;
+            color: #cbd5e1;
+        }
+
+        .empty-search-state h3 {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        /* Footer */
+        .site-footer {
+            border-top: 1px solid var(--border-color);
+            padding: 32px 24px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.84rem;
+            margin-top: 60px;
+        }
+
+        @media (max-width: 900px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .item-col-metrics {
+                gap: 12px;
+            }
+            .metrics-visual {
+                min-width: 100px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .header-inner {
+                padding: 0 16px;
+            }
+            .page-container {
+                padding: 20px 16px 60px;
+            }
+            .hero-banner {
+                padding: 24px 20px;
+            }
+            .hero-title {
+                font-size: 1.4rem;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .filter-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-left, .filter-right {
+                width: 100%;
+            }
+            .search-input-wrap {
+                max-width: 100%;
+            }
+            .density-legend {
+                display: none;
+            }
+            .view-switcher {
+                width: 100%;
+                justify-content: center;
+            }
+            .cal-cell {
+                min-height: 64px;
+                padding: 6px;
+            }
+            .cal-count-badge {
+                font-size: 0.7rem;
+                padding: 1px 4px;
+            }
+            .history-row-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 14px;
+            }
+            .item-col-metrics {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .metrics-visual {
+                align-items: flex-start;
+                flex: 1;
+                margin: 0 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- Header -->
+<header class="site-header">
+<div class="header-inner">
+<a class="brand-logo" href="./index.html">
+<div class="brand-icon">
+<svg fill="none" height="22" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24" width="22">
+<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+<polyline points="14 2 14 8 20 8"></polyline>
+<line x1="16" x2="8" y1="13" y2="13"></line>
+<line x1="16" x2="8" y1="17" y2="17"></line>
+<polyline points="10 9 9 9 8 9"></polyline>
+</svg>
+</div>
+<div class="brand-text">
+<h1>招投标每日简报</h1>
+<p>历史归档与数据追溯中心</p>
+</div>
+</a>
+<div class="header-actions">
+<a class="btn-latest" href="./2026-09-08.html" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+<span>查看最新简报 (2026-09-08)</span>
+<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><polyline points="9 18 15 12 9 6"></polyline></svg>
+</a>
+</div>
+</div>
+</header>
+<main class="page-container">
+<!-- Hero Overview -->
+<section class="hero-banner">
+<div class="hero-content">
+<div class="hero-badge">
+<svg fill="currentColor" height="12" viewbox="0 0 24 24" width="12"><circle cx="12" cy="12" r="10"></circle></svg>
+<span>PORTAL &amp; ARCHIVE DATABASE</span>
+</div>
+<h2 class="hero-title">广西全区招投标数据监控中心</h2>
+<p class="hero-desc">全区招投标每日信息智能汇聚平台，实时监控区交易中心及全区各地市交易动态。直达每日最新简报，支持月历交互检索及全量历史回溯。</p>
+<div class="stats-grid">
+<div class="stat-box">
+<div class="sb-label">已归档简报天数</div>
+<div class="sb-value">70<span class="sb-unit">天</span></div>
+</div>
+<div class="stat-box">
+<div class="sb-label">累计监测收录公告</div>
+<div class="sb-value">10,435<span class="sb-unit">条</span></div>
+</div>
+<div class="stat-box">
+<div class="sb-label">累计触发重点提醒</div>
+<div class="sb-value" style="color: #dc2626;">140<span class="sb-unit">次</span></div>
+</div>
+<div class="stat-box">
+<div class="sb-label">交易日均发布量</div>
+<div class="sb-value">186.3<span class="sb-unit">条/日</span></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Filter / View Switcher -->
+<section class="filter-section">
+<div class="filter-left">
+<div class="search-input-wrap">
+<svg class="search-icon" fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
+<input class="search-input" id="archiveSearch" placeholder="输入日期检索（如 2026-09、08-25、周一）..." type="text"/>
+</div>
+</div>
+<div class="filter-right">
+<div class="density-legend">
+<span>发布热度:</span>
+<span class="legend-dot" style="background:#f8fafc; border:1px solid #e2e8f0;" title="0条"></span>
+<span class="legend-dot" style="background:#eff6ff; border:1px solid #dbeafe;" title="1-60条"></span>
+<span class="legend-dot" style="background:#dbeafe; border:1px solid #bfdbfe;" title="61-160条"></span>
+<span class="legend-dot" style="background:#bfdbfe; border:1px solid #93c5fd;" title="161-240条"></span>
+<span class="legend-dot" style="background:#93c5fd; border:1px solid #60a5fa;" title="&gt;240条"></span>
+</div>
+<div class="view-switcher">
+<button class="view-btn active" id="btnViewCalendar" onclick="switchView('calendar')">
+<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="15"><rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+<span>月历视图</span>
+</button>
+<button class="view-btn" id="btnViewList" onclick="switchView('list')">
+<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="15"><line x1="8" x2="21" y1="6" y2="6"></line><line x1="8" x2="21" y1="12" y2="12"></line><line x1="8" x2="21" y1="18" y2="18"></line><line x1="3" x2="3.01" y1="6" y2="6"></line><line x1="3" x2="3.01" y1="12" y2="12"></line><line x1="3" x2="3.01" y1="18" y2="18"></line></svg>
+<span>清单列表</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Empty search state -->
+<div class="empty-search-state" id="emptySearch">
+<svg fill="none" height="48" stroke="currentColor" stroke-width="1.5" viewbox="0 0 24 24" width="48"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
+<h3>未找到匹配的归档简报</h3>
+<p>请尝试搜索年份、月份（如 2026-08）或具体日期</p>
+</div>
+<!-- View 1: Calendar View -->
+<div class="view-panel active" id="viewCalendar">
+<div class="calendar-grid-container">
+<div class="month-calendar-card" data-year-month="2026-09">
+<div class="month-card-header">
+<div class="month-title-group">
+<div class="month-icon">
+<svg fill="none" height="20" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="20"><rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+</div>
+<span class="month-heading">2026 年 09 月</span>
+<span class="month-chip">8 个简报日</span>
+</div>
+<div class="month-stats-group">
+<span class="stat-pill"><span class="label">本月收录:</span> <strong>1,433</strong> 条</span>
+<span class="stat-pill alert-pill"><span class="label">重点提醒:</span> <strong>16</strong> 次</span>
+</div>
+</div>
+<div class="cal-weekdays-row">
+<span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span class="wknd">周六</span><span class="wknd">周日</span>
+</div>
+<div class="cal-grid-body">
+<div class="cal-cell cal-cell-empty"></div>
+<a class="cal-cell cal-cell-active density-3" data-count="223" data-date="2026-09-01" href="./2026-09-01.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">1</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">223<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="224" data-date="2026-09-02" href="./2026-09-02.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">2</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">224<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="201" data-date="2026-09-03" href="./2026-09-03.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">3</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">201<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-4" data-count="293" data-date="2026-09-04" href="./2026-09-04.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">4</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">293<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-1" data-count="3" data-date="2026-09-05" href="./2026-09-05.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">5</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span><span class="cal-pill-nonwork" title="有非工作时间发布">加班发</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">3<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-0" data-count="0" data-date="2026-09-06" href="./2026-09-06.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">6</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">0<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-4" data-count="250" data-date="2026-09-07" href="./2026-09-07.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">7</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">250<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="239" data-date="2026-09-08" href="./2026-09-08.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">8</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">239<span class="unit">条</span></span>
+</div>
+</a>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">9</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">10</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">11</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">12</span>
+<div class="cal-pill-group"><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">13</span>
+<div class="cal-pill-group"><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">14</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">15</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">16</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">17</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">18</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">19</span>
+<div class="cal-pill-group"><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">20</span>
+<div class="cal-pill-group"><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">21</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">22</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">23</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">24</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">25</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">26</span>
+<div class="cal-pill-group"><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">27</span>
+<div class="cal-pill-group"><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">28</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">29</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-disabled">
+<div class="cal-cell-header">
+<span class="cal-date-num">30</span>
+<div class="cal-pill-group"></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-no-data">-</span>
+</div>
+</div>
+<div class="cal-cell cal-cell-empty"></div><div class="cal-cell cal-cell-empty"></div><div class="cal-cell cal-cell-empty"></div><div class="cal-cell cal-cell-empty"></div>
+</div>
+</div>
+<div class="month-calendar-card" data-year-month="2026-08">
+<div class="month-card-header">
+<div class="month-title-group">
+<div class="month-icon">
+<svg fill="none" height="20" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="20"><rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+</div>
+<span class="month-heading">2026 年 08 月</span>
+<span class="month-chip">31 个简报日</span>
+</div>
+<div class="month-stats-group">
+<span class="stat-pill"><span class="label">本月收录:</span> <strong>4,225</strong> 条</span>
+<span class="stat-pill alert-pill"><span class="label">重点提醒:</span> <strong>62</strong> 次</span>
+</div>
+</div>
+<div class="cal-weekdays-row">
+<span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span class="wknd">周六</span><span class="wknd">周日</span>
+</div>
+<div class="cal-grid-body">
+<div class="cal-cell cal-cell-empty"></div><div class="cal-cell cal-cell-empty"></div><div class="cal-cell cal-cell-empty"></div><div class="cal-cell cal-cell-empty"></div><div class="cal-cell cal-cell-empty"></div>
+<a class="cal-cell cal-cell-active density-0" data-count="0" data-date="2026-08-01" href="./2026-08-01.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">1</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">0<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-0" data-count="0" data-date="2026-08-02" href="./2026-08-02.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">2</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">0<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="199" data-date="2026-08-03" href="./2026-08-03.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">3</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">199<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="188" data-date="2026-08-04" href="./2026-08-04.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">4</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">188<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="237" data-date="2026-08-05" href="./2026-08-05.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">5</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">237<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="180" data-date="2026-08-06" href="./2026-08-06.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">6</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">180<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-4" data-count="259" data-date="2026-08-07" href="./2026-08-07.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">7</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">259<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-0" data-count="0" data-date="2026-08-08" href="./2026-08-08.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">8</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">0<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-0" data-count="0" data-date="2026-08-09" href="./2026-08-09.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">9</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">0<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="215" data-date="2026-08-10" href="./2026-08-10.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">10</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">215<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="171" data-date="2026-08-11" href="./2026-08-11.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">11</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">171<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-2" data-count="158" data-date="2026-08-12" href="./2026-08-12.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">12</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">158<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="175" data-date="2026-08-13" href="./2026-08-13.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">13</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">175<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-4" data-count="259" data-date="2026-08-14" href="./2026-08-14.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">14</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">259<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-0" data-count="0" data-date="2026-08-15" href="./2026-08-15.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">15</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">0<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-0" data-count="0" data-date="2026-08-16" href="./2026-08-16.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">16</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">0<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="205" data-date="2026-08-17" href="./2026-08-17.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">17</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">205<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-2" data-count="157" data-date="2026-08-18" href="./2026-08-18.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">18</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">157<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="180" data-date="2026-08-19" href="./2026-08-19.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">19</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">180<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="181" data-date="2026-08-20" href="./2026-08-20.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">20</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">181<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="223" data-date="2026-08-21" href="./2026-08-21.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">21</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">223<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-0" data-count="0" data-date="2026-08-22" href="./2026-08-22.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">22</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">0<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-0" data-count="0" data-date="2026-08-23" href="./2026-08-23.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">23</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">0<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-2" data-count="146" data-date="2026-08-24" href="./2026-08-24.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">24</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">146<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="216" data-date="2026-08-25" href="./2026-08-25.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">25</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">216<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="163" data-date="2026-08-26" href="./2026-08-26.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">26</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">163<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="195" data-date="2026-08-27" href="./2026-08-27.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">27</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">195<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-4" data-count="258" data-date="2026-08-28" href="./2026-08-28.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">28</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">258<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-1" data-count="7" data-date="2026-08-29" href="./2026-08-29.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">29</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span><span class="cal-pill-nonwork" title="有非工作时间发布">加班发</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">7<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-0" data-count="0" data-date="2026-08-30" href="./2026-08-30.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">30</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">0<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-4" data-count="253" data-date="2026-08-31" href="./2026-08-31.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">31</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">253<span class="unit">条</span></span>
+</div>
+</a>
+<div class="cal-cell cal-cell-empty"></div><div class="cal-cell cal-cell-empty"></div><div class="cal-cell cal-cell-empty"></div><div class="cal-cell cal-cell-empty"></div><div class="cal-cell cal-cell-empty"></div><div class="cal-cell cal-cell-empty"></div>
+</div>
+</div>
+<div class="month-calendar-card" data-year-month="2026-07">
+<div class="month-card-header">
+<div class="month-title-group">
+<div class="month-icon">
+<svg fill="none" height="20" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="20"><rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+</div>
+<span class="month-heading">2026 年 07 月</span>
+<span class="month-chip">31 个简报日</span>
+</div>
+<div class="month-stats-group">
+<span class="stat-pill"><span class="label">本月收录:</span> <strong>4,777</strong> 条</span>
+<span class="stat-pill alert-pill"><span class="label">重点提醒:</span> <strong>62</strong> 次</span>
+</div>
+</div>
+<div class="cal-weekdays-row">
+<span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span class="wknd">周六</span><span class="wknd">周日</span>
+</div>
+<div class="cal-grid-body">
+<div class="cal-cell cal-cell-empty"></div><div class="cal-cell cal-cell-empty"></div>
+<a class="cal-cell cal-cell-active density-3" data-count="198" data-date="2026-07-01" href="./2026-07-01.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">1</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">198<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="166" data-date="2026-07-02" href="./2026-07-02.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">2</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">166<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-4" data-count="251" data-date="2026-07-03" href="./2026-07-03.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">3</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">251<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-1" data-count="9" data-date="2026-07-04" href="./2026-07-04.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">4</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span><span class="cal-pill-nonwork" title="有非工作时间发布">加班发</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">9<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-0" data-count="0" data-date="2026-07-05" href="./2026-07-05.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">5</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">0<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="192" data-date="2026-07-06" href="./2026-07-06.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">6</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">192<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-4" data-count="283" data-date="2026-07-07" href="./2026-07-07.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">7</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">283<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="192" data-date="2026-07-08" href="./2026-07-08.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">8</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">192<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="187" data-date="2026-07-09" href="./2026-07-09.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">9</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">187<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="202" data-date="2026-07-10" href="./2026-07-10.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">10</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">202<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-0" data-count="0" data-date="2026-07-11" href="./2026-07-11.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">11</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">0<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-0" data-count="0" data-date="2026-07-12" href="./2026-07-12.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">12</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">0<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="168" data-date="2026-07-13" href="./2026-07-13.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">13</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">168<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-2" data-count="155" data-date="2026-07-14" href="./2026-07-14.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">14</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">155<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="185" data-date="2026-07-15" href="./2026-07-15.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">15</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">185<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="164" data-date="2026-07-16" href="./2026-07-16.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">16</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">164<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="188" data-date="2026-07-17" href="./2026-07-17.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">17</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">188<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-0" data-count="0" data-date="2026-07-18" href="./2026-07-18.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">18</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">0<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-1" data-count="4" data-date="2026-07-19" href="./2026-07-19.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">19</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span><span class="cal-pill-nonwork" title="有非工作时间发布">加班发</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">4<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="211" data-date="2026-07-20" href="./2026-07-20.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">20</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">211<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="197" data-date="2026-07-21" href="./2026-07-21.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">21</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">197<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-4" data-count="248" data-date="2026-07-22" href="./2026-07-22.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">22</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">248<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="186" data-date="2026-07-23" href="./2026-07-23.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">23</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">186<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="231" data-date="2026-07-24" href="./2026-07-24.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">24</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">231<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-1" data-count="2" data-date="2026-07-25" href="./2026-07-25.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">25</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span><span class="cal-pill-nonwork" title="有非工作时间发布">加班发</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">2<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-1" data-count="12" data-date="2026-07-26" href="./2026-07-26.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">26</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span><span class="cal-pill-rest">休</span><span class="cal-pill-nonwork" title="有非工作时间发布">加班发</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">12<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="193" data-date="2026-07-27" href="./2026-07-27.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">27</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">193<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="221" data-date="2026-07-28" href="./2026-07-28.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">28</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">221<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="191" data-date="2026-07-29" href="./2026-07-29.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">29</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">191<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-3" data-count="217" data-date="2026-07-30" href="./2026-07-30.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">30</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">217<span class="unit">条</span></span>
+</div>
+</a>
+<a class="cal-cell cal-cell-active density-4" data-count="324" data-date="2026-07-31" href="./2026-07-31.html">
+<div class="cal-cell-header">
+<span class="cal-date-num">31</span>
+<div class="cal-pill-group"><span class="cal-pill-alert" title="重点提醒 2条">⚡2</span></div>
+</div>
+<div class="cal-cell-body">
+<span class="cal-count-badge">324<span class="unit">条</span></span>
+</div>
+</a>
+<div class="cal-cell cal-cell-empty"></div><div class="cal-cell cal-cell-empty"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- View 2: List View -->
+<div class="view-panel" id="viewList">
+<div class="history-list-wrap">
+<a class="history-row-item" data-count="239" data-date="2026-09-08" data-month="9" data-year="2026" href="./2026-09-08.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">09月</span>
+<span class="dc-day">08</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-09-08</span>
+<span class="dm-weekday">周二</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">239</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="250" data-date="2026-09-07" data-month="9" data-year="2026" href="./2026-09-07.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">09月</span>
+<span class="dc-day">07</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-09-07</span>
+<span class="dm-weekday">周一</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">250</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="0" data-date="2026-09-06" data-month="9" data-year="2026" href="./2026-09-06.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">09月</span>
+<span class="dc-day">06</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-09-06</span>
+<span class="dm-weekday">周日</span>
+
+<span class="status-chip chip-rest" title="周末休市无更新">周末非交易</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">0</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="3" data-date="2026-09-05" data-month="9" data-year="2026" href="./2026-09-05.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">09月</span>
+<span class="dc-day">05</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-09-05</span>
+<span class="dm-weekday">周六</span>
+
+<span class="status-chip chip-nonwork" title="周末或非工作时间有公告更新发布">有非工作时间发布</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">3</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="293" data-date="2026-09-04" data-month="9" data-year="2026" href="./2026-09-04.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">09月</span>
+<span class="dc-day">04</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-09-04</span>
+<span class="dm-weekday">周五</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">293</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="201" data-date="2026-09-03" data-month="9" data-year="2026" href="./2026-09-03.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">09月</span>
+<span class="dc-day">03</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-09-03</span>
+<span class="dm-weekday">周四</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">201</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="224" data-date="2026-09-02" data-month="9" data-year="2026" href="./2026-09-02.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">09月</span>
+<span class="dc-day">02</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-09-02</span>
+<span class="dm-weekday">周三</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">224</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="223" data-date="2026-09-01" data-month="9" data-year="2026" href="./2026-09-01.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">09月</span>
+<span class="dc-day">01</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-09-01</span>
+<span class="dm-weekday">周二</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">223</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="253" data-date="2026-08-31" data-month="8" data-year="2026" href="./2026-08-31.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">31</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-31</span>
+<span class="dm-weekday">周一</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">253</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="0" data-date="2026-08-30" data-month="8" data-year="2026" href="./2026-08-30.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">30</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-30</span>
+<span class="dm-weekday">周日</span>
+
+<span class="status-chip chip-rest" title="周末休市无更新">周末非交易</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">0</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="7" data-date="2026-08-29" data-month="8" data-year="2026" href="./2026-08-29.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">29</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-29</span>
+<span class="dm-weekday">周六</span>
+
+<span class="status-chip chip-nonwork" title="周末或非工作时间有公告更新发布">有非工作时间发布</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">7</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="258" data-date="2026-08-28" data-month="8" data-year="2026" href="./2026-08-28.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">28</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-28</span>
+<span class="dm-weekday">周五</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">258</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="195" data-date="2026-08-27" data-month="8" data-year="2026" href="./2026-08-27.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">27</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-27</span>
+<span class="dm-weekday">周四</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">195</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="163" data-date="2026-08-26" data-month="8" data-year="2026" href="./2026-08-26.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">26</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-26</span>
+<span class="dm-weekday">周三</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">163</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="216" data-date="2026-08-25" data-month="8" data-year="2026" href="./2026-08-25.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">25</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-25</span>
+<span class="dm-weekday">周二</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">216</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="146" data-date="2026-08-24" data-month="8" data-year="2026" href="./2026-08-24.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">24</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-24</span>
+<span class="dm-weekday">周一</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">146</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="0" data-date="2026-08-23" data-month="8" data-year="2026" href="./2026-08-23.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">23</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-23</span>
+<span class="dm-weekday">周日</span>
+
+<span class="status-chip chip-rest" title="周末休市无更新">周末非交易</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">0</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="0" data-date="2026-08-22" data-month="8" data-year="2026" href="./2026-08-22.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">22</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-22</span>
+<span class="dm-weekday">周六</span>
+
+<span class="status-chip chip-rest" title="周末休市无更新">周末非交易</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">0</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="223" data-date="2026-08-21" data-month="8" data-year="2026" href="./2026-08-21.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">21</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-21</span>
+<span class="dm-weekday">周五</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">223</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="181" data-date="2026-08-20" data-month="8" data-year="2026" href="./2026-08-20.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">20</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-20</span>
+<span class="dm-weekday">周四</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">181</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="180" data-date="2026-08-19" data-month="8" data-year="2026" href="./2026-08-19.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">19</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-19</span>
+<span class="dm-weekday">周三</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">180</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="157" data-date="2026-08-18" data-month="8" data-year="2026" href="./2026-08-18.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">18</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-18</span>
+<span class="dm-weekday">周二</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">157</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="205" data-date="2026-08-17" data-month="8" data-year="2026" href="./2026-08-17.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">17</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-17</span>
+<span class="dm-weekday">周一</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">205</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="0" data-date="2026-08-16" data-month="8" data-year="2026" href="./2026-08-16.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">16</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-16</span>
+<span class="dm-weekday">周日</span>
+
+<span class="status-chip chip-rest" title="周末休市无更新">周末非交易</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">0</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="0" data-date="2026-08-15" data-month="8" data-year="2026" href="./2026-08-15.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">15</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-15</span>
+<span class="dm-weekday">周六</span>
+
+<span class="status-chip chip-rest" title="周末休市无更新">周末非交易</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">0</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="259" data-date="2026-08-14" data-month="8" data-year="2026" href="./2026-08-14.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">14</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-14</span>
+<span class="dm-weekday">周五</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">259</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="175" data-date="2026-08-13" data-month="8" data-year="2026" href="./2026-08-13.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">13</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-13</span>
+<span class="dm-weekday">周四</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">175</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="158" data-date="2026-08-12" data-month="8" data-year="2026" href="./2026-08-12.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">12</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-12</span>
+<span class="dm-weekday">周三</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">158</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="171" data-date="2026-08-11" data-month="8" data-year="2026" href="./2026-08-11.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">11</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-11</span>
+<span class="dm-weekday">周二</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">171</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="215" data-date="2026-08-10" data-month="8" data-year="2026" href="./2026-08-10.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">10</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-10</span>
+<span class="dm-weekday">周一</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">215</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="0" data-date="2026-08-09" data-month="8" data-year="2026" href="./2026-08-09.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">09</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-09</span>
+<span class="dm-weekday">周日</span>
+
+<span class="status-chip chip-rest" title="周末休市无更新">周末非交易</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">0</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="0" data-date="2026-08-08" data-month="8" data-year="2026" href="./2026-08-08.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">08</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-08</span>
+<span class="dm-weekday">周六</span>
+
+<span class="status-chip chip-rest" title="周末休市无更新">周末非交易</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">0</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="259" data-date="2026-08-07" data-month="8" data-year="2026" href="./2026-08-07.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">07</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-07</span>
+<span class="dm-weekday">周五</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">259</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="180" data-date="2026-08-06" data-month="8" data-year="2026" href="./2026-08-06.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">06</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-06</span>
+<span class="dm-weekday">周四</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">180</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="237" data-date="2026-08-05" data-month="8" data-year="2026" href="./2026-08-05.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">05</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-05</span>
+<span class="dm-weekday">周三</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">237</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="188" data-date="2026-08-04" data-month="8" data-year="2026" href="./2026-08-04.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">04</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-04</span>
+<span class="dm-weekday">周二</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">188</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="199" data-date="2026-08-03" data-month="8" data-year="2026" href="./2026-08-03.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">03</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-03</span>
+<span class="dm-weekday">周一</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">199</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="0" data-date="2026-08-02" data-month="8" data-year="2026" href="./2026-08-02.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">02</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-02</span>
+<span class="dm-weekday">周日</span>
+
+<span class="status-chip chip-rest" title="周末休市无更新">周末非交易</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">0</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="0" data-date="2026-08-01" data-month="8" data-year="2026" href="./2026-08-01.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">08月</span>
+<span class="dc-day">01</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-08-01</span>
+<span class="dm-weekday">周六</span>
+
+<span class="status-chip chip-rest" title="周末休市无更新">周末非交易</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">0</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="324" data-date="2026-07-31" data-month="7" data-year="2026" href="./2026-07-31.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">31</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-31</span>
+<span class="dm-weekday">周五</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">324</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="217" data-date="2026-07-30" data-month="7" data-year="2026" href="./2026-07-30.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">30</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-30</span>
+<span class="dm-weekday">周四</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">217</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="191" data-date="2026-07-29" data-month="7" data-year="2026" href="./2026-07-29.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">29</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-29</span>
+<span class="dm-weekday">周三</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">191</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="221" data-date="2026-07-28" data-month="7" data-year="2026" href="./2026-07-28.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">28</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-28</span>
+<span class="dm-weekday">周二</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">221</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="193" data-date="2026-07-27" data-month="7" data-year="2026" href="./2026-07-27.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">27</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-27</span>
+<span class="dm-weekday">周一</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">193</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="12" data-date="2026-07-26" data-month="7" data-year="2026" href="./2026-07-26.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">26</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-26</span>
+<span class="dm-weekday">周日</span>
+
+<span class="status-chip chip-nonwork" title="周末或非工作时间有公告更新发布">有非工作时间发布</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">12</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="2" data-date="2026-07-25" data-month="7" data-year="2026" href="./2026-07-25.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">25</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-25</span>
+<span class="dm-weekday">周六</span>
+
+<span class="status-chip chip-nonwork" title="周末或非工作时间有公告更新发布">有非工作时间发布</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">2</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="231" data-date="2026-07-24" data-month="7" data-year="2026" href="./2026-07-24.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">24</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-24</span>
+<span class="dm-weekday">周五</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">231</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="186" data-date="2026-07-23" data-month="7" data-year="2026" href="./2026-07-23.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">23</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-23</span>
+<span class="dm-weekday">周四</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">186</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="248" data-date="2026-07-22" data-month="7" data-year="2026" href="./2026-07-22.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">22</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-22</span>
+<span class="dm-weekday">周三</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">248</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="197" data-date="2026-07-21" data-month="7" data-year="2026" href="./2026-07-21.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">21</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-21</span>
+<span class="dm-weekday">周二</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">197</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="211" data-date="2026-07-20" data-month="7" data-year="2026" href="./2026-07-20.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">20</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-20</span>
+<span class="dm-weekday">周一</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">211</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="4" data-date="2026-07-19" data-month="7" data-year="2026" href="./2026-07-19.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">19</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-19</span>
+<span class="dm-weekday">周日</span>
+
+<span class="status-chip chip-nonwork" title="周末或非工作时间有公告更新发布">有非工作时间发布</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">4</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="0" data-date="2026-07-18" data-month="7" data-year="2026" href="./2026-07-18.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">18</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-18</span>
+<span class="dm-weekday">周六</span>
+
+<span class="status-chip chip-rest" title="周末休市无更新">周末非交易</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">0</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="188" data-date="2026-07-17" data-month="7" data-year="2026" href="./2026-07-17.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">17</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-17</span>
+<span class="dm-weekday">周五</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">188</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="164" data-date="2026-07-16" data-month="7" data-year="2026" href="./2026-07-16.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">16</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-16</span>
+<span class="dm-weekday">周四</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">164</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="185" data-date="2026-07-15" data-month="7" data-year="2026" href="./2026-07-15.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">15</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-15</span>
+<span class="dm-weekday">周三</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">185</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="155" data-date="2026-07-14" data-month="7" data-year="2026" href="./2026-07-14.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">14</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-14</span>
+<span class="dm-weekday">周二</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">155</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="168" data-date="2026-07-13" data-month="7" data-year="2026" href="./2026-07-13.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">13</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-13</span>
+<span class="dm-weekday">周一</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">168</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="0" data-date="2026-07-12" data-month="7" data-year="2026" href="./2026-07-12.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">12</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-12</span>
+<span class="dm-weekday">周日</span>
+
+<span class="status-chip chip-rest" title="周末休市无更新">周末非交易</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">0</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="0" data-date="2026-07-11" data-month="7" data-year="2026" href="./2026-07-11.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">11</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-11</span>
+<span class="dm-weekday">周六</span>
+
+<span class="status-chip chip-rest" title="周末休市无更新">周末非交易</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">0</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="202" data-date="2026-07-10" data-month="7" data-year="2026" href="./2026-07-10.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">10</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-10</span>
+<span class="dm-weekday">周五</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">202</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="187" data-date="2026-07-09" data-month="7" data-year="2026" href="./2026-07-09.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">09</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-09</span>
+<span class="dm-weekday">周四</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">187</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="192" data-date="2026-07-08" data-month="7" data-year="2026" href="./2026-07-08.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">08</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-08</span>
+<span class="dm-weekday">周三</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">192</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="283" data-date="2026-07-07" data-month="7" data-year="2026" href="./2026-07-07.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">07</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-07</span>
+<span class="dm-weekday">周二</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">283</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="192" data-date="2026-07-06" data-month="7" data-year="2026" href="./2026-07-06.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">06</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-06</span>
+<span class="dm-weekday">周一</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">192</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="0" data-date="2026-07-05" data-month="7" data-year="2026" href="./2026-07-05.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">05</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-05</span>
+<span class="dm-weekday">周日</span>
+
+<span class="status-chip chip-rest" title="周末休市无更新">周末非交易</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">0</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="9" data-date="2026-07-04" data-month="7" data-year="2026" href="./2026-07-04.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">04</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-04</span>
+<span class="dm-weekday">周六</span>
+
+<span class="status-chip chip-nonwork" title="周末或非工作时间有公告更新发布">有非工作时间发布</span></div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">9</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="251" data-date="2026-07-03" data-month="7" data-year="2026" href="./2026-07-03.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">03</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-03</span>
+<span class="dm-weekday">周五</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">251</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="166" data-date="2026-07-02" data-month="7" data-year="2026" href="./2026-07-02.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">02</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-02</span>
+<span class="dm-weekday">周四</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">166</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+<a class="history-row-item" data-count="198" data-date="2026-07-01" data-month="7" data-year="2026" href="./2026-07-01.html">
+<div class="item-col-date">
+<div class="date-calendar-box">
+<span class="dc-month">07月</span>
+<span class="dc-day">01</span>
+</div>
+<div class="date-meta-box">
+<div class="dm-primary">
+<span class="dm-datestr">2026-07-01</span>
+<span class="dm-weekday">周三</span>
+
+</div>
+<div class="dm-secondary">
+                        广西全区公共资源交易信息 · 每日简报全量归档
+                    </div>
+</div>
+</div>
+<div class="item-col-metrics">
+<span class="chip-alert" title="重点提醒 2 条">
+<svg fill="currentColor" height="13" viewbox="0 0 24 24" width="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+<span>重点提醒 2</span>
+</span>
+<div class="metrics-visual">
+<div class="num-wrapper">
+<span class="count-value">198</span>
+<span class="count-unit">条公告</span>
+</div>
+
+</div>
+<div class="action-arrow">
+<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+</div>
+</div>
+</a>
+</div>
+</div>
+</main>
+<footer class="site-footer">
+<p>广西招投标自动化监控分析看板系统 · 每日定时自动采集与归档</p>
+</footer>
+<script>
+        function switchView(mode) {
+            const btnCal = document.getElementById('btnViewCalendar');
+            const btnList = document.getElementById('btnViewList');
+            const viewCal = document.getElementById('viewCalendar');
+            const viewList = document.getElementById('viewList');
+
+            if (mode === 'calendar') {
+                btnCal.classList.add('active');
+                btnList.classList.remove('active');
+                viewCal.classList.add('active');
+                viewList.classList.remove('active');
+            } else {
+                btnList.classList.add('active');
+                btnCal.classList.remove('active');
+                viewList.classList.add('active');
+                viewCal.classList.remove('active');
+            }
+        }
+
+        // Search logic
+        const searchInput = document.getElementById('archiveSearch');
+        const emptyState = document.getElementById('emptySearch');
+        const listItems = document.querySelectorAll('.history-row-item');
+        const calActiveCells = document.querySelectorAll('.cal-cell-active');
+        const monthCards = document.querySelectorAll('.month-calendar-card');
+
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.trim().toLowerCase();
+            let matchCount = 0;
+
+            // Filter List View
+            listItems.forEach(row => {
+                const date = (row.dataset.date || '').toLowerCase();
+                const text = row.textContent.toLowerCase();
+                if (!query || date.includes(query) || text.includes(query)) {
+                    row.style.display = '';
+                    matchCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Filter Calendar View
+            if (!query) {
+                monthCards.forEach(c => c.style.display = '');
+                calActiveCells.forEach(cell => {
+                    cell.style.opacity = '1';
+                    cell.style.filter = 'none';
+                });
+            } else {
+                monthCards.forEach(card => {
+                    let hasMatchInMonth = false;
+                    const cells = card.querySelectorAll('.cal-cell-active');
+                    cells.forEach(cell => {
+                        const date = (cell.dataset.date || '').toLowerCase();
+                        if (date.includes(query)) {
+                            cell.style.opacity = '1';
+                            cell.style.filter = 'none';
+                            hasMatchInMonth = true;
+                        } else {
+                            cell.style.opacity = '0.25';
+                            cell.style.filter = 'grayscale(80%)';
+                        }
+                    });
+                    card.style.display = hasMatchInMonth ? '' : 'none';
+                });
+            }
+
+            emptyState.style.display = (query && matchCount === 0) ? 'block' : 'none';
+        });
+    </script>
+</body>
+</html>

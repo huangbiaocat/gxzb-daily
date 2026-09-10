@@ -1,0 +1,35 @@
+# ---------- 本地配置与凭证（绝不入库）----------
+.env
+*.env
+!.env.example
+.env.local
+
+# ---------- 运行数据（每次跑都会变，不入库）----------
+data/
+logs/
+reports/
+dist/
+tmp/
+
+# ---------- 生成产物 ----------
+*.html
+!templates/*.html
+*.jsonl
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---------- 系统 / 编辑器 ----------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
