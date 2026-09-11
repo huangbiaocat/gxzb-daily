@@ -26,11 +26,19 @@ gxzb-daily/
 ├── requirements.txt          # 无第三方依赖（仅标注 Python 版本要求）
 ├── .env.example              # 配置模板，复制为 .env 使用
 ├── scripts/
-│   ├── collect.py            # 采集 15 个交易中心公告，按 infoid 去重规范化
+│   ├── fetcher.py            # 接口请求统一入口：限速、熔断、指数退避
+│   ├── collect.py            # 采集 15 个交易中心公告（服务端前缀过滤 + offset 分页 + totalcount 对账）
+│   ├── fetch_detail.py       # 按 infoid+categorynum 抓公告详情页正文
+│   ├── extract.py            # 正文 → 规则实体抽取 → 写 SQLite，产出抽取报告
+│   ├── store.py              # SQLite 四表（notices/notice_fields/projects/runs）读写与状态机
 │   ├── build_daily_page.py   # 生成每日明细页 + 写运行日志 / infoid 台账
 │   ├── build_archive_page.py # 生成归档首页
 │   ├── diff_missing.py       # 全量采集 vs 页面展示 差集核验
 │   └── logstore.py           # 日志与台账读写（infoid 为唯一识别码）
+├── extractors/
+│   ├── normalize.py          # 文本预处理 + 金额/日期/机构名标准化
+│   └── rules.py              # 字段标签与抽取规则，extract_notice() 主入口
+├── tests/test_rules.py       # 抽取规则回归测试（23 条，零依赖）
 ├── templates/
 │   ├── index-preview.html    # 每日页视觉设计基准（样式由此内联提取）
 │   └── index-sample.html     # 归档页样板
@@ -38,9 +46,13 @@ gxzb-daily/
 │   ├── daily/YYYY-MM-DD.json # 当日入库条目（主键 infoid）
 │   ├── collect/              # 当日全量采集结果
 │   ├── raw/                  # 接口原始返回
+│   ├── details/<day>/        # 公告详情页正文
+│   ├── gxzb.sqlite3          # 结构化库（notices/notice_fields/projects/runs）
 │   ├── state/index.json      # 全局 infoid 台账
 │   └── archive.json          # 归档首页数据源
-└── docs/pipeline.md          # 数据契约与运维细则
+├── docs/
+│   ├── pipeline.md           # 数据契约与运维细则
+│   └── extraction-rules.md   # 抽取规则手册（P1）
 ```
 
 ## 3. 快速开始
@@ -78,7 +90,48 @@ python3 run_daily.py --strict               # 存在缺失条目时退出码 2�
 | 5/6 | 缺失核验 | 产出 `missing-YYYY-MM-DD.{json,md}`，供人工确认后再合并 |
 | 6/6 | 外部推送 | 可选，执行 `.env` 中的 `PUSH_CMD`（如推送脚本 / rsync 同步） |
 
-## 5. 唯一识别码口径（重要）
+## 5. 正文抓取与实体抽取入库（P1）
+
+在原有「采集 → 页面」链路之上，P1 增加「详情页正文 → 规则抽取 → SQLite」三段，全部为标准库实现，可独立于页面流程单独重跑：
+
+```bash
+python3 scripts/collect.py --date 2026-09-10        # 1) 采集（前缀过滤 + offset 分页 + totalcount 对账）
+python3 scripts/fetch_detail.py --date 2026-09-10   # 2) 抓正文 → data/details/<day>/<infoid>.json
+python3 scripts/extract.py --date 2026-09-10        # 3) 抽字段 → gxzb.sqlite3 + extract-report-<day>.{json,md}
+python3 tests/test_rules.py                         # 4) 抽取规则回归测试（23 条）
+```
+
+### 5.1 采集加固口径
+
+| 项 | 口径 |
+| --- | --- |
+| 过滤 | 服务端按 categorynum 前缀（默认 001001，likeType=2）过滤，不再全量拉取后本地筛 |
+| 分页 | pn 为 offset 语义，按 rn（默认 500）递增翻页，直到累计条数达到该中心 totalcount |
+| 对账 | 每个中心记录 totalcount / fetched / pages / kept / unique / duplicate / off_day；汇总 totalcount_sum 与 fetched_sum 必须相等，最后一条不一致即报告 mismatch |
+| 限速 | 同 Host 两次请求间隔 ≥3 秒（`API_MIN_INTERVAL`） |
+| 熔断 | 遇 403/429 立即熔断 15 分钟（`API_BREAKER_COOLDOWN`），熔断状态落 `data/state/breaker.json` |
+| 退避 | 5xx 按 2 的幂次指数退避重试（`API_BACKOFF_BASE`，上限 `API_RETRY` 次） |
+| 404 | 直接跳过不重试，避免无效请求 |
+
+### 5.2 抽取与入库
+
+- 正文来源：官方详情页 `projectDetails.html?infoid=...&categorynum=...`，正文容器 class 由 `DETAIL_BODY_CLASS` 指定。
+- 字段：项目名称、招标人、招标代理机构、招标方式、预算/概算/控制价/中标价/投标报价、开标时间与地点、计划工期、中标候选人与中标人、联合体成员、联系人与电话、资质要求、建设内容规模、标段列表、region/stage/project_id。
+- 规则细节（金额标准化、机构名清洗、标段噪音过滤、联合体拆解等）见 [docs/extraction-rules.md](docs/extraction-rules.md)。
+- 状态机：`pending → extracted → pushed`，抽取异常回写 pending 并累计重试次数。
+- 抽取报告：`extract-report-<day>.json/.md`，含 success_rate、abnormal_count、必填/选填缺失分布与字段覆盖率。
+
+### 5.3 实跑基线（2026-09-10）
+
+| 指标 | 结果 |
+| --- | --- |
+| 采集对账 | 15 个中心，totalcount_sum = 219，fetched_sum = 219，差 0，aligned = true；跨中心按 infoid 去重后 111 条 |
+| 正文抓取 | 111/111 条取得正文，正文为空 0 条 |
+| 抽取 | 成功 111 条、异常 0 条，成功率 100%，project_id 归出 102 个项目 |
+| 字段覆盖 | contact_phone 100、tenderee 94、agency 79、contact_name 57、open_time 51、bid_method 49、period 44、winner 36、scale 32、contract_price 31、open_place 31、lots 20、candidates 18、qualification 16、members 14、bid_price 11、control_price 8、budget 5、estimate 3（单位：条 / 111） |
+| 必填缺失 | 139 处，分布 bid_method 62、open_time 60、tenderee 17（多为流标公示、控制价公告等本身不含这些字段的环节） |
+
+## 6. 唯一识别码口径（重要）
 
 - **一律使用官方接口返回的 `infoid` 作为唯一识别码**：入库判重、日志、台账、跨日去重全部以 infoid 为键。
 - **不再自造编号**：历史上的 `GX + 日期 + 序号` 编号机制已废弃，页面不再展示任何编号标签，也不提供编号检索（检索按标题与地市）。
@@ -87,7 +140,7 @@ python3 run_daily.py --strict               # 存在缺失条目时退出码 2�
   `python3 scripts/build_daily_page.py --date YYYY-MM-DD --refetch` 列出，或直接读取 `<DATA_DIR>/state/refetch-YYYY-MM-DD.json`（仅含 infoid 清单）。
 - **链接口径**：不信任数据源 `url` 字段（历史存在被截断、旧路径失效），统一按 `infoid + categorynum` 拼官方详情页地址（`config.DETAIL_URL_TPL`）。
 
-## 6. 配置项（.env）
+## 7. 配置项（.env）
 
 | 键 | 默认 | 说明 |
 | --- | --- | --- |
@@ -108,7 +161,7 @@ python3 run_daily.py --strict               # 存在缺失条目时退出码 2�
 
 > 所有键都可用同名环境变量覆盖，便于容器或 CI 注入。
 
-## 7. 无人值守调度
+## 8. 无人值守调度
 
 **crontab**（每天 08:30 与 17:30 各跑一次，重复运行由 infoid 判重保证幂等）：
 
@@ -134,7 +187,7 @@ OnCalendar=*-*-* 08:30:00
 Persistent=true
 ```
 
-## 8. 发布与同步
+## 9. 发布与同步
 
 `SITE_DIR` 即待发布目录，可按现有流程同步到 Web 服务器，例如：
 
@@ -144,7 +197,7 @@ rsync -az --delete --include='*.html' --exclude='*' "$SITE_DIR/" user@host:/var/
 
 若已有推送逻辑，把它写成独立脚本并配置到 `PUSH_CMD`，即纳入每日任务闭环。
 
-## 9. 自检与验收
+## 10. 自检与验收
 
 `build_daily_page.py` 生成后会执行以下检查，任一 FAIL 即退出码 1：
 
@@ -161,13 +214,13 @@ rsync -az --delete --include='*.html' --exclude='*' "$SITE_DIR/" user@host:/var/
 
 JSON 报告新增字段：`page_window`（时间窗）、`stale_missed_count`、`pending_count`、`stale_missed`（早前漏采子集）；`missing` 数组每条带 `miss_type` 与 `miss_reason`。`run_daily.py --strict` 仍以缺失总数判定退出码。
 
-## 10. 安全与合规
+## 11. 安全与合规
 
 - `.env` 与一切凭证（推送 token、SSH、同步密码）**只放本地环境文件，绝不写进代码、绝不提交仓库**；`.gitignore` 已忽略 `.env`、`data/`、`logs/`、`reports/`、`dist/` 等运行产物。
 - 采集仅访问官方公开接口，单次任务每中心请求次数有限、失败重试有上限，避免对源站造成压力。
 - 运行数据（含公告正文信息）默认只保留在本地 `data/`，仓库内不携带任何采集数据。
 
-## 11. 变更记录
+## 12. 变更记录
 
 - 废弃自造编号（`GX + 日期 + 序号`）：页面移除编号标签与编号检索，日志、台账、入库文件统一改以官方 `infoid` 为唯一识别码，同时保留重跑判重与失败重查能力。
 - 缺失核验增加「早前漏采 / 快照后新增」两类自动判定（基于页面已覆盖发布时间窗，判据可复现），报告中对早前漏采条目单独成区、特别标注；JSON 报告新增 `page_window`、`stale_missed_count`、`pending_count`、`stale_missed` 与每条 `miss_type` / `miss_reason` 字段。

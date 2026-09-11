@@ -88,6 +88,33 @@ DETAIL_URL_TPL = get("DETAIL_URL_TPL",
 
 TIMEZONE = get("TIMEZONE", "Asia/Shanghai")
 
+# ------------------------------------------------------------------ 采集加固（P1）
+# 反爬安全阈值：同一 Host 两次请求的最小间隔（秒），低于 3 秒会被源站限流
+API_MIN_INTERVAL = float(get("API_MIN_INTERVAL", "3.0"))
+# 403 / 429 触发熔断后的冷却时长（秒），默认 15 分钟
+API_BREAKER_COOLDOWN = int(get("API_BREAKER_COOLDOWN", "900"))
+# 5xx 重试的指数退避基数（秒）：第 n 次退避 = API_BACKOFF_BASE ** n
+API_BACKOFF_BASE = float(get("API_BACKOFF_BASE", "2"))
+# 单个中心的翻页上限保护（防接口异常导致死循环）
+API_MAX_PAGES = int(get("API_MAX_PAGES", "200"))
+# 服务端 categorynum 前缀过滤：站点前端口径为 isLike=true + likeType=2（前缀匹配）
+CATEGORY_LIKE_TYPE = int(get("CATEGORY_LIKE_TYPE", "2"))
+# 是否启用服务端发布时间窗（time 数组，字段 infodatepx），默认启用
+API_DAY_WINDOW = get("API_DAY_WINDOW", "1").strip() not in ("0", "false", "False", "")
+# 熔断状态文件（跨进程生效：冷却期内重跑直接拒绝，不打源站）
+BREAKER_PATH = STATE_DIR / "breaker.json"
+
+# ------------------------------------------------------------------ 正文抓取与规则抽取（P1）
+DETAIL_DIR = DATA_DIR / "details"          # 公告正文缓存（按日/按 infoid）
+EXTRACT_DIR = DATA_DIR / "extract"         # 规则抽取结果（按日）
+DB_PATH = get_path("DB_PATH", DATA_DIR / "gxzb.sqlite3")   # SQLite 入库
+# 详情页地址：优先用接口返回的 linkurl（静态页，含正文）；
+# linkurl 缺失时回退到 DETAIL_URL_TPL（前端路由页，可能无正文）
+DETAIL_URL_HOST = get("DETAIL_URL_HOST", "http://ggzy.jgswj.gxzf.gov.cn").rstrip("/")
+# 详情页正文容器（站点前端固定 class，改动时只需改这里）
+DETAIL_BODY_CLASS = get("DETAIL_BODY_CLASS", "ewb-details-info")
+DETAIL_TITLE_CLASS = get("DETAIL_TITLE_CLASS", "ewb-details-title")
+
 # ------------------------------------------------------------------ 业务字典
 INDUSTRY_MAP = {
     "001": "房建市政工程",
@@ -134,7 +161,8 @@ KEEP_DAYS = int(get("KEEP_DAYS", "0"))  # >0 时保留最近 N 天采集原始�
 
 
 def ensure_dirs():
-    for d in (SITE_DIR, DATA_DIR, RAW_DIR, COLLECT_DIR, DAILY_DIR, STATE_DIR, LOG_DIR, REPORT_DIR):
+    for d in (SITE_DIR, DATA_DIR, RAW_DIR, COLLECT_DIR, DAILY_DIR, STATE_DIR, LOG_DIR, REPORT_DIR,
+              DETAIL_DIR, EXTRACT_DIR):
         d.mkdir(parents=True, exist_ok=True)
 
 
