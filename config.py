@@ -164,6 +164,11 @@ WECHAT_TOUSER = get("WECHAT_TOUSER", "").strip()
 WECHAT_TEMPLATE_ID = get("WECHAT_TEMPLATE_ID", "").strip()  # 日常日报模版
 WECHAT_ALERT_TEMPLATE_ID = get("WECHAT_ALERT_TEMPLATE_ID", "").strip()  # 异常告警模版
 AUTO_UPLOAD_VPS = get("AUTO_UPLOAD_VPS", "false").strip().lower() in ("true", "1", "yes", "on")
+VPS_HOST = get("VPS_HOST", "217.142.149.2").strip()
+VPS_PORT = get("VPS_PORT", "22").strip()
+VPS_USER = get("VPS_USER", "root").strip()
+VPS_PATH = get("VPS_PATH", "/opt/1panel/apps/openresty/openresty/www/sites/ztb/index/").strip()
+MANAGER_PORT = int(get("MANAGER_PORT", "8089"))
 KEEP_DAYS = int(get("KEEP_DAYS", "0"))  # >0 时保留最近 N 天采集原始响应，0 表示全部保留
 
 

@@ -3,30 +3,52 @@ import subprocess
 import sys
 from pathlib import Path
 
-def main():
-    root = Path(__file__).resolve().parent.parent
-    dist_dir = root / "dist"
-    if not dist_dir.exists():
-        print(f"Dist directory not found: {dist_dir}")
-        return 1
+REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO))
+import config
 
-    items = [
-        str(p) for p in dist_dir.glob("*")
-        if not p.name.startswith("._") and p.name != ".DS_Store"
-    ]
+def main():
+    root = REPO
+    dist = root / "dist"
+    
+    host = getattr(config, "VPS_HOST", "217.142.149.2")
+    port = str(getattr(config, "VPS_PORT", "22"))
+    user = getattr(config, "VPS_USER", "root")
+    remote_path = getattr(config, "VPS_PATH", "/opt/1panel/apps/openresty/openresty/www/sites/ztb/index/")
+    if not remote_path.endswith("/"):
+        remote_path += "/"
+    
+    remote_target = f"{user}@{host}:{remote_path}"
+    
+    items = []
+    for name in ["index.html", "archive.html", "search.html"]:
+        p = dist / name
+        if p.exists():
+            items.append(str(p))
+            
+    for p in dist.glob("20*.html"):
+        items.append(str(p))
+        
+    for p in dist.glob("*.zip"):
+        items.append(str(p))
+
+    assets = dist / "assets"
+    if assets.exists():
+        items.append(str(assets))
+
     if not items:
-        print("No items to upload.")
+        print("[VPS] dist 目录下未发现需要上传的 HTML/静态文件")
         return 0
 
-    cmd = ["scp", "-P", "22", "-r"] + items + ["root@217.142.149.2:/opt/1panel/www/tender_site/"]
-    print("Executing:", " ".join(cmd))
-    res = subprocess.run(cmd, capture_output=True, text=True)
-    print("Return code:", res.returncode)
-    if res.stdout:
-        print(res.stdout.strip())
-    if res.stderr:
-        print(res.stderr.strip())
-    return res.returncode
+    print(f"[VPS] 准备同步 {len(items)} 个文件/目录 -> {remote_target} (端口: {port})")
+    cmd = ["scp", "-P", port, "-r"] + items + [remote_target]
+    
+    rc = subprocess.run(cmd).returncode
+    if rc == 0:
+        print("[VPS] 恭喜！同步上传 VPS 成功")
+    else:
+        print(f"[VPS] 上传失败，退出码: {rc}")
+    return rc
 
 if __name__ == "__main__":
     sys.exit(main())
