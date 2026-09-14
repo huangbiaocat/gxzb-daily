@@ -152,6 +152,18 @@ def send_alert(day: str, error_msg: str, step_name: str = "每日定时任务") 
     return send_template_message(token, payload)
 
 
+def test_push() -> bool:
+    """测试推送微信卡片消息"""
+    print("开始执行微信服务号推送自检测试...")
+    day = config.today()
+    ok = send_daily_summary(day, total_count=100, focus_count=10)
+    if ok:
+        print("微信推送测试成功！")
+    else:
+        print("微信推送测试失败。")
+    return ok
+
+
 if __name__ == "__main__":
     print("测试微信通知模版推送...")
     day = config.today()

@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>招投标数据中心控制台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .log-terminal {
+            background-color: #0d1117;
+            color: #38bdf8;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+        .btn-action {
+            transition: all 0.2s ease;
+        }
+        .btn-action:hover {
+            transform: translateY(-1px);
+        }
+        .btn-action:active {
+            transform: translateY(0);
+        }
+        .tab-btn.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+    <!-- 顶部导航栏 -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
+                    <p class="text-xs text-slate-500">Tender Data Control & Settings Center</p>
+                </div>
+            </div>
+
+            <!-- Tab 切换导航 -->
+            <div class="flex items-center space-x-1 border-b border-transparent">
+                <button id="tab-btn-settings" onclick="switchTab('settings')" class="tab-btn active px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-blue-600 flex items-center space-x-1.5 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <span>环境配置</span>
+                </button>
+                <button id="tab-btn-dashboard" onclick="switchTab('dashboard')" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-blue-600 flex items-center space-x-1.5 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    <span>监控与调度</span>
+                </button>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="refreshAll()" class="p-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition" title="刷新页面状态与配置">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </button>
+                <a href="/preview/" target="_blank" class="text-xs font-semibold px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg border border-blue-200 transition flex items-center space-x-1">
+                    <span>打开展示大屏</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主体区域 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- ============================================== -->
+        <!-- TAB 1: 设置界面 (默认第一屏幕显示) -->
+        <!-- ============================================== -->
+        <div id="tab-content-settings" class="space-y-6">
+            <div class="bg-white p-6 sm:p-8 rounded-xl border border-slate-200/80 shadow-sm space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">运行参数配置与凭证中心</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">各项参数直接保存在本地 <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600">.env</code> 配置文件中，修改后即时生效。</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" onclick="fetchConfig()" class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">重置/重新载入</button>
+                        <button type="submit" form="config-form" class="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition">保存所有配置</button>
+                    </div>
+                </div>
+
+                <form id="config-form" onsubmit="saveConfig(event)" class="space-y-8">
+                    <!-- 业务与基础配置 -->
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span>
+                            <h3 class="text-sm font-bold text-slate-800">业务过滤与展示基础配置</h3>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">重点预警关键词列表 (FOCUS_KEYWORDS)</label>
+                                <input id="cfg-focus-keywords" type="text" placeholder="公路,医院,学校,安置,水库,治理,灌区,道路" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                <span class="text-[11px] text-slate-400 mt-1 block">多个关键词请用半角逗号隔开。命中此关键词的条目将在日报表格中高亮标记为重点关注。</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">展示页面线上基准域名 (SITE_BASE_URL)</label>
+                                <input id="cfg-site-base-url" type="text" placeholder="https://ztb.139771.xyz" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                <span class="text-[11px] text-slate-400 mt-1 block">微信通知卡片点击后跳转访问的线上主站链接。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VPS 云端同步配置 -->
+                    <div class="space-y-4 pt-4 border-t border-slate-100">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-1.5 h-4 bg-indigo-600 rounded-full"></span>
+                            <h3 class="text-sm font-bold text-slate-800">云端服务器同步 (SCP / SSH)</h3>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">自动同步 VPS (AUTO_UPLOAD_VPS)</label>
+                                <select id="cfg-vps-auto" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="false">关闭 (False) - 仅本地生成</option>
+                                    <option value="true">开启 (True) - 生成后自动上传</option>
+                                </select>
+                                <span class="text-[11px] text-slate-400 mt-1 block">开启后，每日自动化调度运行结束将直接通过 SSH 上传至云服务器。</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">云端服务器 IP 地址 (VPS_HOST)</label>
+                                <input id="cfg-vps-host" type="text" placeholder="217.142.149.2" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">SSH 端口 (VPS_PORT)</label>
+                                <input id="cfg-vps-port" type="text" placeholder="22" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">SSH 登录用户名 (VPS_USER)</label>
+                                <input id="cfg-vps-user" type="text" placeholder="root" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">云端 Web 根目录路径 (VPS_PATH)</label>
+                                <input id="cfg-vps-path" type="text" placeholder="/opt/1panel/www/tender_site/" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 微信服务号通知配置 -->
+                    <div class="space-y-4 pt-4 border-t border-slate-100">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-1.5 h-4 bg-emerald-600 rounded-full"></span>
+                                <h3 class="text-sm font-bold text-slate-800">微信服务号模板消息通知</h3>
+                            </div>
+                            <button type="button" onclick="testWechatPush(this)" class="px-3 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-xs font-medium transition flex items-center space-x-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                                <span>发送测试推送</span>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">开发者 ID (WECHAT_APPID)</label>
+                                <input id="cfg-wx-appid" type="text" placeholder="wx..." class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">开发者密码 (WECHAT_APPSECRET)</label>
+                                <input id="cfg-wx-appsecret" type="password" placeholder="••••••••••••••••••••••••••••••••" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">接收人微信号 OpenID (WECHAT_TOUSER)</label>
+                                <input id="cfg-wx-touser" type="text" placeholder="o..." class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                <span class="text-[11px] text-slate-400 mt-1 block">支持多个接收人，英文逗号分隔。</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">日报模版 ID (WECHAT_TEMPLATE_ID)</label>
+                                <input id="cfg-wx-tpl" type="text" placeholder="模板行业: 招标公告通知 (IT科技/互联网|电子商务)" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">采集异常告警模版 ID (WECHAT_ALERT_TEMPLATE_ID)</label>
+                                <input id="cfg-wx-alert-tpl" type="text" placeholder="留空则回退使用日报模版" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作提交栏 -->
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <span id="save-status-tip" class="text-xs text-slate-500"></span>
+                        <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+                            保存并应用配置
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 2: 监控与调度界面 -->
+        <!-- ============================================== -->
+        <div id="tab-content-dashboard" class="space-y-6 hidden">
+            <!-- 状态卡片概览 -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
+                    <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">今日数据采集状态</div>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <span id="stat-today-date" class="text-xl font-bold text-slate-800">--</span>
+                        <span id="stat-today-badge" class="px-2 py-0.5 rounded text-xs">--</span>
+                    </div>
+                    <div id="stat-today-desc" class="text-xs text-slate-500 mt-1">加载中...</div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
+                    <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">历史累计生成页面</div>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <span id="stat-page-count" class="text-xl font-bold text-slate-800">0</span>
+                        <span class="text-xs text-slate-500">期</span>
+                    </div>
+                    <div class="text-xs text-slate-500 mt-1">最近期号: <span id="stat-last-day" class="font-medium text-slate-700">--</span></div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
+                    <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">云端同步 VPS</div>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <span id="stat-vps-status" class="text-base font-semibold text-slate-700">未配置</span>
+                        <span id="stat-vps-badge" class="px-2 py-0.5 rounded text-xs">--</span>
+                    </div>
+                    <div id="stat-vps-desc" class="text-xs text-slate-500 mt-1">--</div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
+                    <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">微信推送服务号</div>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <span id="stat-wechat-status" class="text-base font-semibold text-slate-700">未配置</span>
+                        <span id="stat-wechat-badge" class="px-2 py-0.5 rounded text-xs">--</span>
+                    </div>
+                    <div id="stat-wechat-desc" class="text-xs text-slate-500 mt-1">--</div>
+                </div>
+            </div>
+
+            <!-- 任务调度与操作台 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 控制面板 -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200/80 shadow-sm space-y-6">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">一键任务调度</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">手动触发全流程或分步自动化流水线</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <button onclick="triggerTask('daily')" class="btn-action w-full flex items-center justify-between p-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm text-left">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="text-xs font-bold">全流程一键采集入库发布</div>
+                                    <div class="text-[11px] opacity-80">采集 -> 入库 -> 页面生成 -> 自动同步/推送</div>
+                                </div>
+                            </div>
+                            <span class="text-xs font-medium">执行 &rarr;</span>
+                        </button>
+
+                        <div class="grid grid-cols-3 gap-2 pt-1">
+                            <button onclick="triggerTask('collect')" class="btn-action flex flex-col items-center justify-center p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
+                                <span class="text-xs font-semibold">仅抓取数据</span>
+                                <span class="text-[10px] text-slate-400 mt-0.5">collect.py</span>
+                            </button>
+                            <button onclick="triggerTask('build')" class="btn-action flex flex-col items-center justify-center p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
+                                <span class="text-xs font-semibold">重新生成页面</span>
+                                <span class="text-[10px] text-slate-400 mt-0.5">build_daily.py</span>
+                            </button>
+                            <button onclick="triggerTask('upload')" class="btn-action flex flex-col items-center justify-center p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
+                                <span class="text-xs font-semibold">手动同步云端</span>
+                                <span class="text-[10px] text-slate-400 mt-0.5">upload_vps.py</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 历史页面快速查看 -->
+                    <div class="pt-4 border-t border-slate-100">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">最近生成的日报列表</h3>
+                            <span class="text-[11px] text-slate-400">点击在新标签打开</span>
+                        </div>
+                        <div class="overflow-hidden border border-slate-100 rounded-lg">
+                            <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-500 font-medium">
+                                    <tr>
+                                        <th class="px-3 py-2">日期</th>
+                                        <th class="px-3 py-2">大小</th>
+                                        <th class="px-3 py-2 text-right">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pages-table-body" class="divide-y divide-slate-100 text-slate-700">
+                                    <tr><td colspan="3" class="px-3 py-3 text-center text-slate-400">正在获取...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 实时终端日志 -->
+                <div class="lg:col-span-2 bg-slate-900 rounded-xl shadow-md border border-slate-800 flex flex-col overflow-hidden h-[480px]">
+                    <div class="bg-slate-800/80 px-4 py-2.5 border-b border-slate-700/60 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+                            <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
+                            <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
+                            <span class="text-xs text-slate-400 font-mono ml-2">Console Output</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span id="task-status-pill" class="text-[11px] px-2 py-0.5 rounded font-mono bg-slate-700 text-slate-300">IDLE</span>
+                            <button onclick="clearLogs()" class="text-xs text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 transition">清空</button>
+                        </div>
+                    </div>
+                    <div id="log-container" class="p-4 flex-1 overflow-y-auto log-terminal text-xs leading-relaxed font-mono whitespace-pre-wrap">等待任务启动中...</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
+        广西招投标数据自动化采集中心 &copy; 2026
+    </footer>
+
+    <script>
+        let pollTimer = null;
+
+        function switchTab(tabId) {
+            const btnSettings = document.getElementById("tab-btn-settings");
+            const btnDashboard = document.getElementById("tab-btn-dashboard");
+            const contentSettings = document.getElementById("tab-content-settings");
+            const contentDashboard = document.getElementById("tab-content-dashboard");
+
+            if (tabId === "settings") {
+                btnSettings.classList.add("active");
+                btnDashboard.classList.remove("active");
+                contentSettings.classList.remove("hidden");
+                contentDashboard.classList.add("hidden");
+            } else {
+                btnDashboard.classList.add("active");
+                btnSettings.classList.remove("active");
+                contentDashboard.classList.remove("hidden");
+                contentSettings.classList.add("hidden");
+            }
+        }
+
+        async function refreshAll() {
+            await Promise.all([fetchStatus(), fetchConfig()]);
+        }
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch("/api/status");
+                const data = await res.json();
+
+                document.getElementById("stat-today-date").textContent = data.today || "--";
+                const todayBadge = document.getElementById("stat-today-badge");
+                const todayDesc = document.getElementById("stat-today-desc");
+
+                if (data.today_has_page) {
+                    todayBadge.textContent = "已生成";
+                    todayBadge.className = "px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-800 font-semibold";
+                    todayDesc.textContent = "今日日报页面已就绪";
+                } else {
+                    todayBadge.textContent = "未生成";
+                    todayBadge.className = "px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-800 font-semibold";
+                    todayDesc.textContent = "尚未生成今日日报";
+                }
+
+                document.getElementById("stat-page-count").textContent = data.html_count || 0;
+                document.getElementById("stat-last-day").textContent = (data.recent_pages && data.recent_pages[0]) ? data.recent_pages[0].date : "--";
+
+                const vpsStatus = document.getElementById("stat-vps-status");
+                const vpsBadge = document.getElementById("stat-vps-badge");
+                const vpsDesc = document.getElementById("stat-vps-desc");
+                if (data.vps && data.vps.auto_upload) {
+                    vpsStatus.textContent = data.vps.host || "已开启";
+                    vpsBadge.textContent = "自动同步";
+                    vpsBadge.className = "px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-800 font-semibold";
+                    vpsDesc.textContent = `路径: ${data.vps.path || "/"}`;
+                } else {
+                    vpsStatus.textContent = "未开启自动同步";
+                    vpsBadge.textContent = "仅本地";
+                    vpsBadge.className = "px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600";
+                    vpsDesc.textContent = data.vps && data.vps.host ? `主机: ${data.vps.host}` : "未配置目标 VPS";
+                }
+
+                const wxStatus = document.getElementById("stat-wechat-status");
+                const wxBadge = document.getElementById("stat-wechat-badge");
+                const wxDesc = document.getElementById("stat-wechat-desc");
+                if (data.wechat && data.wechat.configured) {
+                    wxStatus.textContent = "已配置推送";
+                    wxBadge.textContent = "正常";
+                    wxBadge.className = "px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-800 font-semibold";
+                    wxDesc.textContent = `接收人: ${data.wechat.touser || "未设置"}`;
+                } else {
+                    wxStatus.textContent = "未配置";
+                    wxBadge.textContent = "关闭";
+                    wxBadge.className = "px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600";
+                    wxDesc.textContent = "未填 AppID / Secret";
+                }
+
+                const tbody = document.getElementById("pages-table-body");
+                if (data.recent_pages && data.recent_pages.length > 0) {
+                    tbody.innerHTML = data.recent_pages.map(p => `
+                        <tr>
+                            <td class="px-3 py-2 font-medium">${p.date}</td>
+                            <td class="px-3 py-2 text-slate-500">${(p.size / 1024).toFixed(1)} KB</td>
+                            <td class="px-3 py-2 text-right">
+                                <a href="/preview/${p.name}" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium">查看</a>
+                            </td>
+                        </tr>
+                    `).join("");
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="3" class="px-3 py-3 text-center text-slate-400">暂无生成的日报页面</td></tr>';
+                }
+            } catch (err) {
+                console.error("获取状态失败", err);
+            }
+        }
+
+        async function fetchConfig() {
+            try {
+                const res = await fetch("/api/config");
+                const data = await res.json();
+
+                document.getElementById("cfg-focus-keywords").value = data.FOCUS_KEYWORDS_STR || (data.FOCUS_KEYWORDS ? data.FOCUS_KEYWORDS.join(",") : "");
+                document.getElementById("cfg-site-base-url").value = data.SITE_BASE_URL || "";
+                document.getElementById("cfg-vps-auto").value = String(data.AUTO_UPLOAD_VPS).toLowerCase() === "true" ? "true" : "false";
+                document.getElementById("cfg-vps-host").value = data.VPS_HOST || "";
+                document.getElementById("cfg-vps-port").value = data.VPS_PORT || "22";
+                document.getElementById("cfg-vps-user").value = data.VPS_USER || "root";
+                document.getElementById("cfg-vps-path").value = data.VPS_PATH || "";
+                document.getElementById("cfg-wx-appid").value = data.WECHAT_APPID || "";
+                document.getElementById("cfg-wx-appsecret").value = data.WECHAT_APPSECRET || "";
+                document.getElementById("cfg-wx-touser").value = data.WECHAT_TOUSER || "";
+                document.getElementById("cfg-wx-tpl").value = data.WECHAT_TEMPLATE_ID || "";
+                document.getElementById("cfg-wx-alert-tpl").value = data.WECHAT_ALERT_TEMPLATE_ID || "";
+            } catch (err) {
+                console.error("获取配置失败", err);
+            }
+        }
+
+        async function saveConfig(e) {
+            if (e) e.preventDefault();
+            const tip = document.getElementById("save-status-tip");
+            tip.textContent = "正在保存并更新配置...";
+            tip.className = "text-xs text-blue-600 font-medium";
+
+            const payload = {
+                FOCUS_KEYWORDS_STR: document.getElementById("cfg-focus-keywords").value,
+                SITE_BASE_URL: document.getElementById("cfg-site-base-url").value,
+                AUTO_UPLOAD_VPS: document.getElementById("cfg-vps-auto").value,
+                VPS_HOST: document.getElementById("cfg-vps-host").value,
+                VPS_PORT: document.getElementById("cfg-vps-port").value,
+                VPS_USER: document.getElementById("cfg-vps-user").value,
+                VPS_PATH: document.getElementById("cfg-vps-path").value,
+                WECHAT_APPID: document.getElementById("cfg-wx-appid").value,
+                WECHAT_APPSECRET: document.getElementById("cfg-wx-appsecret").value,
+                WECHAT_TOUSER: document.getElementById("cfg-wx-touser").value,
+                WECHAT_TEMPLATE_ID: document.getElementById("cfg-wx-tpl").value,
+                WECHAT_ALERT_TEMPLATE_ID: document.getElementById("cfg-wx-alert-tpl").value
+            };
+
+            try {
+                const res = await fetch("/api/save_config", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                const ret = await res.json();
+                if (ret.ok) {
+                    tip.textContent = "✅ " + (ret.msg || "配置保存成功并已重载生效！");
+                    tip.className = "text-xs text-emerald-600 font-semibold";
+                    setTimeout(() => { tip.textContent = ""; }, 4000);
+                    fetchStatus();
+                } else {
+                    tip.textContent = "❌ " + (ret.msg || "保存失败");
+                    tip.className = "text-xs text-red-600 font-semibold";
+                }
+            } catch (err) {
+                tip.textContent = "❌ 网络或接口异常: " + err;
+                tip.className = "text-xs text-red-600 font-semibold";
+            }
+        }
+
+        async function testWechatPush(btn) {
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-1.5 h-3.5 w-3.5 text-emerald-700 inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>发送中...</span>`;
+            
+            // 自动切到监控终端让用户看输出
+            switchTab("dashboard");
+            startPollingLog();
+
+            try {
+                const res = await fetch("/api/test_wechat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    alert("已发起推送自检测试任务，请查看终端输出及手机微信卡片！");
+                } else {
+                    alert("启动推送测试失败: " + data.msg);
+                }
+            } catch (err) {
+                alert("请求出错: " + err);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function triggerTask(action) {
+            const endpoints = {
+                "daily": "/api/run_daily",
+                "collect": "/api/run_collect",
+                "build": "/api/run_build",
+                "upload": "/api/run_upload"
+            };
+            const url = endpoints[action];
+            if (!url) return;
+
+            // 切换到调度监控面板
+            switchTab("dashboard");
+
+            const logEl = document.getElementById("log-container");
+            logEl.textContent = `[System] 正在发起任务: ${action}...
+`;
+
+            try {
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    startPollingLog();
+                } else {
+                    logEl.textContent += `[System Error] ${data.msg}
+`;
+                }
+            } catch (err) {
+                logEl.textContent += `[System Error] 网络请求失败: ${err}
+`;
+            }
+        }
+
+        function clearLogs() {
+            document.getElementById("log-container").textContent = "";
+        }
+
+        function startPollingLog() {
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(async () => {
+                try {
+                    const res = await fetch("/api/task_state");
+                    const data = await res.json();
+
+                    const pill = document.getElementById("task-status-pill");
+                    if (data.running) {
+                        pill.textContent = "RUNNING";
+                        pill.className = "text-[11px] px-2 py-0.5 rounded font-mono bg-amber-500/20 text-amber-400 font-semibold animate-pulse";
+                    } else {
+                        pill.textContent = data.exit_code === 0 ? "SUCCESS" : (data.exit_code !== null ? "FAILED (" + data.exit_code + ")" : "IDLE");
+                        pill.className = data.exit_code === 0 ? "text-[11px] px-2 py-0.5 rounded font-mono bg-emerald-500/20 text-emerald-400 font-semibold" : (data.exit_code !== null ? "text-[11px] px-2 py-0.5 rounded font-mono bg-red-500/20 text-red-400 font-semibold" : "text-[11px] px-2 py-0.5 rounded font-mono bg-slate-700 text-slate-300");
+                        if (!data.running && pollTimer) {
+                            clearInterval(pollTimer);
+                            pollTimer = null;
+                            fetchStatus();
+                        }
+                    }
+
+                    if (data.logs) {
+                        const logEl = document.getElementById("log-container");
+                        logEl.textContent = data.logs;
+                        logEl.scrollTop = logEl.scrollHeight;
+                    }
+                } catch (err) {
+                    console.error("轮询日志出错", err);
+                }
+            }, 1000);
+        }
+
+        // 初始化载入
+        window.addEventListener("DOMContentLoaded", () => {
+            fetchConfig();
+            fetchStatus();
+        });
+    </script>
+</body>
+</html>
