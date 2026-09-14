@@ -31,7 +31,18 @@ except ImportError:
     config = None
 
 PORT = int(getattr(config, "MANAGER_PORT", os.environ.get("MANAGER_PORT", 8089)))
-STATIC_DIR = Path(__file__).resolve().parent / "static"
+def get_static_dir() -> Path:
+    candidates = []
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        candidates.append(Path(sys._MEIPASS) / "manager" / "static")
+    candidates.append(Path(__file__).resolve().parent / "static")
+    candidates.append(ROOT_DIR / "manager" / "static")
+    for p in candidates:
+        if p.exists() and (p / "index.html").exists():
+            return p
+    return candidates[0] if candidates else Path(__file__).resolve().parent / "static"
+
+STATIC_DIR = get_static_dir()
 
 def get_site_dir() -> Path:
     """获取展示大屏与日报静态文件所在目录 (dist)"""
@@ -212,7 +223,17 @@ def get_system_status():
         "vps_path": getattr(config, "VPS_PATH", "/opt/1panel/apps/openresty/openresty/www/sites/ztb/index/"),
         "auto_upload_vps": getattr(config, "AUTO_UPLOAD_VPS", False),
         "wechat_configured": bool(getattr(config, "WECHAT_APPID", "") and getattr(config, "WECHAT_TOUSER", "")),
-        "last_run_log_tail": last_run_log[-1000:] if last_run_log else ""
+        "last_run_log_tail": last_run_log[-1000:] if last_run_log else "",
+        "today_has_page": any(p["date"] == today_str for p in html_files),
+        "vps": {
+            "host": getattr(config, "VPS_HOST", "217.142.149.2"),
+            "auto_upload": getattr(config, "AUTO_UPLOAD_VPS", False),
+            "path": getattr(config, "VPS_PATH", "/opt/1panel/apps/openresty/openresty/www/sites/ztb/index/"),
+        },
+        "wechat": {
+            "configured": bool(getattr(config, "WECHAT_APPID", "") and getattr(config, "WECHAT_APPSECRET", "")),
+            "touser": getattr(config, "WECHAT_TOUSER", ""),
+        },
     }
 
 def read_config_env():
@@ -246,6 +267,9 @@ def read_config_env():
         "WECHAT_TOUSER": getattr(config, "WECHAT_TOUSER", ""),
         "WECHAT_TEMPLATE_ID": getattr(config, "WECHAT_TEMPLATE_ID", ""),
         "WECHAT_ALERT_TEMPLATE_ID": getattr(config, "WECHAT_ALERT_TEMPLATE_ID", ""),
+        "MONITOR_START_TIME": getattr(config, "MONITOR_START_TIME", "08:00"),
+        "MONITOR_END_TIME": getattr(config, "MONITOR_END_TIME", "20:00"),
+        "MONITOR_INTERVAL_MINUTES": getattr(config, "MONITOR_INTERVAL_MINUTES", 10),
     }
     return res
 
@@ -276,6 +300,9 @@ def save_config_env(data):
         "WECHAT_TOUSER": data.get("WECHAT_TOUSER", "").strip(),
         "WECHAT_TEMPLATE_ID": data.get("WECHAT_TEMPLATE_ID", "").strip(),
         "WECHAT_ALERT_TEMPLATE_ID": data.get("WECHAT_ALERT_TEMPLATE_ID", "").strip(),
+        "MONITOR_START_TIME": data.get("MONITOR_START_TIME", "08:00").strip(),
+        "MONITOR_END_TIME": data.get("MONITOR_END_TIME", "20:00").strip(),
+        "MONITOR_INTERVAL_MINUTES": str(data.get("MONITOR_INTERVAL_MINUTES", "10")).strip(),
     }
 
     for line in lines:
@@ -296,6 +323,16 @@ def save_config_env(data):
 
     with open(env_file, "w", encoding="utf-8") as f:
         f.writelines(new_lines)
+
+
+    # 若在 Windows 环境，尝试同步更新系统计划任务触发间隔
+    try:
+        interval_min = int(data.get("MONITOR_INTERVAL_MINUTES", 10))
+        if sys.platform.startswith("win"):
+            ps_cmd = f"$t = Get-ScheduledTask -TaskName 'ZtbCollector_Sync' -ErrorAction SilentlyContinue; if ($t) {{ $t.Triggers[0].Repetition.Interval = 'PT{interval_min}M'; $t | Set-ScheduledTask | Out-Null }}"
+            subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd], check=False)
+    except Exception:
+        pass
 
     # 重新载入 config
     if config:
@@ -323,12 +360,25 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def do_HEAD(self):
+        self.do_GET()
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
 
+        if path == "/favicon.ico":
+            self.send_response(204)
+            self.end_headers()
+            return
+
         if path == "/" or path == "/index.html":
             index_file = STATIC_DIR / "index.html"
+            if not index_file.exists():
+                for cand in [Path(__file__).resolve().parent / "static" / "index.html", ROOT_DIR / "manager" / "static" / "index.html"]:
+                    if cand.exists():
+                        index_file = cand
+                        break
             if index_file.exists():
                 content = index_file.read_bytes()
                 self.send_response(200)
@@ -337,7 +387,13 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(content)
             else:
-                self.send_error(404, "index.html not found")
+                fallback_html = f"<html><head><meta charset=\"utf-8\"><title>招投标监控服务运行中</title></head><body style=\"font-family:sans-serif;padding:30px;\"><h2 style=\"color:#1677ff;\">招投标系统控制面板已成功运行</h2><p>未找到静态 index.html 资源文件 (尝试路径: {STATIC_DIR})</p><p>后台 API 正常可用：</p><ul><li><a href=\"/api/status\">/api/status (系统状态)</a></li><li><a href=\"/api/task_state\">/api/task_state (运行进度)</a></li><li><a href=\"/preview\">/preview (大屏展示)</a></li></ul></body></html>"
+                c = fallback_html.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(c)))
+                self.end_headers()
+                self.wfile.write(c)
             return
 
         if path == "/api/status":
@@ -482,9 +538,9 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
         self.send_error(404, "Not Found")
 
 
-def run_server(host="127.0.0.1", port=PORT):
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer((host, port), ManagerHandler) as httpd:
+def run_server(host="0.0.0.0", port=PORT):
+    http.server.ThreadingHTTPServer.allow_reuse_address = True
+    with http.server.ThreadingHTTPServer((host, port), ManagerHandler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
@@ -497,9 +553,8 @@ def main():
     print(f"局域网访问:   http://0.0.0.0:{PORT}")
     print(f"按 Ctrl+C 可停止控制台服务")
     print(f"==================================================")
-    # 支持端口复用
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("0.0.0.0", PORT), ManagerHandler) as httpd:
+    http.server.ThreadingHTTPServer.allow_reuse_address = True
+    with http.server.ThreadingHTTPServer(("0.0.0.0", PORT), ManagerHandler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

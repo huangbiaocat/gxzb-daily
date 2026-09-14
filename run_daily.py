@@ -16,6 +16,25 @@
 crontab 示例（每天 08:30 采集、17:30 再跑一遍）:
     30 8,17 * * * cd /opt/gxzb-daily && /usr/bin/python3 run_daily.py >> logs/cron.log 2>&1
 """
+from datetime import datetime, time
+
+def is_within_schedule(start_str: str, end_str: str) -> bool:
+    """判断当前时刻是否处于设定的监控时间段内（支持跨午夜）"""
+    if not start_str or not end_str:
+        return True
+    try:
+        now_t = datetime.now().time()
+        s_h, s_m = map(int, start_str.split(":"))
+        e_h, e_m = map(int, end_str.split(":"))
+        s_t = time(s_h, s_m)
+        e_t = time(e_h, e_m)
+        if s_t <= e_t:
+            return s_t <= now_t <= e_t
+        else:
+            return now_t >= s_t or now_t <= e_t
+    except Exception:
+        return True
+
 import argparse
 import json
 import subprocess
@@ -136,6 +155,7 @@ def main(argv=None):
     ap.add_argument("--skip-archive", action="store_true")
     ap.add_argument("--no-push", action="store_true")
     ap.add_argument("--strict", action="store_true", help="存在缺失条目时退出码 2")
+    ap.add_argument("--force", action="store_true", help="忽略监控时间窗口限制强制执行")
     ap.add_argument("--reconcile", choices=["report", "merge"], default=config.RECONCILE)
     args = ap.parse_args(argv)
 
@@ -149,6 +169,15 @@ def main(argv=None):
     print("=" * 68)
 
     failed_steps = []
+
+    # 0) 监控时间窗口检查（支持定时任务自动跳过非工作时段）
+    monitor_start = getattr(config, "MONITOR_START_TIME", "08:00")
+    monitor_end = getattr(config, "MONITOR_END_TIME", "20:00")
+    if not args.force and not args.skip_collect and not is_within_schedule(monitor_start, monitor_end):
+        now_str = datetime.now().strftime("%H:%M")
+        print(f"[*] 当前时间 {now_str} 不在监控时间段 [{monitor_start} - {monitor_end}] 内，跳过本次采集与同步。")
+        print("    （如需手动强制执行，可加 --force 参数）")
+        return 0
 
     # 1) 采集
     if args.skip_collect:

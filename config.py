@@ -111,6 +111,12 @@ API_DAY_WINDOW = get("API_DAY_WINDOW", "1").strip() not in ("0", "false", "False
 # 熔断状态文件（跨进程生效：冷却期内重跑直接拒绝，不打源站）
 BREAKER_PATH = STATE_DIR / "breaker.json"
 
+# ------------------------------------------------------------------ 监控调度窗口与定时刷新
+MONITOR_START_TIME = get("MONITOR_START_TIME", "08:00").strip()
+MONITOR_END_TIME = get("MONITOR_END_TIME", "20:00").strip()
+MONITOR_INTERVAL_MINUTES = int(get("MONITOR_INTERVAL_MINUTES", "10"))
+
+
 # ------------------------------------------------------------------ 正文抓取与规则抽取（P1）
 DETAIL_DIR = DATA_DIR / "details"          # 公告正文缓存（按日/按 infoid）
 EXTRACT_DIR = DATA_DIR / "extract"         # 规则抽取结果（按日）
