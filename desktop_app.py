@@ -155,7 +155,13 @@ def find_browser_app_cmd(url):
     ]
     for exe in candidates:
         if os.path.exists(exe):
-            return [exe, f"--app={url}", "--window-size=1200,800"]
+            return [
+                exe,
+                f"--app={url}",
+                "--window-size=1200,800",
+                "--no-proxy-server",
+                "--proxy-bypass-list=127.0.0.1;localhost",
+            ]
     return None
 
 
