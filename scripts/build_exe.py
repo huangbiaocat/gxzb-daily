@@ -10,11 +10,11 @@ os.chdir(root_dir)
 print("[1/3] 检查并安装 pyinstaller...")
 subprocess.run([py_exe, "-m", "pip", "install", "-i", "https://pypi.tuna.tsinghua.edu.cn/simple", "pyinstaller"], check=True)
 
-print("[2/3] 打包桌面控制中心 (ztb_desktop.exe)...")
+print("[2/3] 打包桌面控制中心 (TenderManager.exe)...")
 cmd_desktop = [
     py_exe, "-m", "PyInstaller",
     "-F", "-w", "desktop_app.py",
-    "--name", "ztb_desktop",
+    "--name", "TenderManager",
     "--add-data", "manager;manager",
     "--add-data", "scripts;scripts",
     "--add-data", "templates;templates",
