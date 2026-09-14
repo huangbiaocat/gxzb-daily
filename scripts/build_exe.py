@@ -8,7 +8,7 @@ root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 os.chdir(root_dir)
 
 print("[1/3] 检查并安装 pyinstaller...")
-subprocess.run([py_exe, "-m", "pip", "install", "-i", "https://pypi.tuna.tsinghua.edu.cn/simple", "pyinstaller"], check=True)
+subprocess.run([py_exe, "-m", "pip", "install", "-i", "https://pypi.tuna.tsinghua.edu.cn/simple", "pyinstaller", "pystray", "pillow"], check=True)
 
 print("[2/3] 打包桌面控制中心 (TenderManager.exe)...")
 cmd_desktop = [
@@ -21,6 +21,10 @@ cmd_desktop = [
     "--add-data", "config.py;.",
     "--add-data", "run_daily.py;.",
     "--hidden-import=manager.server",
+    "--hidden-import=pystray",
+    "--hidden-import=PIL",
+    "--hidden-import=PIL.Image",
+    "--hidden-import=PIL.ImageDraw",
     "--hidden-import=scripts.collect",
     "--hidden-import=scripts.store",
     "--hidden-import=scripts.build_daily_page",

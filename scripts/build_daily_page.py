@@ -103,21 +103,21 @@ for it in items:
     owner = it.get("owner", "")
     reasons = list(it.get("focus_reason") or [])
     
-    proj_hits = [p for p in getattr(config, "FOCUS_PROJECTS", []) if p in title]
+    proj_hits = [p for p in getattr(config, "FOCUS_PROJECTS", []) if config.fuzzy_match(p, title)]
     if proj_hits:
         for p in proj_hits:
             msg = "命中重点项目: %s" % p
             if msg not in reasons:
                 reasons.append(msg)
                 
-    owner_hits = [o for o in getattr(config, "FOCUS_OWNERS", []) if (o in owner or o in title)]
+    owner_hits = [o for o in getattr(config, "FOCUS_OWNERS", []) if ((owner and config.fuzzy_match(o, owner)) or config.fuzzy_match(o, title))]
     if owner_hits:
         for o in owner_hits:
             msg = "命中重点业主: %s" % o
             if msg not in reasons:
                 reasons.append(msg)
                 
-    type_hits = [t for t in getattr(config, "FOCUS_PROJECT_TYPES", []) if (t in industry or t in title)]
+    type_hits = [t for t in getattr(config, "FOCUS_PROJECT_TYPES", []) if (t in industry or config.fuzzy_match(t, title))]
     if type_hits:
         for t in type_hits:
             msg = "命中重点类型: %s" % t

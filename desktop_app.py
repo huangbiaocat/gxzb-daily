@@ -11,10 +11,18 @@ import threading
 import subprocess
 import webbrowser
 from pathlib import Path
+try:
+    from PIL import Image, ImageDraw
+    import pystray
+    HAS_TRAY = True
+except ImportError:
+    HAS_TRAY = False
+    Image = ImageDraw = pystray = None
 
 # 定位当前运行环境目录
 if getattr(sys, "frozen", False):
-    APP_DIR = Path(sys.executable).resolve().parent
+    _exe_dir = Path(sys.executable).resolve().parent
+    APP_DIR = _exe_dir.parent if _exe_dir.name.lower() == "dist" else _exe_dir
     BUNDLE_DIR = Path(getattr(sys, "_MEIPASS", APP_DIR))
 else:
     APP_DIR = Path(__file__).resolve().parent
@@ -93,6 +101,48 @@ def start_server_background():
 
 def find_browser_app_cmd(url):
     """优先寻找 Edge 或 Chrome 的 --app 独立视窗模式"""
+def create_tray_icon_image():
+    """动态绘制托盘图标（蓝底白标盾徽造型）"""
+    size = 64
+    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle([4, 4, 60, 60], radius=12, fill=(24, 144, 255, 255))
+    draw.rectangle([18, 26, 46, 48], fill=(255, 255, 255, 255))
+    draw.rectangle([26, 20, 38, 26], fill=(255, 255, 255, 255))
+    draw.rectangle([22, 32, 42, 34], fill=(24, 144, 255, 255))
+    return image
+
+def setup_system_tray(url, on_exit_callback):
+    """配置系统状态栏托盘图标"""
+    if not HAS_TRAY:
+        print("[Desktop App] 未检测到 pystray/PIL 模块，跳过托盘图标常驻")
+        return None
+
+    def on_open_panel(icon, item):
+        open_ui(url)
+
+    def on_quit(icon, item):
+        print("[Desktop App] 用户从状态栏选择退出整个服务...")
+        icon.stop()
+        if on_exit_callback:
+            on_exit_callback()
+
+    menu = pystray.Menu(
+        pystray.MenuItem("打开控制台", on_open_panel, default=True),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("退出整个服务", on_quit)
+    )
+
+    icon = pystray.Icon(
+        name="ZtbCollector",
+        icon=create_tray_icon_image(),
+        title="广西招投标数据采集 · 控制中心 (后台运行中)",
+        menu=menu
+    )
+    return icon
+
+
+def find_browser_app_cmd(url):
     candidates = [
         # Edge 路径
         os.path.expandvars(r"%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"),
@@ -128,10 +178,24 @@ def main():
     print(f"==================================================")
     start_server_background()
 
-    browser_proc = open_ui(url)
+    open_ui(url)
 
     if "--test" in sys.argv:
         time.sleep(2)
+        return
+
+    def handle_exit():
+        os._exit(0)
+
+    tray_icon = setup_system_tray(url, on_exit_callback=handle_exit)
+
+    if tray_icon:
+        print("[Desktop App] 系统状态栏托盘已启动。关闭浏览器窗口后后台仍常驻，托盘右键可彻底退出。")
+        try:
+            tray_icon.run()
+        except Exception as e:
+            print(f"[Desktop App] 托盘运行异常: {e}")
+            handle_exit()
         return
 
     try:

@@ -18,7 +18,11 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 # 载入根项目与配置
-ROOT_DIR = Path(__file__).resolve().parent.parent
+if getattr(sys, 'frozen', False):
+    _exe_p = Path(sys.executable).resolve().parent
+    ROOT_DIR = _exe_p.parent if _exe_p.name.lower() == 'dist' else _exe_p
+else:
+    ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 
 try:
@@ -38,6 +42,10 @@ def get_site_dir() -> Path:
         site_dir = (ROOT_DIR / site_dir).resolve()
     if not site_dir.exists() and (ROOT_DIR / "dist").exists():
         site_dir = (ROOT_DIR / "dist").resolve()
+    if not site_dir.exists() and getattr(sys, 'frozen', False):
+        _alt = Path(sys.executable).resolve().parent / 'dist'
+        if _alt.exists():
+            site_dir = _alt
     return site_dir
 
 

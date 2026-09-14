@@ -8,6 +8,7 @@
 - 配置只在进程启动时读取一次，定时任务（cron / launchd）无需额外参数即可运行。
 """
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -158,6 +159,93 @@ FOCUS_KEYWORDS = [k.strip() for k in get("FOCUS_KEYWORDS", "公路,医院,学校
 FOCUS_PROJECTS = [k.strip() for k in get("FOCUS_PROJECTS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
 FOCUS_OWNERS = [k.strip() for k in get("FOCUS_OWNERS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
 FOCUS_PROJECT_TYPES = [k.strip() for k in get("FOCUS_PROJECT_TYPES", "").replace("\n", ",").split(",") if k.strip()]
+
+# ------------------------------------------------------------------ 模糊匹配算法
+ALIAS_PAIRS = [
+    ("中医院", "中医医院"),
+    ("住建局", "住房和城乡建设局"),
+    ("交投", "交通投资"),
+    ("北投", "北部湾投资"),
+    ("水投", "水务投资"),
+    ("水投", "水利电业"),
+    ("妇幼", "妇幼保健院"),
+    ("疾控中心", "疾病预防控制中心"),
+    ("医科大", "医科大学"),
+]
+
+def normalize_match_text(text: str) -> str:
+    """去标点、括号与多余空白，用于文本归一化比对。"""
+    if not text:
+        return ""
+    text = str(text).lower()
+    return re.sub(r"[\s\(\)（）\[\]【】\{\}\-—_·、，,。；;:：!！\?？\"\'“”]+", "", text)
+
+def _generate_variants(pattern: str):
+    """生成行业常见简称、同义词变体。"""
+    variants = {pattern}
+    for a, b in ALIAS_PAIRS:
+        cur = list(variants)
+        for v in cur:
+            if a in v:
+                variants.add(v.replace(a, b))
+            if b in v:
+                variants.add(v.replace(b, a))
+    return list(variants)
+
+def _match_single_variant(norm_p: str, norm_t: str) -> bool:
+    if not norm_p or not norm_t:
+        return False
+    # 1. 归一化子串完全包含
+    if norm_p in norm_t:
+        return True
+
+    # 2. 跨度容错：模式串字符保持原序出现在文本中，且两字之间跨度 <= 20（用于容纳"广西"、"一期"、标段等插入词）
+    t_idx = 0
+    for ch in norm_p:
+        pos = norm_t.find(ch, t_idx)
+        if pos == -1:
+            return False
+        gap = pos - t_idx
+        if gap > 20:
+            return False
+        t_idx = pos + 1
+    return True
+
+def fuzzy_match(pattern: str, text: str) -> bool:
+    """通用招投标模糊匹配：支持精确、多关键词AND(空格/+/星号)、OR(|)、简称归一化和中间修饰词跨度容错。"""
+    if not pattern or not text:
+        return False
+    pattern = str(pattern).strip()
+    text = str(text).strip()
+    if not pattern or not text:
+        return False
+
+    if pattern in text:
+        return True
+
+    if "|" in pattern:
+        return any(fuzzy_match(sub_p.strip(), text) for sub_p in pattern.split("|") if sub_p.strip())
+
+    clean_parts = [p for p in re.split(r"[\s\+\*]+", pattern) if p]
+    if len(clean_parts) > 1:
+        return all(fuzzy_match(p, text) for p in clean_parts)
+
+    norm_t = normalize_match_text(text)
+    for v in _generate_variants(pattern):
+        norm_v = normalize_match_text(v)
+        if _match_single_variant(norm_v, norm_t):
+            return True
+
+    for suffix in ["建设项目", "建设工程", "实施方案", "工程", "项目"]:
+        norm_p = normalize_match_text(pattern)
+        if norm_p.endswith(suffix) and len(norm_p) - len(suffix) >= 4:
+            stem = norm_p[:-len(suffix)]
+            if _match_single_variant(stem, norm_t):
+                return True
+
+    return False
+
+fuzzy_match_project = fuzzy_match
 
 # ------------------------------------------------------------------ 运行开关
 # 页面入库口径：

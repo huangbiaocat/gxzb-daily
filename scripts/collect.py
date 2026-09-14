@@ -80,22 +80,27 @@ def normalize(rec, day=None):
     industry = config.INDUSTRY_MAP[industry_code]
     reasons = []
     
-    # 1. 重点跟踪项目（匹配标题）
-    proj_hits = [p for p in getattr(config, "FOCUS_PROJECTS", []) if p in title]
+    # 1. 重点跟踪项目（模糊匹配标题）
+    proj_hits = [p for p in getattr(config, "FOCUS_PROJECTS", []) if config.fuzzy_match(p, title)]
     if proj_hits:
         reasons.extend(["命中重点项目: %s" % p for p in proj_hits])
+
+    # 2. 重点业主（模糊匹配标题）
+    owner_hits = [o for o in getattr(config, "FOCUS_OWNERS", []) if config.fuzzy_match(o, title)]
+    if owner_hits:
+        reasons.extend(["命中重点业主: %s" % o for o in owner_hits])
         
-    # 2. 重点跟踪项目类型（匹配工程类型/行业）
-    type_hits = [t for t in getattr(config, "FOCUS_PROJECT_TYPES", []) if t in industry or t in title]
+    # 3. 重点跟踪项目类型（匹配工程类型/行业）
+    type_hits = [t for t in getattr(config, "FOCUS_PROJECT_TYPES", []) if t in industry or config.fuzzy_match(t, title)]
     if type_hits:
         reasons.extend(["命中重点类型: %s" % t for t in type_hits])
         
-    # 3. 重点预警关键词
+    # 4. 重点预警关键词
     kw_hits = [k for k in config.FOCUS_KEYWORDS if k in title]
     if kw_hits:
         reasons.extend(["命中关键词: %s" % k for k in kw_hits])
 
-    is_focus = 1 if (proj_hits or type_hits or kw_hits) else 0
+    is_focus = 1 if (proj_hits or owner_hits or type_hits or kw_hits) else 0
 
     return {
         "infoid": infoid,
