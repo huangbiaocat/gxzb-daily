@@ -223,20 +223,41 @@ DAILY_CSS = """
 
         /* ② 公告类型标签：胶囊形，浅色底 + 同色系深色文字，数量用浅一档同色 */
         .type-block { --chip-bg: #f1f5f9; --chip-fg: #334155; --chip-num: #94a3b8; }
-        .type-block[data-type="招标计划"] { --chip-bg: #ede9fe; --chip-fg: #5b21b6; --chip-num: #8b5cf6; }
-        .type-block[data-type="招标公告"] { --chip-bg: #d1fae5; --chip-fg: #065f46; --chip-num: #10b981; }
-        .type-block[data-type="澄清/答疑"] { --chip-bg: #fef3c7; --chip-fg: #92400e; --chip-num: #f59e0b; }
-        .type-block[data-type="控制价公示"] { --chip-bg: #ffedd5; --chip-fg: #9a3412; --chip-num: #f97316; }
-        .type-block[data-type="中标公示"] { --chip-bg: #e0f2fe; --chip-fg: #075985; --chip-num: #0ea5e9; }
-        .type-block[data-type="中标公告"] { --chip-bg: #dcfce7; --chip-fg: #166534; --chip-num: #22c55e; }
+        .type-block[data-type="招标计划"] { --chip-bg: #e0f2fe; --chip-fg: #0284c7; --chip-border: #bae6fd; --chip-num: #0284c7; }
+        .type-block[data-type="招标公告"] { --chip-bg: #dcfce7; --chip-fg: #16a34a; --chip-border: #bbf7d0; --chip-num: #16a34a; }
+        .type-block[data-type="澄清/答疑"] { --chip-bg: #fef3c7; --chip-fg: #d97706; --chip-border: #fde68a; --chip-num: #d97706; }
+        .type-block[data-type="控制价公示"] { --chip-bg: #f3e8ff; --chip-fg: #9333ea; --chip-border: #e9d5ff; --chip-num: #9333ea; }
+        .type-block[data-type="中标公示"] { --chip-bg: #dbeafe; --chip-fg: #2563eb; --chip-border: #bfdbfe; --chip-num: #2563eb; }
+        .type-block[data-type="中标公告"] { --chip-bg: #d1fae5; --chip-fg: #059669; --chip-border: #a7f3d0; --chip-num: #059669; }
+
+        /* 统一阶段统计卡色彩 (Unified Stage Colors for Stat Boxes) */
+        .stat-box.stage-plan { background: #e0f2fe !important; border-color: #bae6fd !important; }
+        .stat-box.stage-plan .sb-label { color: #0284c7 !important; }
+        .stat-box.stage-plan .sb-value { color: #0284c7 !important; }
+        .stat-box.stage-notice { background: #dcfce7 !important; border-color: #bbf7d0 !important; }
+        .stat-box.stage-notice .sb-label { color: #16a34a !important; }
+        .stat-box.stage-notice .sb-value { color: #16a34a !important; }
+        .stat-box.stage-clarify { background: #fef3c7 !important; border-color: #fde68a !important; }
+        .stat-box.stage-clarify .sb-label { color: #d97706 !important; }
+        .stat-box.stage-clarify .sb-value { color: #d97706 !important; }
+        .stat-box.stage-control { background: #f3e8ff !important; border-color: #e9d5ff !important; }
+        .stat-box.stage-control .sb-label { color: #9333ea !important; }
+        .stat-box.stage-control .sb-value { color: #9333ea !important; }
+        .stat-box.stage-candidate { background: #dbeafe !important; border-color: #bfdbfe !important; }
+        .stat-box.stage-candidate .sb-label { color: #2563eb !important; }
+        .stat-box.stage-candidate .sb-value { color: #2563eb !important; }
+        .stat-box.stage-award { background: #d1fae5 !important; border-color: #a7f3d0 !important; }
+        .stat-box.stage-award .sb-label { color: #059669 !important; }
+        .stat-box.stage-award .sb-value { color: #059669 !important; }
 
         .cat-block .type-head {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            padding: 2px 12px;
+            gap: 6px;
+            padding: 3px 12px;
             border-radius: 9999px;
             background: var(--chip-bg);
+            border: 1px solid var(--chip-border, transparent);
             margin-bottom: 12px;
         }
         .cat-block .type-head .type-bar { display: none; }
@@ -335,27 +356,27 @@ __DAILY_CSS__
             <h2 class="hero-title">广西全区招投标公告日报（__DATE__）</h2>
             <p class="hero-desc">按 6 大业务环节与工程类别归集当日全区公共资源交易公告，每条公告以官方唯一识别码（infoid）入库，便于溯源与查重，点击标题可跳转至官方公告页面查看原文。支持关键词检索、工程大类 / 地市 / 业务环节筛选与重点预警；无公告更新的类别与类型不在此页展示。</p>
             <div class="stats-grid cols-6">
-                <div class="stat-box">
+                <div class="stat-box stage-plan">
                     <div class="sb-label">招标计划</div>
                     <div class="sb-value" id="stat-plan">0<span class="sb-unit">条</span></div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box stage-notice">
                     <div class="sb-label">招标公告</div>
                     <div class="sb-value" id="stat-notice">0<span class="sb-unit">条</span></div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box stage-clarify">
                     <div class="sb-label">澄清/答疑</div>
                     <div class="sb-value" id="stat-clarify">0<span class="sb-unit">条</span></div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box stage-control">
                     <div class="sb-label">控制价公示</div>
                     <div class="sb-value" id="stat-control">0<span class="sb-unit">条</span></div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box stage-candidate">
                     <div class="sb-label">中标公示</div>
                     <div class="sb-value" id="stat-candidate">0<span class="sb-unit">条</span></div>
                 </div>
-                <div class="stat-box">
+                <div class="stat-box stage-award">
                     <div class="sb-label">中标公告</div>
                     <div class="sb-value" id="stat-result">0<span class="sb-unit">条</span></div>
                 </div>
