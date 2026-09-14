@@ -39,8 +39,29 @@ def banner(step, text):
 
 
 def run(args, allow_codes=(0,)):
-    """执行子脚本并回显输出；返回 (退出码, 是否可接受)。"""
+    """执行子脚本并回显输出；返回 (退出码, 是否可接受)。兼容 PyInstaller 打包环境。"""
     print("$ " + " ".join(str(a) for a in args), flush=True)
+    
+    # 在 PyInstaller 单文件/打包环境中，sys.executable 是 exe 本身，无法直接解释其他 py 文件
+    # 优先检测是否打包环境或目标脚本可以直接在当前进程使用 runpy 运行
+    if getattr(sys, 'frozen', False) and len(args) >= 2 and str(args[0]) == sys.executable:
+        script_path = Path(args[1])
+        if script_path.suffix == ".py" and script_path.exists():
+            import runpy
+            old_argv = sys.argv[:]
+            sys.argv = [str(script_path)] + [str(a) for a in args[2:]]
+            ret_code = 0
+            try:
+                runpy.run_path(str(script_path), run_name="__main__")
+            except SystemExit as se:
+                ret_code = se.code if isinstance(se.code, int) else (1 if se.code else 0)
+            except Exception as e:
+                print(f"[Error in runpy {script_path.name}]: {e}", file=sys.stderr)
+                ret_code = 1
+            finally:
+                sys.argv = old_argv
+            return ret_code, ret_code in allow_codes
+
     proc = subprocess.run([str(a) for a in args], capture_output=True, text=True)
     if proc.stdout:
         print(proc.stdout.rstrip(), flush=True)

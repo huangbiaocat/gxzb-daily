@@ -8,13 +8,12 @@ sys.path.insert(0, str(REPO))
 import config
 
 def main():
-    root = REPO
-    dist = root / "dist"
+    dist = Path(config.SITE_DIR)
     
     host = getattr(config, "VPS_HOST", "217.142.149.2")
     port = str(getattr(config, "VPS_PORT", "22"))
     user = getattr(config, "VPS_USER", "root")
-    remote_path = getattr(config, "VPS_PATH", "/opt/1panel/apps/openresty/openresty/www/sites/ztb/index/")
+    remote_path = getattr(config, "VPS_PATH", "/opt/1panel/www/tender_site/")
     if not remote_path.endswith("/"):
         remote_path += "/"
     

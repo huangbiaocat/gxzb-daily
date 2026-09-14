@@ -324,8 +324,10 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             return
 
         # 预览静态 dist 中的文件
-        if path.startswith("/dist/"):
-            rel = path[6:].lstrip("/")
+        if path.startswith("/dist/") or path == "/dist":
+            rel = path[6:].lstrip("/") if path.startswith("/dist/") else "index.html"
+            if not rel:
+                rel = "index.html"
             target = ROOT_DIR / "dist" / rel
             if target.exists() and target.is_file():
                 mime = "text/html; charset=utf-8" if target.suffix == ".html" else "application/octet-stream"
@@ -352,10 +354,27 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
                 pass
 
         py_exe = sys.executable
+        collector_exe = None
+        if getattr(sys, 'frozen', False):
+            candidate = Path(py_exe).resolve().parent / "ztb_collector.exe"
+            if candidate.exists():
+                collector_exe = candidate
+            elif (ROOT_DIR / "dist" / "ztb_collector.exe").exists():
+                collector_exe = ROOT_DIR / "dist" / "ztb_collector.exe"
+
+        # 如果没有安装全局 python 命令且没有直接 py_exe，回退使用内置或默认 Python 解释器
+        if not getattr(sys, 'frozen', False):
+            run_cmd_prefix = [py_exe]
+        else:
+            # 优先看有没有配置好的 python.exe
+            run_cmd_prefix = [collector_exe] if collector_exe else [py_exe]
 
         if path == "/api/run_daily":
             target_date = post_data.get("date", "").strip() or date.today().isoformat()
-            cmd = [py_exe, str(ROOT_DIR / "run_daily.py"), "--date", target_date]
+            if collector_exe:
+                cmd = [str(collector_exe), "--date", target_date]
+            else:
+                cmd = [py_exe, str(ROOT_DIR / "run_daily.py"), "--date", target_date]
             ok, msg = PROC_MGR.start_task(f"全流程日报流水线 ({target_date})", cmd)
             self.send_json({"ok": ok, "msg": msg})
             return
@@ -400,6 +419,15 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             return
 
         self.send_error(404, "Not Found")
+
+
+def run_server(host="127.0.0.1", port=PORT):
+    socketserver.TCPServer.allow_reuse_address = True
+    with socketserver.TCPServer((host, port), ManagerHandler) as httpd:
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            pass
 
 def main():
     print(f"==================================================")

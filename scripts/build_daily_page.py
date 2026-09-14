@@ -735,7 +735,17 @@ print("正在同步更新首页/归档索引...")
 try:
     import run_daily
     run_daily.refresh_archive(DAY)
-    rc = subprocess.run([sys.executable, str(_REPO / "scripts" / "build_archive_page.py")]).returncode
+    try:
+        import run_archive
+        rc = run_archive.main() if hasattr(run_archive, 'main') else 0
+    except ImportError:
+        archive_script = _REPO / "scripts" / "build_archive_page.py"
+        if getattr(sys, 'frozen', False):
+            import runpy
+            runpy.run_path(str(archive_script), run_name="__main__")
+            rc = 0
+        else:
+            rc = subprocess.run([sys.executable, str(archive_script)]).returncode
     if rc == 0:
         print("归档首页同步完成")
     else:

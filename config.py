@@ -8,9 +8,15 @@
 - 配置只在进程启动时读取一次，定时任务（cron / launchd）无需额外参数即可运行。
 """
 import os
+import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent
+if getattr(sys, 'frozen', False):
+    REPO_ROOT = Path(sys.executable).resolve().parent
+    if REPO_ROOT.name.lower() == "dist":
+        REPO_ROOT = REPO_ROOT.parent
+else:
+    REPO_ROOT = Path(__file__).resolve().parent
 
 # ------------------------------------------------------------------ .env 解析
 def load_env_file(path=None):
@@ -167,7 +173,7 @@ AUTO_UPLOAD_VPS = get("AUTO_UPLOAD_VPS", "false").strip().lower() in ("true", "1
 VPS_HOST = get("VPS_HOST", "217.142.149.2").strip()
 VPS_PORT = get("VPS_PORT", "22").strip()
 VPS_USER = get("VPS_USER", "root").strip()
-VPS_PATH = get("VPS_PATH", "/opt/1panel/apps/openresty/openresty/www/sites/ztb/index/").strip()
+VPS_PATH = get("VPS_PATH", "/opt/1panel/www/tender_site/").strip()
 MANAGER_PORT = int(get("MANAGER_PORT", "8089"))
 KEEP_DAYS = int(get("KEEP_DAYS", "0"))  # >0 时保留最近 N 天采集原始响应，0 表示全部保留
 

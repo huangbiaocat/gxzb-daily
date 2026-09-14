@@ -79,7 +79,7 @@ def send_daily_summary(day: str, total_count: int, focus_count: int, failed_step
     if not token:
         return False
 
-    base_url = getattr(config, "BASE_URL", "").rstrip("/")
+    base_url = getattr(config, "SITE_BASE_URL", getattr(config, "BASE_URL", "https://ztb.139771.xyz")).rstrip("/")
     if base_url:
         page_url = f"{base_url}/{day}.html"
     else:
@@ -120,7 +120,7 @@ def send_alert(day: str, error_msg: str, step_name: str = "每日定时任务") 
     if not token:
         return False
 
-    base_url = getattr(config, "BASE_URL", "").rstrip("/")
+    base_url = getattr(config, "SITE_BASE_URL", getattr(config, "BASE_URL", "https://ztb.139771.xyz")).rstrip("/")
     page_url = f"{base_url}/" if base_url else "http://127.0.0.1:8089/"
 
     if tpl_id == config.WECHAT_ALERT_TEMPLATE_ID and config.WECHAT_ALERT_TEMPLATE_ID:
