@@ -25,7 +25,7 @@ try:
 except ImportError:
     config = None
 
-PORT = int(os.environ.get("MANAGER_PORT", 8088))
+PORT = int(getattr(config, "MANAGER_PORT", os.environ.get("MANAGER_PORT", 8089)))
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 class ProcessManager:
