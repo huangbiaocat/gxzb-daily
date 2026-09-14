@@ -5,6 +5,7 @@
 """
 import http.server
 import json
+import mimetypes
 import os
 import re
 import socketserver
@@ -27,6 +28,18 @@ except ImportError:
 
 PORT = int(getattr(config, "MANAGER_PORT", os.environ.get("MANAGER_PORT", 8089)))
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+def get_site_dir() -> Path:
+    """获取展示大屏与日报静态文件所在目录 (dist)"""
+    site_dir = getattr(config, "SITE_DIR", ROOT_DIR / "dist")
+    if not isinstance(site_dir, Path):
+        site_dir = Path(site_dir)
+    if not site_dir.is_absolute():
+        site_dir = (ROOT_DIR / site_dir).resolve()
+    if not site_dir.exists() and (ROOT_DIR / "dist").exists():
+        site_dir = (ROOT_DIR / "dist").resolve()
+    return site_dir
+
 
 class ProcessManager:
     """管理后台任务进程执行与实时日志捕获"""
@@ -211,6 +224,9 @@ def read_config_env():
     res = {
         "FOCUS_KEYWORDS": getattr(config, "FOCUS_KEYWORDS", ["公路", "医院", "学校", "水利", "防洪", "大桥"]),
         "FOCUS_KEYWORDS_STR": ",".join(getattr(config, "FOCUS_KEYWORDS", [])) if getattr(config, "FOCUS_KEYWORDS", None) else "",
+        "FOCUS_PROJECTS": "\n".join(getattr(config, "FOCUS_PROJECTS", [])) if getattr(config, "FOCUS_PROJECTS", None) else "",
+        "FOCUS_OWNERS": "\n".join(getattr(config, "FOCUS_OWNERS", [])) if getattr(config, "FOCUS_OWNERS", None) else "",
+        "FOCUS_PROJECT_TYPES": "\n".join(getattr(config, "FOCUS_PROJECT_TYPES", [])) if getattr(config, "FOCUS_PROJECT_TYPES", None) else "",
         "AUTO_UPLOAD_VPS": "true" if getattr(config, "AUTO_UPLOAD_VPS", False) else "false",
         "VPS_HOST": getattr(config, "VPS_HOST", "217.142.149.2"),
         "VPS_PORT": getattr(config, "VPS_PORT", "22"),
@@ -238,6 +254,9 @@ def save_config_env(data):
     
     mapping = {
         "FOCUS_KEYWORDS": data.get("FOCUS_KEYWORDS_STR", "").strip(),
+        "FOCUS_PROJECTS": ",".join([p.strip() for p in data.get("FOCUS_PROJECTS", "").replace("\r\n", "\n").replace("，", ",").split("\n") if p.strip()]) if "\n" in data.get("FOCUS_PROJECTS", "") else data.get("FOCUS_PROJECTS", "").strip(),
+        "FOCUS_OWNERS": ",".join([p.strip() for p in data.get("FOCUS_OWNERS", "").replace("\r\n", "\n").replace("，", ",").split("\n") if p.strip()]) if "\n" in data.get("FOCUS_OWNERS", "") else data.get("FOCUS_OWNERS", "").strip(),
+        "FOCUS_PROJECT_TYPES": ",".join([p.strip() for p in data.get("FOCUS_PROJECT_TYPES", "").replace("\r\n", "\n").replace("，", ",").split("\n") if p.strip()]) if "\n" in data.get("FOCUS_PROJECT_TYPES", "") else data.get("FOCUS_PROJECT_TYPES", "").strip(),
         "AUTO_UPLOAD_VPS": data.get("AUTO_UPLOAD_VPS", "false").strip().lower(),
         "VPS_HOST": data.get("VPS_HOST", "").strip(),
         "VPS_PORT": data.get("VPS_PORT", "22").strip(),
@@ -325,20 +344,52 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             self.send_json(read_config_env())
             return
 
-        # 预览静态 dist 中的文件
-        if path.startswith("/dist/") or path == "/dist":
-            rel = path[6:].lstrip("/") if path.startswith("/dist/") else "index.html"
+        # 预览静态 dist / preview 中的展示大屏与日报文件
+        is_preview = path == "/preview" or path.startswith("/preview/")
+        is_dist = path == "/dist" or path.startswith("/dist/")
+        is_assets = path.startswith("/assets/")
+
+        if is_preview or is_dist or is_assets:
+            site_dir = get_site_dir()
+            if is_preview:
+                rel = path[8:].lstrip("/") if path.startswith("/preview/") else "index.html"
+            elif is_dist:
+                rel = path[5:].lstrip("/") if path.startswith("/dist/") else "index.html"
+            else:
+                rel = path.lstrip("/")
+
             if not rel:
                 rel = "index.html"
-            target = ROOT_DIR / "dist" / rel
-            if target.exists() and target.is_file():
-                mime = "text/html; charset=utf-8" if target.suffix == ".html" else "application/octet-stream"
-                data = target.read_bytes()
+
+            try:
+                target = (site_dir / rel).resolve()
+                if str(target).startswith(str(site_dir.resolve())) and target.is_file():
+                    mime = "text/html; charset=utf-8" if target.suffix.lower() == ".html" else                            "text/css; charset=utf-8" if target.suffix.lower() == ".css" else                            "application/javascript; charset=utf-8" if target.suffix.lower() == ".js" else                            mimetypes.guess_type(str(target))[0] or "application/octet-stream"
+                    data = target.read_bytes()
+                    self.send_response(200)
+                    self.send_header("Content-Type", mime)
+                    self.send_header("Content-Length", str(len(data)))
+                    self.end_headers()
+                    self.wfile.write(data)
+                    return
+            except Exception:
+                pass
+
+            if rel.endswith(".html") or not rel or "." not in rel:
+                tips_html = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>页面尚未生成</title><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>body{{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f8fafc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}}
+.card{{background:#fff;padding:32px 40px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.06);max-width:480px;text-align:center;}}
+h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;line-height:1.6;margin:16px 0 24px;}}
+.btn{{display:inline-block;padding:10px 20px;background:#0284c7;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;}}
+.btn:hover{{background:#0369a1;}}</style></head>
+<body><div class="card"><h2>展示页面暂未生成</h2><p>找不到目标文件 <code>{rel}</code>。<br>请先返回控制面板，点击【立即采集一次】以生成今日大屏与日报数据。</p><a class="btn" href="/">返回控制台</a></div></body></html>"""
                 self.send_response(200)
-                self.send_header("Content-Type", mime)
-                self.send_header("Content-Length", str(len(data)))
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(tips_html.encode("utf-8"))))
                 self.end_headers()
-                self.wfile.write(data)
+                self.wfile.write(tips_html.encode("utf-8"))
                 return
 
         self.send_error(404, "Not Found")

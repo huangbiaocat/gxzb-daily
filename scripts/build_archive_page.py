@@ -337,7 +337,10 @@ PAGE = """<!DOCTYPE html>
 </svg>
 </div>
 <div class="brand-text">
-<h1>招投标每日简报</h1>
+<div style="display: flex; align-items: center; gap: 8px;">
+<h1 style="margin: 0;">招投标每日简报</h1>
+<span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v2.2.0</span>
+</div>
 <p>历史归档与数据追溯中心</p>
 </div>
 </a>

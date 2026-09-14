@@ -41,7 +41,10 @@
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v2.2.0</span>
+                    </div>
                     <p class="text-xs text-slate-500">Tender Data Control & Settings Center</p>
                 </div>
             </div>
@@ -105,11 +108,70 @@
                             <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span>
                             <h3 class="text-sm font-bold text-slate-800">业务过滤与展示基础配置</h3>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">重点预警关键词列表 (FOCUS_KEYWORDS)</label>
+                        <!-- 重点跟踪：项目 / 业主 / 项目类型 大版面 -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                            <!-- 1 重点跟踪项目 -->
+                            <div class="flex flex-col bg-slate-50/60 p-3.5 rounded-xl border border-slate-200">
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[11px] font-black">1</span>
+                                        重点跟踪项目 (FOCUS_PROJECTS)
+                                    </label>
+                                    <span class="text-[10px] text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded font-medium">支持多行批量粘贴</span>
+                                </div>
+                                <textarea id="cfg-focus-projects" rows="8" placeholder="粘贴重点关注的项目名称，每行一个。例如：
+平陆运河
+南宁市中医院新院区
+环北部湾水资源配置工程
+金秀县大瑶山生态保护工程
+江南区旧城改造项目" class="w-full text-xs rounded-lg border border-slate-300 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono resize-y shadow-inner leading-relaxed"></textarea>
+                                <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">支持每行输入一个项目名称或关键短语（也支持半角逗号分隔）。标题命中后将自动高亮标红并在微信预警。</p>
+                            </div>
+
+                            <!-- 2 重点跟踪业主 -->
+                            <div class="flex flex-col bg-slate-50/60 p-3.5 rounded-xl border border-slate-200">
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-black">2</span>
+                                        重点跟踪业主 (FOCUS_OWNERS)
+                                    </label>
+                                    <span class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded font-medium">支持多行批量粘贴</span>
+                                </div>
+                                <textarea id="cfg-focus-owners" rows="8" placeholder="粘贴重点跟踪的业主/招标人，每行一个。例如：
+广西交投
+广西北投
+南宁市住房和城乡建设局
+广西水利发展集团
+南宁轨道交通集团" class="w-full text-xs rounded-lg border border-slate-300 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono resize-y shadow-inner leading-relaxed"></textarea>
+                                <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">支持每行输入一个业主单位全称或简称（也支持半角逗号分隔）。当抓取到该单位或标题含该单位时标记为重点。</p>
+                            </div>
+
+                            <!-- 3 重点跟踪项目类型 -->
+                            <div class="flex flex-col bg-slate-50/60 p-3.5 rounded-xl border border-slate-200">
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-black">3</span>
+                                        重点跟踪项目类型 (FOCUS_PROJECT_TYPES)
+                                    </label>
+                                    <span class="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-medium">支持多行批量粘贴</span>
+                                </div>
+                                <textarea id="cfg-focus-project-types" rows="8" placeholder="粘贴关注的工程行业或类型，每行一个。例如：
+房建
+市政
+水利
+公路
+轨道交通
+信息化" class="w-full text-xs rounded-lg border border-slate-300 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono resize-y shadow-inner leading-relaxed"></textarea>
+                                <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">支持每行输入一个工程行业或专业类别（如水利、公路、房建、市政等）。匹配后将自动标记为重点。</p>
+                            </div>
+                        </div>
+
+                        <!-- 基础辅助项 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">常规通用预警关键词 (FOCUS_KEYWORDS)</label>
                                 <input id="cfg-focus-keywords" type="text" placeholder="公路,医院,学校,安置,水库,治理,灌区,道路" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                                <span class="text-[11px] text-slate-400 mt-1 block">多个关键词请用半角逗号隔开。命中此关键词的条目将在日报表格中高亮标记为重点关注。</span>
+                                <span class="text-[11px] text-slate-400 mt-1 block">单行半角逗号分隔。与上方 1、2、3 项共同生效，作为补充词汇。</span>
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-slate-700 mb-1">展示页面线上基准域名 (SITE_BASE_URL)</label>
@@ -333,7 +395,7 @@
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-        广西招投标数据自动化采集中心 &copy; 2026
+        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v2.2.0</span>
     </footer>
 
     <script>
@@ -438,6 +500,9 @@
                 const res = await fetch("/api/config");
                 const data = await res.json();
 
+                document.getElementById("cfg-focus-projects").value = data.FOCUS_PROJECTS || "";
+                document.getElementById("cfg-focus-owners").value = data.FOCUS_OWNERS || "";
+                document.getElementById("cfg-focus-project-types").value = data.FOCUS_PROJECT_TYPES || "";
                 document.getElementById("cfg-focus-keywords").value = data.FOCUS_KEYWORDS_STR || (data.FOCUS_KEYWORDS ? data.FOCUS_KEYWORDS.join(",") : "");
                 document.getElementById("cfg-site-base-url").value = data.SITE_BASE_URL || "";
                 document.getElementById("cfg-vps-auto").value = String(data.AUTO_UPLOAD_VPS).toLowerCase() === "true" ? "true" : "false";
@@ -462,6 +527,9 @@
             tip.className = "text-xs text-blue-600 font-medium";
 
             const payload = {
+                FOCUS_PROJECTS: document.getElementById("cfg-focus-projects").value,
+                FOCUS_OWNERS: document.getElementById("cfg-focus-owners").value,
+                FOCUS_PROJECT_TYPES: document.getElementById("cfg-focus-project-types").value,
                 FOCUS_KEYWORDS_STR: document.getElementById("cfg-focus-keywords").value,
                 SITE_BASE_URL: document.getElementById("cfg-site-base-url").value,
                 AUTO_UPLOAD_VPS: document.getElementById("cfg-vps-auto").value,

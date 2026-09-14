@@ -77,12 +77,31 @@ def normalize(rec, day=None):
     if not infoid or not title:
         return None
     stage = config.STAGE_MAP[stage_code]
-    hits = [k for k in config.FOCUS_KEYWORDS if k in title]
+    industry = config.INDUSTRY_MAP[industry_code]
+    reasons = []
+    
+    # 1. 重点跟踪项目（匹配标题）
+    proj_hits = [p for p in getattr(config, "FOCUS_PROJECTS", []) if p in title]
+    if proj_hits:
+        reasons.extend(["命中重点项目: %s" % p for p in proj_hits])
+        
+    # 2. 重点跟踪项目类型（匹配工程类型/行业）
+    type_hits = [t for t in getattr(config, "FOCUS_PROJECT_TYPES", []) if t in industry or t in title]
+    if type_hits:
+        reasons.extend(["命中重点类型: %s" % t for t in type_hits])
+        
+    # 3. 重点预警关键词
+    kw_hits = [k for k in config.FOCUS_KEYWORDS if k in title]
+    if kw_hits:
+        reasons.extend(["命中关键词: %s" % k for k in kw_hits])
+
+    is_focus = 1 if (proj_hits or type_hits or kw_hits) else 0
+
     return {
         "infoid": infoid,
         "title": title,
         "categorynum": categorynum,
-        "industry": config.INDUSTRY_MAP[industry_code],
+        "industry": industry,
         "stage": stage,
         "stage_key": config.STAGE_KEY_MAP[stage],
         "badge_class": config.BADGE_CLASS_MAP[stage],
@@ -91,8 +110,8 @@ def normalize(rec, day=None):
         "pub_time": str(rec.get("infodatepx") or "").strip(),
         "link": config.DETAIL_URL_TPL.format(infoid=infoid, categorynum=categorynum),
         "detail_url": detail_url_of(rec),
-        "is_focus": 1 if hits else 0,
-        "focus_reason": ["命中关键词: %s" % k for k in hits],
+        "is_focus": is_focus,
+        "focus_reason": reasons,
         "owner": "",
     }
 

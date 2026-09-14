@@ -96,6 +96,44 @@ for it in items:
     it["infoid"] = str(it.get("infoid") or it.get("id") or "")
     assert it["infoid"], "条目缺少官方唯一识别码 infoid，拒绝生成页面：%r" % it.get("title", "")[:40]
     it["link"] = DETAIL_TPL.format(infoid=it["infoid"], categorynum=it["categorynum"])
+    
+    # 依据最新配置动态补充重点预警标记
+    title = it.get("title", "")
+    industry = it.get("industry", "")
+    owner = it.get("owner", "")
+    reasons = list(it.get("focus_reason") or [])
+    
+    proj_hits = [p for p in getattr(config, "FOCUS_PROJECTS", []) if p in title]
+    if proj_hits:
+        for p in proj_hits:
+            msg = "命中重点项目: %s" % p
+            if msg not in reasons:
+                reasons.append(msg)
+                
+    owner_hits = [o for o in getattr(config, "FOCUS_OWNERS", []) if (o in owner or o in title)]
+    if owner_hits:
+        for o in owner_hits:
+            msg = "命中重点业主: %s" % o
+            if msg not in reasons:
+                reasons.append(msg)
+                
+    type_hits = [t for t in getattr(config, "FOCUS_PROJECT_TYPES", []) if (t in industry or t in title)]
+    if type_hits:
+        for t in type_hits:
+            msg = "命中重点类型: %s" % t
+            if msg not in reasons:
+                reasons.append(msg)
+                
+    kw_hits = [k for k in getattr(config, "FOCUS_KEYWORDS", []) if k in title]
+    if kw_hits:
+        for k in kw_hits:
+            msg = "命中关键词: %s" % k
+            if msg not in reasons:
+                reasons.append(msg)
+                
+    if proj_hits or owner_hits or type_hits or kw_hits:
+        it["is_focus"] = 1
+        it["focus_reason"] = reasons
 
 # ------------------------------------------------------------------ 0.5 运行日志与 infoid 台账
 # 官方接口返回的 infoid 即公告唯一识别码，直接作为入库判重 / 失败重查 / 跨日去重的主键。
@@ -334,7 +372,10 @@ __DAILY_CSS__
 </svg>
 </div>
 <div class="brand-text">
-<h1>招投标每日简报</h1>
+<div style="display: flex; align-items: center; gap: 8px;">
+<h1 style="margin: 0;">招投标每日简报</h1>
+<span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v2.2.0</span>
+</div>
 <p>__DATE__ · 全区公告分类明细</p>
 </div>
 </a>

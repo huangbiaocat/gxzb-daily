@@ -154,7 +154,10 @@ BADGE_CLASS_MAP = {
     "中标公告": "bg-green-100 text-green-800 border-green-200",
 }
 # 重点预警关键词：标题命中即标记，纯规则判断，不依赖人工
-FOCUS_KEYWORDS = [k.strip() for k in get("FOCUS_KEYWORDS", "公路,医院,学校,安置,水库,治理,灌区,道路").split(",") if k.strip()]
+FOCUS_KEYWORDS = [k.strip() for k in get("FOCUS_KEYWORDS", "公路,医院,学校,安置,水库,治理,灌区,道路").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
+FOCUS_PROJECTS = [k.strip() for k in get("FOCUS_PROJECTS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
+FOCUS_OWNERS = [k.strip() for k in get("FOCUS_OWNERS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
+FOCUS_PROJECT_TYPES = [k.strip() for k in get("FOCUS_PROJECT_TYPES", "").replace("\n", ",").split(",") if k.strip()]
 
 # ------------------------------------------------------------------ 运行开关
 # 页面入库口径：
