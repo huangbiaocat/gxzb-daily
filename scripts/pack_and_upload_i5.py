@@ -22,6 +22,8 @@ FILES_TO_PACK = [
     "scripts/notify_wechat.py",
     "scripts/sync_from_server.bat",
     "scripts/sync_and_run.bat",
+    "scripts/update_and_run_desktop.bat",
+    "scripts/create_desktop_shortcut.bat",
     "manager/server.py",
     "manager/static/index.html",
 ]

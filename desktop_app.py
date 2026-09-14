@@ -56,8 +56,29 @@ def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("127.0.0.1", port)) == 0
 
+def kill_old_server_on_port(port):
+    """在 Windows 上如果端口被占用且不是自身，尝试清理旧的后台服务"""
+    if not is_port_in_use(port):
+        return
+    if sys.platform == "win32":
+        try:
+            # 查找占用指定端口的 PID
+            out = subprocess.check_output(f"netstat -ano | findstr :{port}", shell=True).decode(errors="ignore")
+            lines = [l.strip() for l in out.splitlines() if f":{port}" in l and "LISTENING" in l]
+            current_pid = os.getpid()
+            for line in lines:
+                parts = line.split()
+                if parts:
+                    pid = parts[-1]
+                    if pid.isdigit() and int(pid) != current_pid:
+                        print(f"[Desktop App] 正在释放旧进程 PID: {pid} 对端口 {port} 的占用...")
+                        subprocess.run(f"taskkill /F /PID {pid}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            time.sleep(0.5)
+        except Exception as e:
+            print(f"[Desktop App] 检查/释放旧端口占用失败: {e}")
 
 def start_server_background():
+    kill_old_server_on_port(PORT)
     if is_port_in_use(PORT):
         print(f"[Desktop App] 端口 {PORT} 已有服务运行，复用现有服务")
         return
@@ -102,7 +123,7 @@ def open_ui(url):
 def main():
     url = f"http://127.0.0.1:{PORT}"
     print(f"==================================================")
-    print(f"  广西招投标数据采集 · 桌面控制中心")
+    print(f"  广西招投标数据采集 · 桌面控制中心 v2.2.0")
     print(f"  访问地址: {url}")
     print(f"==================================================")
     start_server_background()
