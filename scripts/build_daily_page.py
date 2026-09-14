@@ -25,6 +25,7 @@ import hashlib
 import json
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -131,6 +132,19 @@ DAILY_CSS = """
         .stats-grid.cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
         .stats-grid.cols-6 .stat-box { padding: 14px 16px; }
         .stats-grid.cols-6 .stat-box .sb-value { font-size: 1.5rem; }
+        .stats-grid.cols-6 .stat-box.clickable {
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+        }
+        .stats-grid.cols-6 .stat-box.clickable:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px -4px rgba(15, 23, 42, 0.12);
+        }
+        .stats-grid.cols-6 .stat-box.clickable.active {
+            box-shadow: 0 0 0 2px #0f172a, 0 6px 20px -4px rgba(15, 23, 42, 0.2);
+            transform: translateY(-2px);
+        }
         @media (max-width: 1100px) { .stats-grid.cols-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
         @media (max-width: 760px) { .stats-grid.cols-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 520px) { .stats-grid.cols-6 { grid-template-columns: 1fr; } }
@@ -227,8 +241,8 @@ DAILY_CSS = """
         .type-block[data-type="招标公告"] { --chip-bg: #dcfce7; --chip-fg: #16a34a; --chip-border: #bbf7d0; --chip-num: #16a34a; }
         .type-block[data-type="澄清/答疑"] { --chip-bg: #fef3c7; --chip-fg: #d97706; --chip-border: #fde68a; --chip-num: #d97706; }
         .type-block[data-type="控制价公示"] { --chip-bg: #f3e8ff; --chip-fg: #9333ea; --chip-border: #e9d5ff; --chip-num: #9333ea; }
-        .type-block[data-type="中标公示"] { --chip-bg: #dbeafe; --chip-fg: #2563eb; --chip-border: #bfdbfe; --chip-num: #2563eb; }
-        .type-block[data-type="中标公告"] { --chip-bg: #d1fae5; --chip-fg: #059669; --chip-border: #a7f3d0; --chip-num: #059669; }
+        .type-block[data-type="中标公示"] { --chip-bg: #e0e7ff; --chip-fg: #4338ca; --chip-border: #c7d2fe; --chip-num: #4338ca; }
+        .type-block[data-type="中标公告"] { --chip-bg: #f1f5f9; --chip-fg: #475569; --chip-border: #cbd5e1; --chip-num: #475569; }
 
         /* 统一阶段统计卡色彩 (Unified Stage Colors for Stat Boxes) */
         .stat-box.stage-plan { background: #e0f2fe !important; border-color: #bae6fd !important; }
@@ -243,12 +257,12 @@ DAILY_CSS = """
         .stat-box.stage-control { background: #f3e8ff !important; border-color: #e9d5ff !important; }
         .stat-box.stage-control .sb-label { color: #9333ea !important; }
         .stat-box.stage-control .sb-value { color: #9333ea !important; }
-        .stat-box.stage-candidate { background: #dbeafe !important; border-color: #bfdbfe !important; }
-        .stat-box.stage-candidate .sb-label { color: #2563eb !important; }
-        .stat-box.stage-candidate .sb-value { color: #2563eb !important; }
-        .stat-box.stage-award { background: #d1fae5 !important; border-color: #a7f3d0 !important; }
-        .stat-box.stage-award .sb-label { color: #059669 !important; }
-        .stat-box.stage-award .sb-value { color: #059669 !important; }
+        .stat-box.stage-candidate { background: #e0e7ff !important; border-color: #c7d2fe !important; }
+        .stat-box.stage-candidate .sb-label { color: #4338ca !important; }
+        .stat-box.stage-candidate .sb-value { color: #4338ca !important; }
+        .stat-box.stage-award { background: #f1f5f9 !important; border-color: #cbd5e1 !important; }
+        .stat-box.stage-award .sb-label { color: #475569 !important; }
+        .stat-box.stage-award .sb-value { color: #475569 !important; }
 
         .cat-block .type-head {
             display: inline-flex;
@@ -356,27 +370,27 @@ __DAILY_CSS__
             <h2 class="hero-title">广西全区招投标公告日报（__DATE__）</h2>
             <p class="hero-desc">按 6 大业务环节与工程类别归集当日全区公共资源交易公告，每条公告以官方唯一识别码（infoid）入库，便于溯源与查重，点击标题可跳转至官方公告页面查看原文。支持关键词检索、工程大类 / 地市 / 业务环节筛选与重点预警；无公告更新的类别与类型不在此页展示。</p>
             <div class="stats-grid cols-6">
-                <div class="stat-box stage-plan">
+                <div class="stat-box stage-plan clickable" data-stage="招标计划" title="点击筛选 招标计划">
                     <div class="sb-label">招标计划</div>
                     <div class="sb-value" id="stat-plan">0<span class="sb-unit">条</span></div>
                 </div>
-                <div class="stat-box stage-notice">
+                <div class="stat-box stage-notice clickable" data-stage="招标公告" title="点击筛选 招标公告">
                     <div class="sb-label">招标公告</div>
                     <div class="sb-value" id="stat-notice">0<span class="sb-unit">条</span></div>
                 </div>
-                <div class="stat-box stage-clarify">
+                <div class="stat-box stage-clarify clickable" data-stage="澄清/答疑" title="点击筛选 澄清/答疑">
                     <div class="sb-label">澄清/答疑</div>
                     <div class="sb-value" id="stat-clarify">0<span class="sb-unit">条</span></div>
                 </div>
-                <div class="stat-box stage-control">
+                <div class="stat-box stage-control clickable" data-stage="控制价公示" title="点击筛选 控制价公示">
                     <div class="sb-label">控制价公示</div>
                     <div class="sb-value" id="stat-control">0<span class="sb-unit">条</span></div>
                 </div>
-                <div class="stat-box stage-candidate">
+                <div class="stat-box stage-candidate clickable" data-stage="中标公示" title="点击筛选 中标公示">
                     <div class="sb-label">中标公示</div>
                     <div class="sb-value" id="stat-candidate">0<span class="sb-unit">条</span></div>
                 </div>
-                <div class="stat-box stage-award">
+                <div class="stat-box stage-award clickable" data-stage="中标公告" title="点击筛选 中标公告">
                     <div class="sb-label">中标公告</div>
                     <div class="sb-value" id="stat-result">0<span class="sb-unit">条</span></div>
                 </div>
@@ -594,6 +608,15 @@ function apply() {
 
     hint.innerHTML = '当前筛选匹配 <strong>' + shown + '</strong> 条标讯';
     empty.style.display = shown === 0 ? 'block' : 'none';
+
+    /* 同步高亮业务环节统计卡激活状态 */
+    document.querySelectorAll('.stat-box.clickable').forEach(function(box) {
+        if (stage && box.getAttribute('data-stage') === stage) {
+            box.classList.add('active');
+        } else {
+            box.classList.remove('active');
+        }
+    });
 }
 
 searchInput.addEventListener('input', apply);
@@ -615,6 +638,23 @@ document.getElementById('btnReset').addEventListener('click', function () {
     focusOnly = false;
     btnFocus.classList.remove('active');
     apply();
+});
+
+/* 统计卡点击联动筛选与平滑滚动 */
+document.querySelectorAll('.stat-box.clickable').forEach(function(box) {
+    box.addEventListener('click', function() {
+        var targetStage = this.getAttribute('data-stage');
+        if (stageFilter.value === targetStage) {
+            stageFilter.value = '';
+        } else {
+            stageFilter.value = targetStage;
+        }
+        apply();
+        var filterEl = document.querySelector('.filter-section.daily');
+        if (filterEl) {
+            filterEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
 });
 
 document.getElementById('focusCount').textContent = RAW_DATA.filter(function (d) { return d.is_focus; }).length;
@@ -689,3 +729,16 @@ if problems:
     print("自检未通过      :", "、".join(problems))
     raise SystemExit(1)
 print("自检通过")
+
+# ------------------------------------------------------------------ 联动更新归档首页
+print("正在同步更新首页/归档索引...")
+try:
+    import run_daily
+    run_daily.refresh_archive(DAY)
+    rc = subprocess.run([sys.executable, str(_REPO / "scripts" / "build_archive_page.py")]).returncode
+    if rc == 0:
+        print("归档首页同步完成")
+    else:
+        print("WARN: 归档首页生成返回异常码 %d" % rc)
+except Exception as exc:
+    print("WARN: 同步归档首页失败: %s" % exc)

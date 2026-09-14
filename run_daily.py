@@ -131,17 +131,23 @@ def main(argv=None):
 
     # 1) 采集
     if args.skip_collect:
-        banner("1/6", "采集：已跳过（--skip-collect）")
+        banner("1/8", "采集：已跳过（--skip-collect）")
     else:
-        banner("1/6", "采集当日全量公告")
+        banner("1/8", "采集当日全量公告")
         rc, ok = run([PY, SCRIPT / "collect.py", "--date", day], allow_codes=(0, 3))
         if not ok:
             failed_steps.append("collect")
             print("采集全部失败，终止后续步骤（保留旧日志与旧页面）")
+            if getattr(config, "WECHAT_APPID", "") and getattr(config, "WECHAT_TOUSER", ""):
+                try:
+                    from scripts.notify_wechat import send_alert
+                    send_alert(day, "采集步骤全部失败，已中断后续生成", "collect")
+                except Exception as exc:
+                    print("告警推送异常：", exc)
             return finish(day, failed_steps, args)
 
     # 2) 入库对账 / 合并
-    banner("2/6", "入库对账（缺失 = 全量 - 已入库）")
+    banner("2/8", "入库对账（缺失 = 全量 - 已入库）")
     try:
         reconcile(day, args.reconcile)
     except Exception as exc:                                   # noqa: BLE001
@@ -149,17 +155,23 @@ def main(argv=None):
         print("入库对账失败：", exc)
 
     # 3) 生成每日页
-    banner("3/6", "生成每日明细页")
+    banner("3/8", "生成每日明细页")
     rc, ok = run([PY, SCRIPT / "build_daily_page.py", "--date", day])
     if not ok:
         failed_steps.append("build_daily_page")
+        if getattr(config, "WECHAT_APPID", "") and getattr(config, "WECHAT_TOUSER", ""):
+            try:
+                from scripts.notify_wechat import send_alert
+                send_alert(day, "明细页生成失败，已中断后续流程", "build_daily_page")
+            except Exception as exc:
+                print("告警推送异常：", exc)
         return finish(day, failed_steps, args)
 
     # 4) 归档首页
     if args.skip_archive:
-        banner("4/6", "归档首页：已跳过（--skip-archive）")
+        banner("4/8", "归档首页：已跳过（--skip-archive）")
     else:
-        banner("4/6", "刷新归档首页")
+        banner("4/8", "刷新归档首页")
         try:
             refresh_archive(day)
         except Exception as exc:                               # noqa: BLE001
@@ -173,7 +185,7 @@ def main(argv=None):
             print("   未找到归档样板，跳过：", config.TEMPLATE_ARCHIVE_SAMPLE)
 
     # 5) 核验
-    banner("5/6", "核验页面缺失条目")
+    banner("5/8", "核验页面缺失条目")
     res = {}
     try:
         res = diff_missing.diff(day)
@@ -188,12 +200,42 @@ def main(argv=None):
 
     # 6) 外部推送（可选）
     if config.PUSH_CMD and not args.no_push:
-        banner("6/6", "执行外部推送命令")
+        banner("6/8", "执行外部推送命令")
         rc, ok = run(config.PUSH_CMD.split(), allow_codes=(0,))
         if not ok:
             failed_steps.append("push")
     else:
-        banner("6/6", "外部推送：未配置或已跳过")
+        banner("6/8", "外部推送：未配置或已跳过")
+
+
+    # 7) 自动同步 VPS（可选）
+    if getattr(config, "AUTO_UPLOAD_VPS", False):
+        banner("7/8", "同步上传静态站点至 VPS")
+        rc, ok = run([PY, SCRIPT / "upload_vps.py"], allow_codes=(0,))
+        if not ok:
+            failed_steps.append("upload_vps")
+
+    # 8) 微信服务号模版推送（可选）
+    if getattr(config, "WECHAT_APPID", "") and getattr(config, "WECHAT_TOUSER", ""):
+        banner("8/8", "微信服务号模版消息推送")
+        try:
+            from scripts.notify_wechat import send_daily_summary, send_alert
+            total_cnt = int(res.get("page_total") or res.get("collect_unique") or 0)
+            # 统计重点条目
+            focus_num = 0
+            page_path = config.SITE_DIR / f"{day}.html"
+            if page_path.exists():
+                try:
+                    txt = page_path.read_text(encoding="utf-8")
+                    import re
+                    m = re.search(r"重点关注\s*\((\d+)\)", txt)
+                    if m:
+                        focus_num = int(m.group(1))
+                except Exception:
+                    pass
+            send_daily_summary(day, total_count=total_cnt, focus_count=focus_num, failed_steps=failed_steps)
+        except Exception as exc:
+            print("微信推送异常：", exc)
 
     return finish(day, failed_steps, args, res)
 

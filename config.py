@@ -157,6 +157,13 @@ FOCUS_KEYWORDS = [k.strip() for k in get("FOCUS_KEYWORDS", "公路,医院,学校
 RECONCILE = get("RECONCILE", "report").strip().lower()
 # 生成完成后需要执行的外部命令（例如推送脚本），留空则跳过；密钥请写在 .env
 PUSH_CMD = get("PUSH_CMD", "").strip()
+# 微信服务号模版消息推送配置（留空则不推送）
+WECHAT_APPID = get("WECHAT_APPID", "").strip()
+WECHAT_APPSECRET = get("WECHAT_APPSECRET", "").strip()
+WECHAT_TOUSER = get("WECHAT_TOUSER", "").strip()
+WECHAT_TEMPLATE_ID = get("WECHAT_TEMPLATE_ID", "").strip()  # 日常日报模版
+WECHAT_ALERT_TEMPLATE_ID = get("WECHAT_ALERT_TEMPLATE_ID", "").strip()  # 异常告警模版
+AUTO_UPLOAD_VPS = get("AUTO_UPLOAD_VPS", "false").strip().lower() in ("true", "1", "yes", "on")
 KEEP_DAYS = int(get("KEEP_DAYS", "0"))  # >0 时保留最近 N 天采集原始响应，0 表示全部保留
 
 
