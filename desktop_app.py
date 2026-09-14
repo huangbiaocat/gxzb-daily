@@ -114,12 +114,8 @@ def main():
         return
 
     try:
-        if browser_proc:
-            # 浏览器窗口关闭后退出程序
-            browser_proc.wait()
-        else:
-            while True:
-                time.sleep(1)
+        while True:
+            time.sleep(1)
     except KeyboardInterrupt:
         print("\n桌面控制中心已退出。")
 
