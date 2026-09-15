@@ -98,8 +98,8 @@ extra_style = """
 
         /* ===== 今日标识样式 (Today Highlight) ===== */
         .cal-today {
-            border-color: #dc2626 !important;
-            box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.25), 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.22), 0 4px 6px -1px rgba(0, 0, 0, 0.05);
             position: relative;
         }
 
@@ -110,7 +110,7 @@ extra_style = """
             left: 0;
             right: 0;
             height: 3px;
-            background: #dc2626;
+            background: var(--primary);
             border-top-left-radius: var(--radius-md);
             border-top-right-radius: var(--radius-md);
         }
@@ -137,8 +137,8 @@ extra_style = """
         }
 
         .history-row-today {
-            border-left: 4px solid #dc2626 !important;
-            background: linear-gradient(to right, rgba(254, 242, 242, 0.85), var(--card-bg)) !important;
+            border-left: 4px solid var(--primary) !important;
+            background: linear-gradient(to right, rgba(240, 249, 255, 0.85), var(--card-bg)) !important;
         }
 
         .archive-hint {
@@ -339,7 +339,7 @@ PAGE = """<!DOCTYPE html>
 <div class="brand-text">
 <div style="display: flex; align-items: center; gap: 8px;">
 <h1 style="margin: 0;">招投标每日简报</h1>
-<span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v2.2.0</span>
+<span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.0.1</span>
 </div>
 <p>历史归档与数据追溯中心</p>
 </div>
@@ -395,9 +395,9 @@ PAGE = """<!DOCTYPE html>
 <div class="density-legend">
 <span>发布热度:</span>
 <span class="legend-dot" style="background:#f8fafc; border:1px solid #e2e8f0;" title="0条"></span>
-<span class="legend-dot" style="background:#fef2f2; border:1px solid #dbeafe;" title="1-60条"></span>
-<span class="legend-dot" style="background:#dbeafe; border:1px solid #fecaca;" title="61-160条"></span>
-<span class="legend-dot" style="background:#fecaca; border:1px solid #93c5fd;" title="161-240条"></span>
+<span class="legend-dot" style="background:#eff6ff; border:1px solid #dbeafe;" title="1-60条"></span>
+<span class="legend-dot" style="background:#dbeafe; border:1px solid #bfdbfe;" title="61-160条"></span>
+<span class="legend-dot" style="background:#bfdbfe; border:1px solid #93c5fd;" title="161-240条"></span>
 <span class="legend-dot" style="background:#93c5fd; border:1px solid #60a5fa;" title="&gt;240条"></span>
 </div>
 <div class="view-switcher">
@@ -441,6 +441,79 @@ PAGE = """<!DOCTYPE html>
 <p>广西招投标自动化监控分析看板系统 · 每日定时自动采集与归档</p>
 </footer>
 {base_script}
+<script>
+(function() {
+    function formatLocalDate(d) {
+        var year = d.getFullYear();
+        var month = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return year + '-' + month + '-' + day;
+    }
+    var todayStr = formatLocalDate(new Date());
+
+    // 1. 清理静态已存在的 cal-today、cal-pill-today、history-row-today、chip-today
+    document.querySelectorAll('.cal-today').forEach(function(el) {
+        el.classList.remove('cal-today');
+    });
+    document.querySelectorAll('.cal-pill-today').forEach(function(el) {
+        el.remove();
+    });
+    document.querySelectorAll('.history-row-today').forEach(function(el) {
+        el.classList.remove('history-row-today');
+    });
+    document.querySelectorAll('.chip-today').forEach(function(el) {
+        el.remove();
+    });
+
+    // 2. 日历网格：根据客户端实际今日动态定位并高亮
+    var activeCell = document.querySelector('.cal-cell-active[href*="' + todayStr + '.html"]');
+    if (activeCell) {
+        activeCell.classList.add('cal-today');
+        var pillGroup = activeCell.querySelector('.cal-pill-group');
+        if (pillGroup && !pillGroup.querySelector('.cal-pill-today')) {
+            var pill = document.createElement('span');
+            pill.className = 'cal-pill-today';
+            pill.textContent = '今日';
+            pillGroup.appendChild(pill);
+        }
+    } else {
+        // 如果今日尚无采集数据，在置灰日期格中查找并添加今日提示
+        var parts = todayStr.split('-');
+        var ym = parts[0] + '-' + parts[1];
+        var dayNum = parseInt(parts[2], 10);
+        var monthCard = document.querySelector('.month-calendar-card[data-year-month="' + ym + '"]');
+        if (monthCard) {
+            var disabledCells = monthCard.querySelectorAll('.cal-cell-disabled');
+            disabledCells.forEach(function(cell) {
+                var numElem = cell.querySelector('.cal-date-num');
+                if (numElem && parseInt(numElem.textContent.trim(), 10) === dayNum) {
+                    cell.classList.add('cal-today');
+                    var pillGroup = cell.querySelector('.cal-pill-group');
+                    if (pillGroup && !pillGroup.querySelector('.cal-pill-today')) {
+                        var pill = document.createElement('span');
+                        pill.className = 'cal-pill-today';
+                        pill.textContent = '今日';
+                        pillGroup.appendChild(pill);
+                    }
+                }
+            });
+        }
+    }
+
+    // 3. 清单视图高亮
+    var listRow = document.querySelector('.history-row-item[href*="' + todayStr + '.html"]');
+    if (listRow) {
+        listRow.classList.add('history-row-today');
+        var titleElem = listRow.querySelector('.item-date-title');
+        if (titleElem && !titleElem.querySelector('.chip-today')) {
+            var chip = document.createElement('span');
+            chip.className = 'status-chip chip-today';
+            chip.textContent = '今日';
+            titleElem.appendChild(chip);
+        }
+    }
+})();
+</script>
 </body>
 </html>
 """

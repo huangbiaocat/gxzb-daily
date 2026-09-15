@@ -102,7 +102,10 @@ def send_daily_summary(day: str, total_count: int, focus_count: int, failed_step
             "remark": {"value": "点击本通知即可直接在手机端查看今日完整标讯明细与筛选。", "color": "#64748b"}
         }
     }
-    return send_template_message(token, payload)
+    ret = send_template_message(token, payload)
+    if ret:
+        record_push_success()
+    return ret
 
 
 def send_alert(day: str, error_msg: str, step_name: str = "每日定时任务") -> bool:
@@ -150,6 +153,107 @@ def send_alert(day: str, error_msg: str, step_name: str = "每日定时任务") 
             }
         }
     return send_template_message(token, payload)
+
+
+
+def check_push_condition(force: bool = False):
+    """
+    检查当前时刻是否满足推送条件：
+    1. force=True：手动触发或强制模式，直接放行。
+    2. 下午17:30批次（17:30-18:00）：发送日常常规推送（记录推送信标）。
+    3. 早上08:00批次（08:00-08:30）：
+       检查从昨天17:30（或上次常规推送时间）至今天早上08:00之间，是否有新公告入库。
+       - 有新公告：触发早上推送；
+       - 无新公告：跳过推送，避免无实质更新的打扰。
+    返回 (should_push: bool, reason: str)
+    """
+    if force:
+        return True, "手动/强制触发"
+    
+    from datetime import datetime, time
+    import sqlite3
+    now = datetime.now()
+    cur_time = now.time()
+    
+    state_file = getattr(config, "STATE_DIR", Path("data/state")) / "wechat_push_state.json"
+    state = {}
+    if state_file.exists():
+        try:
+            with open(state_file, "r", encoding="utf-8") as f:
+                state = json.load(f)
+        except Exception:
+            state = {}
+            
+    today_str = now.strftime("%Y-%m-%d")
+    
+    # 批次1：下午 17:30 - 18:00
+    if time(17, 30) <= cur_time <= time(18, 0):
+        if state.get("last_afternoon_push_date") == today_str:
+            return False, "今日下午 17:30 批次已推送过，跳过重复推送"
+        return True, "命中下午 17:30 常规推送时段"
+        
+    # 批次2：早上 08:00 - 08:30
+    elif time(8, 0) <= cur_time <= time(8, 30):
+        if state.get("last_morning_push_date") == today_str:
+            return False, "今日早晨 08:00 批次已推送过，跳过重复推送"
+            
+        last_push_time_str = state.get("last_regular_push_time")
+        if not last_push_time_str:
+            # 默认使用昨天下午 17:30
+            from datetime import timedelta
+            yesterday_1730 = (now - timedelta(days=1)).strftime("%Y-%m-%d 17:30:00")
+            last_push_time_str = yesterday_1730
+            
+        # 查询从 last_push_time_str 以来是否有新增公告
+        new_cnt = 0
+        db_path = getattr(config, "DB_PATH", Path("data/gxzb.sqlite3"))
+        if db_path.exists():
+            try:
+                with sqlite3.connect(str(db_path)) as conn:
+                    c = conn.cursor()
+                    c.execute("SELECT count(*) FROM notices WHERE created_at > ?", (last_push_time_str,))
+                    row = c.fetchone()
+                    if row:
+                        new_cnt = row[0]
+            except Exception as e:
+                print(f"[微信推送] 查询新增公告失败: {e}")
+                
+        if new_cnt > 0:
+            return True, f"命中早间 08:00 推送时段（自 {last_push_time_str} 以来新增 {new_cnt} 条公告）"
+        else:
+            return False, f"早间 08:00 检查：自 {last_push_time_str} 以来无新增公告，跳过推送"
+            
+    return False, f"非指定常规推送时间窗口（17:30-18:00 或 08:00-08:30），当前时间 {cur_time.strftime('%H:%M')}"
+
+
+def record_push_success():
+    """记录成功推送的时间与批次"""
+    from datetime import datetime, time
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    cur_time = now.time()
+    
+    state_file = getattr(config, "STATE_DIR", Path("data/state")) / "wechat_push_state.json"
+    state_file.parent.mkdir(parents=True, exist_ok=True)
+    state = {}
+    if state_file.exists():
+        try:
+            with open(state_file, "r", encoding="utf-8") as f:
+                state = json.load(f)
+        except Exception:
+            state = {}
+            
+    state["last_regular_push_time"] = now.strftime("%Y-%m-%d %H:%M:%S")
+    if time(17, 0) <= cur_time <= time(19, 0):
+        state["last_afternoon_push_date"] = today_str
+    elif time(7, 30) <= cur_time <= time(9, 30):
+        state["last_morning_push_date"] = today_str
+        
+    try:
+        with open(state_file, "w", encoding="utf-8") as f:
+            json.dump(state, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[微信推送] 保存推送状态失败: {e}")
 
 
 def test_push() -> bool:

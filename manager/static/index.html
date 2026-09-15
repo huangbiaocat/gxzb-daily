@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>招投标数据中心控制台 v2.2.0</title>
+    <title>招投标数据中心控制台 v0.0.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -43,7 +43,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v2.2.0</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.0.1</span>
                     </div>
                     <p class="text-xs text-slate-500">Tender Data Control & Settings Center</p>
                 </div>
@@ -104,9 +104,17 @@
                 <form id="config-form" onsubmit="saveConfig(event)" class="space-y-8">
                     <!-- 业务与基础配置 -->
                     <div class="space-y-4">
-                        <div class="flex items-center space-x-2">
-                            <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span>
-                            <h3 class="text-sm font-bold text-slate-800">业务过滤与展示基础配置</h3>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span>
+                                <h3 class="text-sm font-bold text-slate-800">业务过滤与展示基础配置</h3>
+                            </div>
+                            <button type="button" onclick="triggerReapplyRules()" class="px-3 py-1 bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300 rounded-lg text-xs font-medium transition flex items-center space-x-1 shadow-sm" title="保存上方配置后，点击重新计算历史所有日期的重点关注与类别并刷新页面">
+                                <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                <span>按新业务配置重新标注历史日期</span>
+                            </button>
                         </div>
                         <!-- 重点跟踪：项目 / 业主 / 项目类型 大版面 -->
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -172,6 +180,11 @@
                                 <label class="block text-xs font-semibold text-slate-700 mb-1">常规通用预警关键词 (FOCUS_KEYWORDS)</label>
                                 <input id="cfg-focus-keywords" type="text" placeholder="公路,医院,学校,安置,水库,治理,灌区,道路" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
                                 <span class="text-[11px] text-slate-400 mt-1 block">单行半角逗号分隔。与上方 1、2、3 项共同生效，作为补充词汇。</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">常规关键词激活金额门槛 (FOCUS_MIN_AMOUNT)</label>
+                                <input id="cfg-focus-min-amount" type="text" placeholder="如 500万、1000万、5000000（留空或0不限）" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                <span class="text-[11px] text-slate-400 mt-1 block">仅对命中常规关键词生效；只有大于等于该金额才激活重点预警。重点项目/业主/类型不受此限制。</span>
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-slate-700 mb-1">展示页面线上基准域名 (SITE_BASE_URL)</label>
@@ -386,7 +399,7 @@
                             <span class="text-xs font-medium">执行 &rarr;</span>
                         </button>
 
-                        <div class="grid grid-cols-3 gap-2 pt-1">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1">
                             <button onclick="triggerTask('collect')" class="btn-action flex flex-col items-center justify-center p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
                                 <span class="text-xs font-semibold">仅抓取数据</span>
                                 <span class="text-[10px] text-slate-400 mt-0.5">collect.py</span>
@@ -394,6 +407,10 @@
                             <button onclick="triggerTask('build')" class="btn-action flex flex-col items-center justify-center p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
                                 <span class="text-xs font-semibold">重新生成页面</span>
                                 <span class="text-[10px] text-slate-400 mt-0.5">build_daily.py</span>
+                            </button>
+                            <button onclick="triggerReapplyRules()" class="btn-action flex flex-col items-center justify-center p-3 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 text-amber-800 transition">
+                                <span class="text-xs font-semibold">历史重算标注</span>
+                                <span class="text-[10px] text-amber-600 mt-0.5">reapply_rules.py</span>
                             </button>
                             <button onclick="triggerTask('upload')" class="btn-action flex flex-col items-center justify-center p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
                                 <span class="text-xs font-semibold">手动同步云端</span>
@@ -447,7 +464,7 @@
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v2.2.0</span>
+        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.0.1</span>
     </footer>
 
     <script>
@@ -528,6 +545,15 @@
                     wxDesc.textContent = "未填 AppID / Secret";
                 }
 
+                if (data.monitor_start_time && data.monitor_end_time) {
+                    const winElem = document.getElementById("dash-monitor-window");
+                    if (winElem) winElem.textContent = `${data.monitor_start_time} - ${data.monitor_end_time}`;
+                }
+                if (data.monitor_interval) {
+                    const ivElem = document.getElementById("dash-monitor-interval");
+                    if (ivElem) ivElem.textContent = `每 ${data.monitor_interval} 分钟`;
+                }
+
                 const tbody = document.getElementById("pages-table-body");
                 if (data.recent_pages && data.recent_pages.length > 0) {
                     tbody.innerHTML = data.recent_pages.map(p => {
@@ -561,6 +587,7 @@
                 document.getElementById("cfg-focus-project-types").value = data.FOCUS_PROJECT_TYPES || "";
                 document.getElementById("cfg-focus-keywords").value = data.FOCUS_KEYWORDS_STR || (data.FOCUS_KEYWORDS ? data.FOCUS_KEYWORDS.join(",") : "");
                 document.getElementById("cfg-site-base-url").value = data.SITE_BASE_URL || "";
+                document.getElementById("cfg-focus-min-amount").value = data.FOCUS_MIN_AMOUNT || "";
                 document.getElementById("cfg-vps-auto").value = String(data.AUTO_UPLOAD_VPS).toLowerCase() === "true" ? "true" : "false";
                 document.getElementById("cfg-vps-host").value = data.VPS_HOST || "";
                 document.getElementById("cfg-vps-port").value = data.VPS_PORT || "22";
@@ -595,6 +622,7 @@
                 FOCUS_OWNERS: document.getElementById("cfg-focus-owners").value,
                 FOCUS_PROJECT_TYPES: document.getElementById("cfg-focus-project-types").value,
                 FOCUS_KEYWORDS_STR: document.getElementById("cfg-focus-keywords").value,
+                FOCUS_MIN_AMOUNT: document.getElementById("cfg-focus-min-amount").value,
                 SITE_BASE_URL: document.getElementById("cfg-site-base-url").value,
                 AUTO_UPLOAD_VPS: document.getElementById("cfg-vps-auto").value,
                 VPS_HOST: document.getElementById("cfg-vps-host").value,
@@ -622,6 +650,7 @@
                     tip.textContent = "✅ " + (ret.msg || "配置保存成功并已重载生效！");
                     tip.className = "text-xs text-emerald-600 font-semibold";
                     setTimeout(() => { tip.textContent = ""; }, 4000);
+                    fetchConfig();
                     fetchStatus();
                 } else {
                     tip.textContent = "❌ " + (ret.msg || "保存失败");
@@ -662,6 +691,30 @@
             }
         }
 
+        async function triggerReapplyRules(dateStr = "") {
+            const confirmMsg = dateStr ? `确定要根据当前最新业务配置重新计算并标注 ${dateStr} 的数据吗？` : "确定要根据当前最新业务配置，重新计算并标注所有历史日期（及归档索引与日报）吗？\n提示：请确保已先保存上方的最新业务配置。";
+            if (!confirm(confirmMsg)) return;
+
+            switchTab("dashboard");
+            const logEl = document.getElementById("log-container");
+            logEl.textContent = `[System] 正在发起历史业务规则重算与标注...\n`;
+            startPollingLog();
+
+            try {
+                const res = await fetch("/api/run_reapply", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ date: dateStr, all: !dateStr })
+                });
+                const d = await res.json();
+                if (!d.ok) {
+                    alert("启动失败: " + d.msg);
+                }
+            } catch (err) {
+                alert("请求失败: " + err.message);
+            }
+        }
+
         async function triggerTask(action) {
             const endpoints = {
                 "daily": "/api/run_daily",
@@ -678,6 +731,7 @@
             const logEl = document.getElementById("log-container");
             logEl.textContent = `[System] 正在发起任务: ${action}...
 `;
+            startPollingLog();
 
             try {
                 const res = await fetch(url, {

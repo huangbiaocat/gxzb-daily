@@ -165,6 +165,40 @@ FOCUS_KEYWORDS = [k.strip() for k in get("FOCUS_KEYWORDS", "公路,医院,学校
 FOCUS_PROJECTS = [k.strip() for k in get("FOCUS_PROJECTS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
 FOCUS_OWNERS = [k.strip() for k in get("FOCUS_OWNERS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
 FOCUS_PROJECT_TYPES = [k.strip() for k in get("FOCUS_PROJECT_TYPES", "").replace("\n", ",").split(",") if k.strip()]
+FOCUS_MIN_AMOUNT_RAW = get("FOCUS_MIN_AMOUNT", "").strip()
+
+def parse_min_amount_val(val: str) -> float:
+    """解析金额阈值字符串为元数值（float）。"""
+    if not val:
+        return 0.0
+    s = str(val).replace(",", "").replace("，", "").strip()
+    try:
+        if "亿" in s:
+            return float(s.replace("亿", "").replace("元", "").strip()) * 100000000.0
+        elif "万" in s:
+            return float(s.replace("万", "").replace("元", "").strip()) * 10000.0
+        elif "元" in s:
+            return float(s.replace("元", "").strip())
+        return float(s)
+    except Exception:
+        return 0.0
+
+FOCUS_MIN_AMOUNT = parse_min_amount_val(FOCUS_MIN_AMOUNT_RAW)
+
+def extract_amount_from_title(title: str):
+    """从标题中提取金额（元），提取不到则返回 None。"""
+    if not title:
+        return None
+    import re
+    from extractors.normalize import parse_money
+    patterns = [r'[¥￥]\s*([0-9]+(?:\.[0-9]+)?)', r'([0-9]+(?:\.[0-9]+)?)\s*(?:亿|万|千|百)?元', r'([0-9]+(?:\.[0-9]+)?)\s*(?:亿|万)']
+    for p in patterns:
+        m = re.search(p, title)
+        if m:
+            res = parse_money(m.group(0))
+            if res.get('value') is not None and res.get('kind') != 'rate':
+                return float(res['value'])
+    return None
 
 # ------------------------------------------------------------------ 模糊匹配算法
 ALIAS_PAIRS = [

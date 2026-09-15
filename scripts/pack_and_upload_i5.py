@@ -26,6 +26,10 @@ FILES_TO_PACK = [
     "scripts/create_desktop_shortcut.bat",
     "manager/server.py",
     "manager/static/index.html",
+    "extractors/__init__.py",
+    "extractors/normalize.py",
+    "extractors/rules.py",
+    "scripts/reapply_rules.py",
 ]
 
 def main():

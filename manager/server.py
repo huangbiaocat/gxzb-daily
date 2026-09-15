@@ -225,6 +225,9 @@ def get_system_status():
         "wechat_configured": bool(getattr(config, "WECHAT_APPID", "") and getattr(config, "WECHAT_TOUSER", "")),
         "last_run_log_tail": last_run_log[-1000:] if last_run_log else "",
         "today_has_page": any(p["date"] == today_str for p in html_files),
+        "monitor_start_time": getattr(config, "MONITOR_START_TIME", "08:00"),
+        "monitor_end_time": getattr(config, "MONITOR_END_TIME", "20:00"),
+        "monitor_interval": getattr(config, "MONITOR_INTERVAL_MINUTES", 10),
         "vps": {
             "host": getattr(config, "VPS_HOST", "217.142.149.2"),
             "auto_upload": getattr(config, "AUTO_UPLOAD_VPS", False),
@@ -256,6 +259,7 @@ def read_config_env():
         "FOCUS_PROJECTS": "\n".join(getattr(config, "FOCUS_PROJECTS", [])) if getattr(config, "FOCUS_PROJECTS", None) else "",
         "FOCUS_OWNERS": "\n".join(getattr(config, "FOCUS_OWNERS", [])) if getattr(config, "FOCUS_OWNERS", None) else "",
         "FOCUS_PROJECT_TYPES": "\n".join(getattr(config, "FOCUS_PROJECT_TYPES", [])) if getattr(config, "FOCUS_PROJECT_TYPES", None) else "",
+        "FOCUS_MIN_AMOUNT": getattr(config, "FOCUS_MIN_AMOUNT_RAW", ""),
         "AUTO_UPLOAD_VPS": "true" if getattr(config, "AUTO_UPLOAD_VPS", False) else "false",
         "VPS_HOST": getattr(config, "VPS_HOST", "217.142.149.2"),
         "VPS_PORT": getattr(config, "VPS_PORT", "22"),
@@ -289,6 +293,7 @@ def save_config_env(data):
         "FOCUS_PROJECTS": ",".join([p.strip() for p in data.get("FOCUS_PROJECTS", "").replace("\r\n", "\n").replace("，", ",").split("\n") if p.strip()]) if "\n" in data.get("FOCUS_PROJECTS", "") else data.get("FOCUS_PROJECTS", "").strip(),
         "FOCUS_OWNERS": ",".join([p.strip() for p in data.get("FOCUS_OWNERS", "").replace("\r\n", "\n").replace("，", ",").split("\n") if p.strip()]) if "\n" in data.get("FOCUS_OWNERS", "") else data.get("FOCUS_OWNERS", "").strip(),
         "FOCUS_PROJECT_TYPES": ",".join([p.strip() for p in data.get("FOCUS_PROJECT_TYPES", "").replace("\r\n", "\n").replace("，", ",").split("\n") if p.strip()]) if "\n" in data.get("FOCUS_PROJECT_TYPES", "") else data.get("FOCUS_PROJECT_TYPES", "").strip(),
+        "FOCUS_MIN_AMOUNT": str(data.get("FOCUS_MIN_AMOUNT", "")).strip(),
         "AUTO_UPLOAD_VPS": data.get("AUTO_UPLOAD_VPS", "false").strip().lower(),
         "VPS_HOST": data.get("VPS_HOST", "").strip(),
         "VPS_PORT": data.get("VPS_PORT", "22").strip(),
@@ -337,6 +342,8 @@ def save_config_env(data):
     # 重新载入 config
     if config:
         import importlib
+        if hasattr(config, "_ENV"):
+            config._ENV = config.load_env_file()
         importlib.reload(config)
 
     return True
@@ -491,33 +498,46 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             if collector_exe:
                 cmd = [str(collector_exe), "--date", target_date]
             else:
-                cmd = [py_exe, str(ROOT_DIR / "run_daily.py"), "--date", target_date]
+                cmd = [py_exe, "-u", str(ROOT_DIR / "run_daily.py"), "--date", target_date]
             ok, msg = PROC_MGR.start_task(f"全流程日报流水线 ({target_date})", cmd)
             self.send_json({"ok": ok, "msg": msg})
             return
 
         if path == "/api/run_collect":
             target_date = post_data.get("date", "").strip() or date.today().isoformat()
-            cmd = [py_exe, str(ROOT_DIR / "scripts" / "collect.py"), "--date", target_date]
+            cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "collect.py"), "--date", target_date]
             ok, msg = PROC_MGR.start_task(f"单步采集公告 ({target_date})", cmd)
             self.send_json({"ok": ok, "msg": msg})
             return
 
         if path == "/api/run_build":
             target_date = post_data.get("date", "").strip() or date.today().isoformat()
-            cmd = [py_exe, str(ROOT_DIR / "scripts" / "build_daily_page.py"), "--date", target_date]
+            cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "build_daily_page.py"), "--date", target_date]
             ok, msg = PROC_MGR.start_task(f"重新构建静态页面 ({target_date})", cmd)
             self.send_json({"ok": ok, "msg": msg})
             return
 
+        if path == "/api/run_reapply":
+            target_date = post_data.get("date", "").strip()
+            reapply_all = post_data.get("all", False)
+            if reapply_all or not target_date:
+                cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "reapply_rules.py"), "--all"]
+                task_title = "按新业务配置重新标注并重建所有历史数据"
+            else:
+                cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "reapply_rules.py"), "--date", target_date]
+                task_title = f"按新业务配置重新标注历史数据 ({target_date})"
+            ok, msg = PROC_MGR.start_task(task_title, cmd)
+            self.send_json({"ok": ok, "msg": msg})
+            return
+
         if path == "/api/run_upload":
-            cmd = [py_exe, str(ROOT_DIR / "scripts" / "upload_vps.py")]
+            cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "upload_vps.py")]
             ok, msg = PROC_MGR.start_task("同步上传静态文件至 VPS", cmd)
             self.send_json({"ok": ok, "msg": msg})
             return
 
         if path == "/api/test_wechat":
-            cmd = [py_exe, "-c", "import sys; sys.path.insert(0, '.'); from scripts.notify_wechat import test_push; sys.exit(0 if test_push() else 1)"]
+            cmd = [py_exe, "-u", "-c", "import sys; sys.path.insert(0, '.'); from scripts.notify_wechat import test_push; sys.exit(0 if test_push() else 1)"]
             ok, msg = PROC_MGR.start_task("测试微信服务号推送", cmd)
             self.send_json({"ok": ok, "msg": msg})
             return

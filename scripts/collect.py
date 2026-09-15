@@ -95,10 +95,20 @@ def normalize(rec, day=None):
     if type_hits:
         reasons.extend(["命中重点类型: %s" % t for t in type_hits])
         
-    # 4. 重点预警关键词
-    kw_hits = [k for k in config.FOCUS_KEYWORDS if k in title]
-    if kw_hits:
-        reasons.extend(["命中关键词: %s" % k for k in kw_hits])
+    # 4. 重点预警关键词（支持金额门槛筛选）
+    raw_kw_hits = [k for k in getattr(config, "FOCUS_KEYWORDS", []) if k in title]
+    kw_hits = []
+    if raw_kw_hits:
+        min_amount = getattr(config, "FOCUS_MIN_AMOUNT", 0.0) or 0.0
+        if min_amount > 0:
+            amt = config.extract_amount_from_title(title)
+            if amt is not None and amt >= min_amount:
+                from extractors.normalize import format_money
+                kw_hits = raw_kw_hits
+                reasons.extend(["命中关键词: %s (金额%s >= 门槛%s)" % (k, format_money(amt), format_money(min_amount)) for k in kw_hits])
+        else:
+            kw_hits = raw_kw_hits
+            reasons.extend(["命中关键词: %s" % k for k in kw_hits])
 
     is_focus = 1 if (proj_hits or owner_hits or type_hits or kw_hits) else 0
 

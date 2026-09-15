@@ -124,12 +124,39 @@ for it in items:
             if msg not in reasons:
                 reasons.append(msg)
                 
-    kw_hits = [k for k in getattr(config, "FOCUS_KEYWORDS", []) if k in title]
-    if kw_hits:
-        for k in kw_hits:
-            msg = "命中关键词: %s" % k
-            if msg not in reasons:
-                reasons.append(msg)
+    raw_kw_hits = [k for k in getattr(config, "FOCUS_KEYWORDS", []) if k in title]
+    kw_hits = []
+    if raw_kw_hits:
+        min_amount = getattr(config, "FOCUS_MIN_AMOUNT", 0.0) or 0.0
+        if min_amount > 0:
+            # 优先从标题提取，提取不到可从 notice_fields 查询已提取金额
+            amt = config.extract_amount_from_title(title)
+            if amt is None:
+                infoid = it.get("infoid", "")
+                if infoid and getattr(config, "DB_PATH", None) and config.DB_PATH.exists():
+                    try:
+                        import sqlite3
+                        with sqlite3.connect(str(config.DB_PATH)) as conn:
+                            c = conn.cursor()
+                            c.execute("SELECT value_num FROM notice_fields WHERE infoid = ? AND value_type = 'money' AND value_num IS NOT NULL ORDER BY value_num DESC LIMIT 1", (infoid,))
+                            r = c.fetchone()
+                            if r and r[0] is not None:
+                                amt = float(r[0])
+                    except Exception:
+                        pass
+            if amt is not None and amt >= min_amount:
+                from extractors.normalize import format_money
+                kw_hits = raw_kw_hits
+                for k in kw_hits:
+                    msg = "命中关键词: %s (金额%s >= 门槛%s)" % (k, format_money(amt), format_money(min_amount))
+                    if msg not in reasons:
+                        reasons.append(msg)
+        else:
+            kw_hits = raw_kw_hits
+            for k in kw_hits:
+                msg = "命中关键词: %s" % k
+                if msg not in reasons:
+                    reasons.append(msg)
                 
     if proj_hits or owner_hits or type_hits or kw_hits:
         it["is_focus"] = 1
@@ -298,9 +325,9 @@ DAILY_CSS = """
         .stat-box.stage-candidate { background: #e0e7ff !important; border-color: #c7d2fe !important; }
         .stat-box.stage-candidate .sb-label { color: #4338ca !important; }
         .stat-box.stage-candidate .sb-value { color: #4338ca !important; }
-        .stat-box.stage-award { background: #f1f5f9 !important; border-color: #cbd5e1 !important; }
-        .stat-box.stage-award .sb-label { color: #475569 !important; }
-        .stat-box.stage-award .sb-value { color: #475569 !important; }
+        .stat-box.stage-award { background: #fdf4ff !important; border-color: #f0abfc !important; }
+        .stat-box.stage-award .sb-label { color: #c026d3 !important; }
+        .stat-box.stage-award .sb-value { color: #a21caf !important; }
 
         .cat-block .type-head {
             display: inline-flex;
@@ -374,7 +401,7 @@ __DAILY_CSS__
 <div class="brand-text">
 <div style="display: flex; align-items: center; gap: 8px;">
 <h1 style="margin: 0;">招投标每日简报</h1>
-<span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v2.2.0</span>
+<span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.0.1</span>
 </div>
 <p>__DATE__ · 全区公告分类明细</p>
 </div>
@@ -391,10 +418,6 @@ __DAILY_CSS__
 <a class="btn-back" href="__NEXT_URL__">
 <span>后一日</span>
 <svg fill="none" height="15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="15"><polyline points="9 18 15 12 9 6"></polyline></svg>
-</a>
-<a class="btn-latest" href="https://ztb.139771.xyz/settings" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
-<svg fill="none" height="15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="15"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1.1 1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6h.09A1.7 1.7 0 0 0 10.64 3V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.09a1.7 1.7 0 0 0 1.55 1.1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"></path></svg>
-<span>设置中心</span>
 </a>
 </div>
 </div>
