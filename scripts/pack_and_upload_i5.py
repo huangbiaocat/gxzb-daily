@@ -14,6 +14,7 @@ FILES_TO_PACK = [
     "desktop_app.py",
     "run_daily.py",
     "scripts/collect.py",
+    "scripts/collect_cz_ygcg.py",
     "scripts/build_daily_page.py",
     "scripts/build_archive_page.py",
     "scripts/build_exe.py",

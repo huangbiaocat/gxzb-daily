@@ -185,6 +185,11 @@ def main(argv=None):
     else:
         banner("1/8", "采集当日全量公告")
         rc, ok = run([PY, SCRIPT / "collect.py", "--date", day], allow_codes=(0, 3))
+        # 并发/顺次采集【崇左阳光采购平台】工程类公告
+        try:
+            rc_cz, ok_cz = run([PY, SCRIPT / "collect_cz_ygcg.py", "--date", day], allow_codes=(0, 3))
+        except Exception as exc_cz:
+            print("崇左阳光采购平台采集异常：", exc_cz)
         if not ok:
             failed_steps.append("collect")
             print("采集全部失败，终止后续步骤（保留旧日志与旧页面）")

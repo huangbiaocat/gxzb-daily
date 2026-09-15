@@ -95,7 +95,11 @@ items = json.loads(DATA.read_text(encoding="utf-8"))
 for it in items:
     it["infoid"] = str(it.get("infoid") or it.get("id") or "")
     assert it["infoid"], "条目缺少官方唯一识别码 infoid，拒绝生成页面：%r" % it.get("title", "")[:40]
-    it["link"] = DETAIL_TPL.format(infoid=it["infoid"], categorynum=it["categorynum"])
+    link_candidate = it.get("link") or it.get("url") or ""
+    if it.get("areaname") == "崇左阳光采购" and ("gxygcg.com" in link_candidate):
+        it["link"] = link_candidate
+    else:
+        it["link"] = DETAIL_TPL.format(infoid=it["infoid"], categorynum=it["categorynum"])
     
     # 依据最新配置动态补充重点预警标记
     title = it.get("title", "")
@@ -494,6 +498,7 @@ __DAILY_CSS__
                 <option value="河池市">河池市</option>
                 <option value="来宾市">来宾市</option>
                 <option value="崇左市">崇左市</option>
+                <option value="崇左阳光采购">崇左阳光采购</option>
             </select>
             <select class="select-input" id="stageFilter">
                 <option value="">全部环节 (6大业务环节)</option>
@@ -554,6 +559,7 @@ const CAT_ICON = {
 
 function shortArea(name) {
     if (!name) { return '全区'; }
+    if (name === '崇左阳光采购') { return '崇左阳光采购'; }
     if (name.indexOf('自治区') === 0) { return '区中心'; }
     return name.replace(/市$/, '');
 }
@@ -780,7 +786,7 @@ raw_rows = json.loads("[" + raw_block.strip().rstrip(",") + "]")
 check("设计基准未变", hashlib.md5(PREVIEW.read_text(encoding="utf-8").encode("utf-8")).hexdigest() == PREVIEW_MD5)
 check("数据条数", len(raw_rows) == total_n, "RAW_DATA=%d 期望=%d" % (len(raw_rows), total_n))
 check("唯一识别码", len({r["infoid"] for r in raw_rows}) == total_n, "infoid 唯一")
-check("官方链接", all("projectDetails.html?infoid=" in r["link"] for r in raw_rows))
+check("官方链接", all(("projectDetails.html?infoid=" in r["link"] or "cz.gxygcg.com" in r["link"]) for r in raw_rows))
 check("无自造编号", ("code-tag" not in out) and ("data-code" not in out) and ("GX%s" % DAY_KEY) not in out)
 check("指标卡", static.count('class="sb-label"') == 6, json.dumps(stat_map, ensure_ascii=False))
 check("筛选控件", static.count('class="select-input"') == 3 and "仅看重点预警" in static and "重置所有筛选" in static)

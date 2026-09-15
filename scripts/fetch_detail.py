@@ -239,7 +239,19 @@ def fetch_details(day, rows=None, source="collect", limit=None, infoids=None, fo
             continue
         url = _detail_url_of(row)
         try:
-            html = fetcher.get_text(url, headers={"Referer": config.API_REFERER})
+            if "bbw_prod/bbw_notice/notice_detail" in url:
+                raw_json = fetcher.get_text(url, headers={"User-Agent": "Mozilla/5.0"})
+                jdata = json.loads(raw_json)
+                notices = (jdata.get("data") or {}).get("notices") or []
+                html_url = None
+                if notices and notices[0].get("htmlUrl"):
+                    html_url = notices[0]["htmlUrl"]
+                if html_url:
+                    html = fetcher.get_text(html_url, headers={"User-Agent": "Mozilla/5.0"})
+                else:
+                    html = raw_json
+            else:
+                html = fetcher.get_text(url, headers={"Referer": config.API_REFERER})
         except fetcher.HttpError as exc:
             stats["failed"] += 1
             stats["done"] += 1

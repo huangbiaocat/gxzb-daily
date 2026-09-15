@@ -261,6 +261,16 @@ def collect(day, centers=None, save_raw=True, quiet=False, page_size=None):
         detail["off_day"] = off_center
         reconcile_centers[center] = detail
 
+    # 额外补充采集【崇左阳光采购平台】工程类公告
+    try:
+        from scripts.collect_cz_ygcg import collect_cz_ygcg
+        cz_rows, _ = collect_cz_ygcg(day)
+        for cr in cz_rows:
+            merged.setdefault(cr["infoid"], cr)
+    except Exception as e_cz:
+        if not quiet:
+            print("   [警告] 崇左阳光采购平台采集失败：", e_cz)
+
     rows = sorted(merged.values(), key=lambda r: (r["pub_time"], r["infoid"]))
     target = config.COLLECT_DIR / ("%s.json" % day)
     target.parent.mkdir(parents=True, exist_ok=True)
