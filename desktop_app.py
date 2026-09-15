@@ -11,6 +11,7 @@ import threading
 import subprocess
 import webbrowser
 from pathlib import Path
+from config import APP_VERSION
 try:
     from PIL import Image, ImageDraw
     import pystray
@@ -179,7 +180,7 @@ def open_ui(url):
 def main():
     url = f"http://127.0.0.1:{PORT}"
     print(f"==================================================")
-    print(f"  广西招投标数据采集 · 桌面控制中心 v0.0.1")
+    print(f"  广西招投标数据采集 · 桌面控制中心 {APP_VERSION}")
     print(f"  访问地址: {url}")
     print(f"==================================================")
     start_server_background()

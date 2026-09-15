@@ -19,6 +19,9 @@ if getattr(sys, 'frozen', False):
 else:
     REPO_ROOT = Path(__file__).resolve().parent
 
+# ------------------------------------------------------------------ 统一版本
+APP_VERSION = "v0.0.2"
+
 # ------------------------------------------------------------------ .env 解析
 def load_env_file(path=None):
     """极简 .env 解析：KEY=VALUE，支持 # 注释、export 前缀、引号包裹。"""
