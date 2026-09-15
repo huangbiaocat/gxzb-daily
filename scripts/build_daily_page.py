@@ -307,7 +307,7 @@ DAILY_CSS = """
         .type-block[data-type="澄清/答疑"] { --chip-bg: #fef3c7; --chip-fg: #d97706; --chip-border: #fde68a; --chip-num: #d97706; }
         .type-block[data-type="控制价公示"] { --chip-bg: #f3e8ff; --chip-fg: #9333ea; --chip-border: #e9d5ff; --chip-num: #9333ea; }
         .type-block[data-type="中标公示"] { --chip-bg: #e0e7ff; --chip-fg: #4338ca; --chip-border: #c7d2fe; --chip-num: #4338ca; }
-        .type-block[data-type="中标公告"] { --chip-bg: #f1f5f9; --chip-fg: #475569; --chip-border: #cbd5e1; --chip-num: #475569; }
+        .type-block[data-type="中标公告"] { --chip-bg: #fdf4ff; --chip-fg: #c026d3; --chip-border: #f0abfc; --chip-num: #a21caf; }
 
         /* 统一阶段统计卡色彩 (Unified Stage Colors for Stat Boxes) */
         .stat-box.stage-plan { background: #e0f2fe !important; border-color: #bae6fd !important; }
