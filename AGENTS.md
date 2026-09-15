@@ -3,6 +3,9 @@
 ## 1. 核心流水线与关键入口
 - **日历/明细页生产**：`scripts/build_daily_page.py`
 - **实机同步与打包部署**：`scripts/pack_and_upload_i5.py`
+- **更新发布同步铁律**：每次代码或前端页面更新后，必须执行双端同步：
+  1. `git push origin main`（同步推送到 GitHub 远端仓库）
+  2. `python3 scripts/pack_and_upload_i5.py`（打包核心脚本与静态文件同步部署到 VPS / I5 实机下载分发站）
 - **每日主采集入口**：`run_daily.py`、`scripts/collect.py`
 - **后台管理系统**：`manager/server.py`、`web/`
 
