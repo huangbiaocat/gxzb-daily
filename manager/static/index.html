@@ -43,7 +43,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.0.1</span>
+                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.0.2</span>
                     </div>
                     <p class="text-xs text-slate-500">Tender Data Control & Settings Center</p>
                 </div>
@@ -67,6 +67,12 @@
             </div>
 
             <div class="flex items-center space-x-3">
+                <button onclick="triggerTask('upgrade')" id="btn-top-upgrade" class="text-xs font-semibold px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition flex items-center space-x-1.5 shadow-xs" title="从 GitHub 拉取最新版本并同步到本机">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    <span>同步升级</span>
+                </button>
                 <button onclick="refreshAll()" class="p-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition" title="刷新页面状态与配置">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -416,6 +422,15 @@
                                 <span class="text-xs font-semibold">手动同步云端</span>
                                 <span class="text-[10px] text-slate-400 mt-0.5">upload_vps.py</span>
                             </button>
+                            <button onclick="triggerTask('upgrade')" class="btn-action flex flex-col items-center justify-center p-3 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200/80 text-emerald-800 transition col-span-2 sm:col-span-2">
+                                <div class="flex items-center space-x-1.5">
+                                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                    </svg>
+                                    <span class="text-xs font-bold">从 GitHub 同步升级新版本</span>
+                                </div>
+                                <span class="text-[10px] text-emerald-600/80 mt-0.5">拉取最新代码并保留本地数据与凭证 (upgrade_app.py)</span>
+                            </button>
                         </div>
                     </div>
 
@@ -498,6 +513,10 @@
                 const res = await fetch("/api/status");
                 const data = await res.json();
 
+                if (data.app_version) {
+                    const badge = document.getElementById("app-version-badge");
+                    if (badge) badge.textContent = data.app_version;
+                }
                 document.getElementById("stat-today-date").textContent = data.today || "--";
                 const todayBadge = document.getElementById("stat-today-badge");
                 const todayDesc = document.getElementById("stat-today-desc");
@@ -720,7 +739,8 @@
                 "daily": "/api/run_daily",
                 "collect": "/api/run_collect",
                 "build": "/api/run_build",
-                "upload": "/api/run_upload"
+                "upload": "/api/run_upload",
+                "upgrade": "/api/run_upgrade"
             };
             const url = endpoints[action];
             if (!url) return;

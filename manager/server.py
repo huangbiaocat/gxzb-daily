@@ -161,6 +161,23 @@ class ProcessManager:
 
 PROC_MGR = ProcessManager()
 
+def get_git_info():
+    """获取本地 Git 版本信息"""
+    try:
+        res = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=str(ROOT_DIR),
+            capture_output=True,
+            text=True,
+            timeout=3
+        )
+        if res.returncode == 0:
+            commit = res.stdout.strip()
+            return {"commit": commit, "version": f"Git #{commit}"}
+    except Exception:
+        pass
+    return {"commit": "release", "version": "v0.0.2"}
+
 def get_system_status():
     """获取系统整体统计与数据概览"""
     site_dir = ROOT_DIR / "dist"
@@ -211,8 +228,11 @@ def get_system_status():
         except Exception:
             pass
 
+    git_info = get_git_info()
     return {
         "today": today_str,
+        "git_commit": git_info["commit"],
+        "app_version": git_info["version"],
         "html_count": len(html_files),
         "recent_pages": html_files[:10],
         "db_exists": db_exists,
@@ -500,6 +520,12 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             else:
                 cmd = [py_exe, "-u", str(ROOT_DIR / "run_daily.py"), "--date", target_date]
             ok, msg = PROC_MGR.start_task(f"全流程日报流水线 ({target_date})", cmd)
+            self.send_json({"ok": ok, "msg": msg})
+            return
+
+        if path == "/api/run_upgrade":
+            cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "upgrade_app.py")]
+            ok, msg = PROC_MGR.start_task("同步拉取 GitHub 最新版本代码", cmd)
             self.send_json({"ok": ok, "msg": msg})
             return
 

@@ -31,6 +31,7 @@ FILES_TO_PACK = [
     "extractors/normalize.py",
     "extractors/rules.py",
     "scripts/reapply_rules.py",
+    "scripts/upgrade_app.py",
 ]
 
 def main():
