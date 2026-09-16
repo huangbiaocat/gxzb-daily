@@ -395,10 +395,10 @@ PAGE = """<!DOCTYPE html>
 <div class="density-legend">
 <span>发布热度:</span>
 <span class="legend-dot" style="background:#f8fafc; border:1px solid #e2e8f0;" title="0条"></span>
-<span class="legend-dot" style="background:#eff6ff; border:1px solid #dbeafe;" title="1-60条"></span>
-<span class="legend-dot" style="background:#dbeafe; border:1px solid #bfdbfe;" title="61-160条"></span>
-<span class="legend-dot" style="background:#bfdbfe; border:1px solid #93c5fd;" title="161-240条"></span>
-<span class="legend-dot" style="background:#93c5fd; border:1px solid #60a5fa;" title="&gt;240条"></span>
+<span class="legend-dot" style="background:#f0f7ff; border:1px solid #dbeafe;" title="1-60条"></span>
+<span class="legend-dot" style="background:#e0eefe; border:1px solid #bfdbfe;" title="61-160条"></span>
+<span class="legend-dot" style="background:#bae0fd; border:1px solid #93c5fd;" title="161-240条"></span>
+<span class="legend-dot" style="background:#3b82f6; border:1px solid #2563eb;" title="&gt;240条"></span>
 </div>
 <div class="view-switcher">
 <button class="view-btn active" id="btnViewCalendar" onclick="switchView('calendar')">

@@ -547,27 +547,28 @@
             border-color: #e2e8f0;
         }
         .density-1 {
-            background: #eff6ff;
+            background: #f0f7ff;
             border-color: #dbeafe;
         }
         .density-2 {
-            background: #dbeafe;
+            background: #e0eefe;
             border-color: #bfdbfe;
         }
         .density-3 {
-            background: #bfdbfe;
+            background: #bae0fd;
             border-color: #93c5fd;
         }
         .density-4 {
-            background: #93c5fd;
-            border-color: #60a5fa;
+            background: #3b82f6;
+            border-color: #2563eb;
         }
 
         .density-0 .cal-count-badge { color: var(--text-muted); background: rgba(255,255,255,0.7); }
-        .density-1 .cal-count-badge { color: #1e40af; background: rgba(255,255,255,0.8); }
-        .density-2 .cal-count-badge { color: #1e3a8a; background: rgba(255,255,255,0.9); }
+        .density-1 .cal-count-badge { color: #1d4ed8; background: rgba(255,255,255,0.85); font-weight: 600; }
+        .density-2 .cal-count-badge { color: #1e40af; background: rgba(255,255,255,0.9); font-weight: 600; }
         .density-3 .cal-count-badge { color: #172554; background: #ffffff; font-weight: 700; }
-        .density-4 .cal-count-badge { color: #0f172a; background: #ffffff; font-weight: 800; }
+        .density-4 .cal-count-badge { color: #ffffff; background: rgba(15, 23, 42, 0.4); font-weight: 700; }
+        .density-4 .cal-date-num { color: #ffffff; }
 
         .cal-cell-header {
             display: flex;
@@ -1009,10 +1010,10 @@
 <div class="density-legend">
 <span>发布热度:</span>
 <span class="legend-dot" style="background:#f8fafc; border:1px solid #e2e8f0;" title="0条"></span>
-<span class="legend-dot" style="background:#eff6ff; border:1px solid #dbeafe;" title="1-60条"></span>
-<span class="legend-dot" style="background:#dbeafe; border:1px solid #bfdbfe;" title="61-160条"></span>
-<span class="legend-dot" style="background:#bfdbfe; border:1px solid #93c5fd;" title="161-240条"></span>
-<span class="legend-dot" style="background:#93c5fd; border:1px solid #60a5fa;" title="&gt;240条"></span>
+<span class="legend-dot" style="background:#f0f7ff; border:1px solid #dbeafe;" title="1-60条"></span>
+<span class="legend-dot" style="background:#e0eefe; border:1px solid #bfdbfe;" title="61-160条"></span>
+<span class="legend-dot" style="background:#bae0fd; border:1px solid #93c5fd;" title="161-240条"></span>
+<span class="legend-dot" style="background:#3b82f6; border:1px solid #2563eb;" title="&gt;240条"></span>
 </div>
 <div class="view-switcher">
 <button class="view-btn active" id="btnViewCalendar" onclick="switchView('calendar')">

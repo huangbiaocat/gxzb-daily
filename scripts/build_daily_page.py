@@ -89,7 +89,9 @@ assert len(styles) >= 2, "未能从设计基准中提取到样式块"
 PREVIEW_CSS = "\n".join(s.strip() for s in styles)
 
 if not DATA.exists():
-    raise SystemExit("入库数据不存在：%s（请先执行 scripts/collect.py 完成当日入库）" % DATA)
+    # 当日暂无入库数据时，自动补空数据文件以支持生成并刷新页面时间
+    DATA.parent.mkdir(parents=True, exist_ok=True)
+    DATA.write_text("[]", encoding="utf-8")
 
 items = json.loads(DATA.read_text(encoding="utf-8"))
 for it in items:
@@ -190,9 +192,10 @@ stat_map = {
 }
 total_n = len(items)
 focus_n = sum(1 for it in items if it.get("is_focus"))
-city_n = len(set(it["areaname"] for it in items))
-cat_n = len(set(it["industry"] for it in items))
-latest = max(it["pub_time"] for it in items)
+city_n = len(set(it.get("areaname", "") for it in items))
+cat_n = len(set(it.get("industry", "") for it in items))
+valid_times = [it.get("pub_time") for it in items if it.get("pub_time")]
+latest = max(valid_times) if valid_times else config.now_stamp()
 
 # ------------------------------------------------------------------ 2. 每日页定制样式（preview 未覆盖的组件）
 DAILY_CSS = """
