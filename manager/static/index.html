@@ -66,20 +66,38 @@
                 </button>
             </div>
 
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <!-- 快捷监控启停开关 -->
+                <button id="btn-top-monitor" onclick="toggleMonitor()" class="text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center space-x-1.5 shadow-xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" title="快捷开启或暂停计划任务后台轮询采集">
+                    <span id="top-monitor-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="top-monitor-text">监控中</span>
+                </button>
+
+                <!-- 展厅模式 / 打开大屏 -->
+                <button onclick="openExhibitionScreen()" class="text-xs font-semibold px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition flex items-center space-x-1.5 shadow-xs" title="在独立展厅大屏窗口打开实时大屏">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                    <span>展厅监控</span>
+                </button>
+
+                <!-- 同步升级 -->
                 <button onclick="triggerTask('upgrade')" id="btn-top-upgrade" class="text-xs font-semibold px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition flex items-center space-x-1.5 shadow-xs" title="从 GitHub 拉取最新版本并同步到本机">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                     </svg>
-                    <span>同步升级</span>
+                    <span class="hidden sm:inline">同步升级</span>
                 </button>
+
+                <!-- 刷新状态 -->
                 <button onclick="refreshAll()" class="p-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition" title="刷新页面状态与配置">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
                 </button>
-                <a href="/preview/" target="_blank" class="text-xs font-semibold px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg border border-blue-200 transition flex items-center space-x-1">
-                    <span>打开展示大屏</span>
+
+                <a href="/preview/" target="_blank" class="text-xs font-semibold px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg border border-blue-200 transition flex items-center space-x-1" title="在浏览器新标签页打开数据看板">
+                    <span>打开看板</span>
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                     </svg>
@@ -372,9 +390,21 @@
                         <div class="text-slate-500 text-[11px] mt-0.5">到达时间窗口内自动运行采集并核验入库；非监控时段自动休眠防干扰。</div>
                     </div>
                 </div>
-                <div class="flex items-center space-x-2">
+                <div class="flex items-center space-x-2 shrink-0">
+                    <button id="btn-banner-monitor-toggle" onclick="toggleMonitor()" class="px-3 py-1.5 font-semibold rounded-lg shadow-xs transition text-xs flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                        </svg>
+                        <span id="banner-monitor-btn-text">开始监控</span>
+                    </button>
+                    <button onclick="openExhibitionScreen()" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg text-indigo-700 font-semibold shadow-xs transition text-xs flex items-center space-x-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>展厅监控</span>
+                    </button>
                     <button onclick="switchTab('settings')" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium shadow-xs transition text-xs">
-                        修改监控时间与周期 &rarr;
+                        周期设置 &rarr;
                     </button>
                 </div>
             </div>
@@ -484,6 +514,72 @@
 
     <script>
         let pollTimer = null;
+        let currentMonitorEnabled = true;
+
+        function updateMonitorUI(monitor) {
+            const topText = document.getElementById("top-monitor-text");
+            const topDot = document.getElementById("top-monitor-dot");
+            const topBtn = document.getElementById("btn-top-monitor");
+            const bannerBtn = document.getElementById("btn-banner-monitor-toggle");
+            const bannerBtnText = document.getElementById("banner-monitor-btn-text");
+
+            if (!monitor || !monitor.exists) {
+                if (topText) topText.textContent = "未配置任务";
+                if (topDot) topDot.className = "w-2 h-2 rounded-full bg-slate-400";
+                return;
+            }
+
+            currentMonitorEnabled = monitor.enabled;
+            if (monitor.enabled) {
+                if (topText) topText.textContent = monitor.state || "监控中";
+                if (topDot) topDot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+                if (topBtn) topBtn.className = "text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center space-x-1.5 shadow-xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100";
+                if (bannerBtn) bannerBtn.className = "px-3 py-1.5 font-semibold rounded-lg shadow-xs transition text-xs flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-600 text-white";
+                if (bannerBtnText) bannerBtnText.textContent = "暂停监控";
+            } else {
+                if (topText) topText.textContent = "已暂停监控";
+                if (topDot) topDot.className = "w-2 h-2 rounded-full bg-amber-400";
+                if (topBtn) topBtn.className = "text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center space-x-1.5 shadow-xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100";
+                if (bannerBtn) bannerBtn.className = "px-3 py-1.5 font-semibold rounded-lg shadow-xs transition text-xs flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white";
+                if (bannerBtnText) bannerBtnText.textContent = "开启监控";
+            }
+        }
+
+        async function toggleMonitor() {
+            const nextAction = currentMonitorEnabled ? "disable" : "enable";
+            const confirmTip = currentMonitorEnabled ? "确定要暂停自动化计划任务监控吗？" : "确定开启后台自动化计划任务监控吗？";
+            if (!confirm(confirmTip)) return;
+
+            try {
+                const res = await fetch("/api/monitor_control", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: nextAction })
+                });
+                const data = await res.json();
+                alert(data.msg || (data.ok ? "操作成功" : "操作失败"));
+                fetchStatus();
+            } catch (err) {
+                alert("请求失败: " + err);
+            }
+        }
+
+        async function openExhibitionScreen() {
+            try {
+                const res = await fetch("/api/open_screen", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (!data.ok) {
+                    window.open("/preview/", "_blank");
+                }
+            } catch (err) {
+                window.open("/preview/", "_blank");
+            }
+        }
+
 
         function switchTab(tabId) {
             const btnSettings = document.getElementById("tab-btn-settings");
@@ -572,6 +668,9 @@
                     const ivElem = document.getElementById("dash-monitor-interval");
                     if (ivElem) ivElem.textContent = `每 ${data.monitor_interval} 分钟`;
                 }
+                
+                // 更新监控计划任务状态
+                updateMonitorUI(data.monitor);
 
                 const tbody = document.getElementById("pages-table-body");
                 if (data.recent_pages && data.recent_pages.length > 0) {

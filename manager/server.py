@@ -8,6 +8,7 @@ import json
 import mimetypes
 import os
 import re
+import shutil
 import socketserver
 import subprocess
 import sys
@@ -52,6 +53,8 @@ def get_site_dir() -> Path:
     if not site_dir.is_absolute():
         site_dir = (ROOT_DIR / site_dir).resolve()
     if not site_dir.exists() and (ROOT_DIR / "dist").exists():
+        site_dir = (ROOT_DIR / "dist").resolve()
+    if site_dir.exists() and not (site_dir / "index.html").exists() and (ROOT_DIR / "dist" / "index.html").exists():
         site_dir = (ROOT_DIR / "dist").resolve()
     if not site_dir.exists() and getattr(sys, 'frozen', False):
         _alt = Path(sys.executable).resolve().parent / 'dist'
@@ -178,10 +181,65 @@ def get_git_info():
         pass
     return {"commit": "release", "version": "v0.0.2"}
 
+def get_scheduled_task_status():
+    """检测 Windows 计划任务 ZtbCollector_Sync 的运行/就绪/启用状态"""
+    res_info = {
+        "exists": False,
+        "enabled": False,
+        "state": "未知",
+        "next_run": "--"
+    }
+    if sys.platform != "win32":
+        return {
+            "exists": True,
+            "enabled": True,
+            "state": "就绪 (监控中)",
+            "next_run": "--"
+        }
+    try:
+        cp = subprocess.run(
+            ["schtasks", "/query", "/tn", "ZtbCollector_Sync", "/fo", "CSV", "/nh"],
+            capture_output=True,
+            timeout=3
+        )
+        if cp.returncode == 0:
+            raw_bytes = cp.stdout
+            text_out = ""
+            try:
+                text_out = raw_bytes.decode("gbk", errors="ignore")
+            except Exception:
+                text_out = raw_bytes.decode("utf-8", errors="ignore")
+            
+            parts = [p.strip().strip('"') for p in text_out.strip().split(",")]
+            if len(parts) >= 3:
+                res_info["exists"] = True
+                res_info["next_run"] = parts[1] if parts[1] != "N/A" else "无"
+                state_raw = parts[2]
+                if "就绪" in state_raw or "Ready" in state_raw:
+                    res_info["enabled"] = True
+                    res_info["state"] = "就绪 (监控中)"
+                elif "正在运行" in state_raw or "Running" in state_raw:
+                    res_info["enabled"] = True
+                    res_info["state"] = "执行中"
+                elif "已禁用" in state_raw or "Disabled" in state_raw:
+                    res_info["enabled"] = False
+                    res_info["state"] = "已暂停监控"
+                else:
+                    res_info["enabled"] = True
+                    res_info["state"] = state_raw
+    except Exception:
+        pass
+    return res_info
+
 def get_system_status():
     """获取系统整体统计与数据概览"""
-    site_dir = ROOT_DIR / "dist"
-    db_path = getattr(config, "DB_PATH", ROOT_DIR / "data" / "tenders.db")
+    site_dir = get_site_dir()
+    db_path = getattr(config, "DB_PATH", ROOT_DIR / "data" / "gxzb.sqlite3")
+    if not db_path.exists():
+        for cand in [ROOT_DIR / "data" / "gxzb.sqlite3", ROOT_DIR / "data" / "tenders.db"]:
+            if cand.exists():
+                db_path = cand
+                break
     
     # 统计历史 HTML 页面
     html_files = []
@@ -207,10 +265,18 @@ def get_system_status():
             import sqlite3
             with sqlite3.connect(str(db_path)) as conn:
                 cur = conn.cursor()
-                cur.execute("SELECT count(*) FROM tenders")
-                db_total = cur.fetchone()[0]
-                cur.execute("SELECT count(*) FROM tenders WHERE date = ?", (today_str,))
-                today_db_count = cur.fetchone()[0]
+                cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                tables = [r[0] for r in cur.fetchall()]
+                if "notices" in tables:
+                    cur.execute("SELECT count(*) FROM notices")
+                    db_total = cur.fetchone()[0]
+                    cur.execute("SELECT count(*) FROM notices WHERE pub_time LIKE ?", (f"{today_str}%",))
+                    today_db_count = cur.fetchone()[0]
+                elif "tenders" in tables:
+                    cur.execute("SELECT count(*) FROM tenders")
+                    db_total = cur.fetchone()[0]
+                    cur.execute("SELECT count(*) FROM tenders WHERE date = ?", (today_str,))
+                    today_db_count = cur.fetchone()[0]
         except Exception:
             pass
 
@@ -257,6 +323,7 @@ def get_system_status():
             "configured": bool(getattr(config, "WECHAT_APPID", "") and getattr(config, "WECHAT_APPSECRET", "")),
             "touser": getattr(config, "WECHAT_TOUSER", ""),
         },
+        "monitor": get_scheduled_task_status(),
     }
 
 def read_config_env():
@@ -566,6 +633,57 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             cmd = [py_exe, "-u", "-c", "import sys; sys.path.insert(0, '.'); from scripts.notify_wechat import test_push; sys.exit(0 if test_push() else 1)"]
             ok, msg = PROC_MGR.start_task("测试微信服务号推送", cmd)
             self.send_json({"ok": ok, "msg": msg})
+            return
+
+        if path == "/api/monitor_control":
+            action = post_data.get("action", "").strip()
+            if sys.platform != "win32":
+                self.send_json({"ok": True, "msg": f"当前系统非 Windows，已模拟设置监控状态为: {action}"})
+                return
+            try:
+                if action == "enable":
+                    cp = subprocess.run(["schtasks", "/change", "/tn", "ZtbCollector_Sync", "/enable"], capture_output=True, timeout=5)
+                    if cp.returncode == 0:
+                        self.send_json({"ok": True, "msg": "自动化监控已成功开启！系统将按周期自动轮询采集。"})
+                    else:
+                        err = cp.stderr.decode("gbk", errors="ignore") or cp.stdout.decode("gbk", errors="ignore")
+                        self.send_json({"ok": False, "msg": f"开启监控失败: {err}"})
+                elif action == "disable":
+                    cp = subprocess.run(["schtasks", "/change", "/tn", "ZtbCollector_Sync", "/disable"], capture_output=True, timeout=5)
+                    if cp.returncode == 0:
+                        self.send_json({"ok": True, "msg": "自动化监控已暂停。定时任务已停止触发。"})
+                    else:
+                        err = cp.stderr.decode("gbk", errors="ignore") or cp.stdout.decode("gbk", errors="ignore")
+                        self.send_json({"ok": False, "msg": f"暂停监控失败: {err}"})
+                else:
+                    self.send_json({"ok": False, "msg": "未知操作类型"})
+            except Exception as e:
+                self.send_json({"ok": False, "msg": f"执行失败: {str(e)}"}, status=500)
+            return
+
+        if path == "/api/open_screen":
+            try:
+                target_url = f"http://127.0.0.1:{PORT}/preview/"
+                if sys.platform == "win32":
+                    edge_paths = [
+                        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+                        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+                    ]
+                    launched = False
+                    for p in edge_paths:
+                        if Path(p).exists():
+                            subprocess.Popen([p, f"--app={target_url}", "--start-maximized"])
+                            launched = True
+                            break
+                    if not launched:
+                        os.startfile(target_url)
+                elif sys.platform == "darwin":
+                    subprocess.Popen(["open", target_url])
+                else:
+                    subprocess.Popen(["xdg-open", target_url])
+                self.send_json({"ok": True, "msg": "已在大屏展厅窗口打开实时大屏！"})
+            except Exception as e:
+                self.send_json({"ok": False, "msg": f"呼起大屏窗口失败: {str(e)}"}, status=500)
             return
 
         if path == "/api/stop_task":
