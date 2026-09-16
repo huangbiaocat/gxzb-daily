@@ -187,14 +187,16 @@ def get_scheduled_task_status():
         "exists": False,
         "enabled": False,
         "state": "未知",
-        "next_run": "--"
+        "next_run": "--",
+        "next_run_standard": ""
     }
     if sys.platform != "win32":
         return {
             "exists": True,
             "enabled": True,
             "state": "就绪 (监控中)",
-            "next_run": "--"
+            "next_run": "--",
+            "next_run_standard": ""
         }
     try:
         cp = subprocess.run(
@@ -213,7 +215,16 @@ def get_scheduled_task_status():
             parts = [p.strip().strip('"') for p in text_out.strip().split(",")]
             if len(parts) >= 3:
                 res_info["exists"] = True
-                res_info["next_run"] = parts[1] if parts[1] != "N/A" else "无"
+                next_run_raw = parts[1] if parts[1] != "N/A" else "无"
+                res_info["next_run"] = next_run_raw
+                if next_run_raw and next_run_raw != "无":
+                    for fmt in ("%Y/%m/%d %H:%M:%S", "%Y-%m-%d %H:%M:%S", "%m/%d/%Y %H:%M:%S"):
+                        try:
+                            dt = datetime.strptime(next_run_raw, fmt)
+                            res_info["next_run_standard"] = dt.strftime("%Y-%m-%d %H:%M:%S")
+                            break
+                        except Exception:
+                            pass
                 state_raw = parts[2]
                 if "就绪" in state_raw or "Ready" in state_raw:
                     res_info["enabled"] = True
@@ -259,6 +270,8 @@ def get_system_status():
     db_exists = db_path.exists()
     db_total = 0
     today_db_count = 0
+    today_monitor_count = 0
+    last_monitor_time = ""
     today_str = date.today().isoformat()
     if db_exists:
         try:
@@ -277,6 +290,14 @@ def get_system_status():
                     db_total = cur.fetchone()[0]
                     cur.execute("SELECT count(*) FROM tenders WHERE date = ?", (today_str,))
                     today_db_count = cur.fetchone()[0]
+
+                if "runs" in tables:
+                    cur.execute("SELECT count(*) FROM runs WHERE day = ?", (today_str,))
+                    today_monitor_count = cur.fetchone()[0]
+                    cur.execute("SELECT started_at, finished_at FROM runs WHERE day = ? ORDER BY rowid DESC LIMIT 1", (today_str,))
+                    row = cur.fetchone()
+                    if row:
+                        last_monitor_time = row[0] or row[1] or ""
         except Exception:
             pass
 
@@ -304,6 +325,8 @@ def get_system_status():
         "db_exists": db_exists,
         "db_total": db_total,
         "today_db_count": today_db_count,
+        "today_monitor_count": today_monitor_count,
+        "last_monitor_time": last_monitor_time,
         "vps_host": getattr(config, "VPS_HOST", "217.142.149.2"),
         "vps_user": getattr(config, "VPS_USER", "root"),
         "vps_path": getattr(config, "VPS_PATH", "/opt/1panel/apps/openresty/openresty/www/sites/ztb/index/"),

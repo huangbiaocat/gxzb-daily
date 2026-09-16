@@ -40,7 +40,7 @@ def main():
         return 0
 
     print(f"[VPS] 准备同步 {len(items)} 个文件/目录 -> {remote_target} (端口: {port})")
-    cmd = ["scp", "-P", port, "-r"] + items + [remote_target]
+    cmd = ["scp", "-P", port, "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", "-r"] + items + [remote_target]
     
     rc = subprocess.run(cmd).returncode
     if rc == 0:

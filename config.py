@@ -20,7 +20,7 @@ else:
     REPO_ROOT = Path(__file__).resolve().parent
 
 # ------------------------------------------------------------------ 统一版本
-APP_VERSION = "v0.0.3"
+APP_VERSION = "v0.0.4"
 
 # ------------------------------------------------------------------ .env 解析
 def load_env_file(path=None):
@@ -29,7 +29,15 @@ def load_env_file(path=None):
     if not path.exists():
         return {}
     data = {}
-    for raw in path.read_text(encoding="utf-8").splitlines():
+    content = ""
+    try:
+        content = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        try:
+            content = path.read_text(encoding="gbk")
+        except Exception:
+            content = path.read_text(encoding="latin1")
+    for raw in content.splitlines():
         line = raw.strip()
         if not line or line.startswith("#"):
             continue

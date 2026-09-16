@@ -374,7 +374,8 @@
             </div>
 
             <!-- 监控调度时间状态提示条 -->
-            <div class="bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 border border-blue-100/80 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 border border-blue-100/80 rounded-xl p-4 space-y-3 text-xs">
+                <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center space-x-3">
                     <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -406,6 +407,39 @@
                     <button onclick="switchTab('settings')" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium shadow-xs transition text-xs">
                         周期设置 &rarr;
                     </button>
+                </div>
+                </div>
+
+                <!-- 自动化监控实时状态栏 -->
+                <div class="pt-2.5 border-t border-blue-100/70 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                    <div class="bg-white/80 rounded-lg px-3 py-2 border border-blue-50/80 flex flex-col justify-between">
+                        <span class="text-slate-400 text-[11px]">今日累计监控</span>
+                        <div class="flex items-baseline space-x-1 mt-0.5">
+                            <span id="mon-stat-today-total" class="font-bold text-slate-800 text-sm font-mono">0</span>
+                            <span class="text-[11px] text-slate-500">次</span>
+                        </div>
+                    </div>
+                    <div class="bg-white/80 rounded-lg px-3 py-2 border border-blue-50/80 flex flex-col justify-between">
+                        <span class="text-slate-400 text-[11px]">本次执行状态</span>
+                        <div class="flex items-baseline space-x-1 mt-0.5">
+                            <span class="text-[11px] text-slate-500">已完成第</span>
+                            <span id="mon-stat-current-round" class="font-bold text-blue-600 text-sm font-mono">0</span>
+                            <span class="text-[11px] text-slate-500">次</span>
+                        </div>
+                    </div>
+                    <div class="bg-white/80 rounded-lg px-3 py-2 border border-blue-50/80 flex flex-col justify-between">
+                        <span class="text-slate-400 text-[11px]">下次刷新时间</span>
+                        <div class="mt-0.5 font-bold text-indigo-600 font-mono text-xs truncate" id="mon-stat-next-time">
+                            --:--:--
+                        </div>
+                    </div>
+                    <div class="bg-white/80 rounded-lg px-3 py-2 border border-blue-50/80 flex flex-col justify-between">
+                        <span class="text-slate-400 text-[11px]">下轮倒计时</span>
+                        <div class="mt-0.5 flex items-center space-x-1 font-mono font-bold text-emerald-600 text-xs" id="mon-stat-countdown-box">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span id="mon-stat-countdown">--:--</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -515,6 +549,51 @@
     <script>
         let pollTimer = null;
         let currentMonitorEnabled = true;
+        let nextRunTargetDate = null;
+        let countdownTimer = null;
+        let monitorIntervalMin = 10;
+        let lastMonitorDateStr = "";
+
+        function updateCountdownDisplay() {
+            const cdElem = document.getElementById("mon-stat-countdown");
+            const nextTimeElem = document.getElementById("mon-stat-next-time");
+            if (!cdElem) return;
+
+            if (!currentMonitorEnabled) {
+                cdElem.textContent = "监控已暂停";
+                if (nextTimeElem) nextTimeElem.textContent = "已暂停";
+                return;
+            }
+
+            if (!nextRunTargetDate) {
+                cdElem.textContent = "等待调度";
+                return;
+            }
+
+            const now = new Date();
+            let diffMs = nextRunTargetDate.getTime() - now.getTime();
+
+            if (diffMs <= 0) {
+                cdElem.textContent = "即将刷新...";
+                return;
+            }
+
+            const totalSec = Math.floor(diffMs / 1000);
+            const h = Math.floor(totalSec / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = totalSec % 60;
+
+            const pad = (n) => String(n).padStart(2, "0");
+            if (h > 0) {
+                cdElem.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+            } else {
+                cdElem.textContent = `${pad(m)}:${pad(s)}`;
+            }
+        }
+
+        if (!countdownTimer) {
+            countdownTimer = setInterval(updateCountdownDisplay, 1000);
+        }
 
         function updateMonitorUI(monitor) {
             const topText = document.getElementById("top-monitor-text");
@@ -665,10 +744,44 @@
                     if (winElem) winElem.textContent = `${data.monitor_start_time} - ${data.monitor_end_time}`;
                 }
                 if (data.monitor_interval) {
+                    monitorIntervalMin = parseInt(data.monitor_interval) || 10;
                     const ivElem = document.getElementById("dash-monitor-interval");
                     if (ivElem) ivElem.textContent = `每 ${data.monitor_interval} 分钟`;
                 }
                 
+                // 更新监控执行轮次与下次倒计时数据
+                const todayRuns = data.today_monitor_count || 0;
+                const monStatTodayTotal = document.getElementById("mon-stat-today-total");
+                const monStatCurrentRound = document.getElementById("mon-stat-current-round");
+                const monStatNextTime = document.getElementById("mon-stat-next-time");
+                if (monStatTodayTotal) monStatTodayTotal.textContent = todayRuns;
+                if (monStatCurrentRound) monStatCurrentRound.textContent = todayRuns;
+
+                if (data.monitor && data.monitor.next_run_standard) {
+                    const parsedDate = new Date(data.monitor.next_run_standard.replace(/-/g, "/"));
+                    if (!isNaN(parsedDate.getTime())) {
+                        nextRunTargetDate = parsedDate;
+                        const timeStr = parsedDate.toTimeString().split(" ")[0]; // HH:MM:SS
+                        if (monStatNextTime) monStatNextTime.textContent = timeStr;
+                    }
+                } else if (data.last_monitor_time) {
+                    // 若无系统任务精确下轮时间，基于最后一次运行时间 + interval 推算
+                    const lastDate = new Date(data.last_monitor_time.replace(/-/g, "/"));
+                    if (!isNaN(lastDate.getTime())) {
+                        let estNext = new Date(lastDate.getTime() + monitorIntervalMin * 60 * 1000);
+                        const now = new Date();
+                        while (estNext < now) {
+                            estNext = new Date(estNext.getTime() + monitorIntervalMin * 60 * 1000);
+                        }
+                        nextRunTargetDate = estNext;
+                        const timeStr = estNext.toTimeString().split(" ")[0];
+                        if (monStatNextTime) monStatNextTime.textContent = timeStr;
+                    }
+                } else {
+                    if (monStatNextTime) monStatNextTime.textContent = data.monitor ? (data.monitor.next_run || "--:--:--") : "--:--:--";
+                }
+                updateCountdownDisplay();
+
                 // 更新监控计划任务状态
                 updateMonitorUI(data.monitor);
 
