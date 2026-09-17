@@ -413,8 +413,7 @@ def save_config_env(data):
                 content_str = raw_b.decode("gb18030")
             except UnicodeError:
                 content_str = raw_b.decode("utf-8", errors="replace")
-        lines = [l + "
-" for l in content_str.splitlines()]
+        lines = [l + "\n" for l in content_str.splitlines()]
 
     keys_written = set()
     new_lines = []
