@@ -179,7 +179,7 @@ def get_git_info():
             return {"commit": commit, "version": f"Git #{commit}"}
     except Exception:
         pass
-    return {"commit": "release", "version": "v0.0.4"}
+    return {"commit": "release", "version": "v0.0.5"}
 
 def get_scheduled_task_status():
     """检测 Windows 计划任务 ZtbCollector_Sync 的运行/就绪/启用状态"""
