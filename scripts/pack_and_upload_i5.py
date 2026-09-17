@@ -29,6 +29,7 @@ FILES_TO_PACK = [
     "scripts/upload_vps.py",
     "scripts/notify_wechat.py",
     "scripts/sync_from_server.bat",
+    "scripts/sync_from_server.ps1",
     "scripts/sync_and_run.bat",
     "scripts/update_and_run_desktop.bat",
     "scripts/create_desktop_shortcut.bat",
