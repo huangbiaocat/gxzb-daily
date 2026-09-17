@@ -20,7 +20,7 @@ else:
     REPO_ROOT = Path(__file__).resolve().parent
 
 # ------------------------------------------------------------------ 统一版本
-APP_VERSION = "v0.0.5"
+APP_VERSION = "v0.0.6"
 
 # ------------------------------------------------------------------ .env 解析
 def load_env_file(path=None):
@@ -31,12 +31,16 @@ def load_env_file(path=None):
     data = {}
     content = ""
     try:
-        content = path.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
+        raw_bytes = path.read_bytes()
+    except Exception:
+        return {}
+    try:
+        content = raw_bytes.decode("utf-8")
+    except UnicodeError:
         try:
-            content = path.read_text(encoding="gbk")
-        except Exception:
-            content = path.read_text(encoding="latin1")
+            content = raw_bytes.decode("gb18030")
+        except UnicodeError:
+            content = raw_bytes.decode("utf-8", errors="replace")
     for raw in content.splitlines():
         line = raw.strip()
         if not line or line.startswith("#"):
@@ -49,6 +53,12 @@ def load_env_file(path=None):
         val = val.strip()
         if len(val) >= 2 and val[0] == val[-1] and val[0] in "\"'":
             val = val[1:-1]
+        # 兼容处理历史 GBK 保存导致的中文乱码（若为 UTF-8 错解为 GBK，则自动修正）
+        if any(ord(c) > 127 for c in val):
+            try:
+                val = val.encode("gbk").decode("utf-8")
+            except Exception:
+                pass
         data[key.strip()] = val
     return data
 

@@ -795,7 +795,7 @@
                             <td class="px-3 py-2 font-medium">${p.date}</td>
                             <td class="px-3 py-2 text-slate-500">${sizeDisplay}</td>
                             <td class="px-3 py-2 text-right">
-                                <a href="/preview/${targetName}" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium">查看</a>
+                                <a href="/preview/${targetName}" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium">查看</a> <button type="button" onclick="openBatchScanModal('${p.date}', '${p.date}')" class="ml-2 text-indigo-600 hover:text-indigo-800 font-medium">补扫</button>
                             </td>
                         </tr>
                         `;

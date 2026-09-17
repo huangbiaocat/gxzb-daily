@@ -179,7 +179,7 @@ def get_git_info():
             return {"commit": commit, "version": f"Git #{commit}"}
     except Exception:
         pass
-    return {"commit": "release", "version": "v0.0.5"}
+    return {"commit": "release", "version": "v0.0.6"}
 
 def get_scheduled_task_status():
     """检测 Windows 计划任务 ZtbCollector_Sync 的运行/就绪/启用状态"""
@@ -354,14 +354,27 @@ def read_config_env():
     env_file = ROOT_DIR / ".env"
     raw_env = {}
     if env_file.exists():
-        with open(env_file, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                if "=" in line:
-                    k, v = line.split("=", 1)
-                    raw_env[k.strip()] = v.strip()
+        raw_b = env_file.read_bytes()
+        try:
+            c_text = raw_b.decode("utf-8")
+        except UnicodeError:
+            try:
+                c_text = raw_b.decode("gb18030")
+            except UnicodeError:
+                c_text = raw_b.decode("utf-8", errors="replace")
+        for line in c_text.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                k, v = line.split("=", 1)
+                val = v.strip()
+                if any(ord(ch) > 127 for ch in val):
+                    try:
+                        val = val.encode("gbk").decode("utf-8")
+                    except Exception:
+                        pass
+                raw_env[k.strip()] = val
 
     res = {
         "FOCUS_KEYWORDS": getattr(config, "FOCUS_KEYWORDS", ["公路", "医院", "学校", "水利", "防洪", "大桥"]),
@@ -392,8 +405,16 @@ def save_config_env(data):
     env_file = ROOT_DIR / ".env"
     lines = []
     if env_file.exists():
-        with open(env_file, "r", encoding="utf-8") as f:
-            lines = f.readlines()
+        raw_b = env_file.read_bytes()
+        try:
+            content_str = raw_b.decode("utf-8")
+        except UnicodeError:
+            try:
+                content_str = raw_b.decode("gb18030")
+            except UnicodeError:
+                content_str = raw_b.decode("utf-8", errors="replace")
+        lines = [l + "
+" for l in content_str.splitlines()]
 
     keys_written = set()
     new_lines = []
@@ -630,6 +651,17 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             target_date = post_data.get("date", "").strip() or date.today().isoformat()
             cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "build_daily_page.py"), "--date", target_date]
             ok, msg = PROC_MGR.start_task(f"重新构建静态页面 ({target_date})", cmd)
+            self.send_json({"ok": ok, "msg": msg})
+            return
+
+        if path == "/api/run_batch_scan":
+            start_date = post_data.get("start_date", "").strip()
+            end_date = post_data.get("end_date", "").strip()
+            if not start_date or not end_date:
+                self.send_json({"ok": False, "msg": "请同时指定起始补扫日期与截止补扫日期！"})
+                return
+            cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "batch_scan.py"), "--start-date", start_date, "--end-date", end_date]
+            ok, msg = PROC_MGR.start_task(f"历史区间数据补扫 ({start_date} 至 {end_date})", cmd)
             self.send_json({"ok": ok, "msg": msg})
             return
 

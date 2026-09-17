@@ -41,6 +41,7 @@ FILES_TO_PACK = [
     "extractors/normalize.py",
     "extractors/rules.py",
     "scripts/reapply_rules.py",
+    "scripts/batch_scan.py",
     "scripts/upgrade_app.py",
 ]
 
