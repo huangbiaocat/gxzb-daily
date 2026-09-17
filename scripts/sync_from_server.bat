@@ -17,7 +17,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Expand-Archive -Pa
 
 echo [3/3] Update completed successfully!
 echo ========================================================
-echo  All scripts and templates updated to v0.0.5
+echo  All scripts and templates updated to v0.0.6
 echo ========================================================
 
 :END
