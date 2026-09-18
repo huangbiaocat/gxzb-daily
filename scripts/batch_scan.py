@@ -69,6 +69,10 @@ def main():
         if cz_script.exists():
             subprocess.run([py_exe, "-u", str(cz_script), "--date", day_str])
 
+        # 2.5 数据合并入库 (reconcile)
+        from run_daily import reconcile
+        reconcile(day_str, "merge")
+
         # 3. 构建每日 HTML 页面
         cmd_build = [py_exe, "-u", str(ROOT_DIR / "scripts" / "build_daily_page.py"), "--date", day_str]
         res2 = subprocess.run(cmd_build)

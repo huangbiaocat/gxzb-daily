@@ -144,16 +144,17 @@ def normalize_cz_record(it, day=None):
     }
 
 
-def collect_cz_ygcg(day, max_pages=10):
-    """从崇左阳光采购平台采集当日发布的工程类公告。
+def collect_cz_ygcg(day, max_pages=10, filter_project_type=False):
+    """从崇左阳光采购平台采集当日发布的工程及工程相关公告。
     
     接口参数只支持 page_size=10。按页遍历，当整页数据的发布日期均早于目标日期时终止。
     """
     params = {
         "region_code": CZ_REGION_CODE,
-        "project_type": "工程",
         "page_size": 10,
     }
+    if filter_project_type:
+        params["project_type"] = "工程"
     
     collected_rows = []
     raw_records = []
@@ -181,6 +182,16 @@ def collect_cz_ygcg(day, max_pages=10):
         has_current_or_newer = False
 
         for it in items:
+            ptype = it.get("purchaseProjectTypeName") or ""
+            title = it.get("noticeTitle") or ""
+            if not filter_project_type and ptype != "工程":
+                eng_keywords = [
+                    "EPC", "工程", "施工", "建设", "安装", "修缮", "装饰", "改造",
+                    "加固", "绿化", "养护", "监理", "勘察", "设计", "消防", "市政"
+                ]
+                if not any(k in title for k in eng_keywords):
+                    continue
+
             ntime = it.get("noticeTime")
             if not ntime:
                 continue
