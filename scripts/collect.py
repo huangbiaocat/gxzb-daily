@@ -128,6 +128,7 @@ def normalize(rec, day=None):
         "is_focus": is_focus,
         "focus_reason": reasons,
         "owner": "",
+        "source": "广西公资",
     }
 
 

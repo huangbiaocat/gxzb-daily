@@ -363,7 +363,7 @@ DAILY_CSS = """
             padding: 0;
         }
 
-        /* ③ 条目内地市标签：对齐参考图取色（底 #f1f5f9 / 边 #e2e8f0 / 字 #334155） */
+        /* ③ 条目内地市标签与信源标签：对齐参考图取色 */
         .cat-block .notice-item .city-tag {
             background: #f1f5f9;
             color: #334155;
@@ -373,6 +373,20 @@ DAILY_CSS = """
             font-weight: 600;
             line-height: 1.25;
             padding: 2px 8px;
+            flex-shrink: 0;
+        }
+
+        .cat-block .notice-item .source-tag {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+            border-radius: 5px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            line-height: 1.25;
+            padding: 2px 8px;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
 """
@@ -408,7 +422,7 @@ __DAILY_CSS__
 <div class="brand-text">
 <div style="display: flex; align-items: center; gap: 8px;">
 <h1 style="margin: 0;">招投标每日简报</h1>
-                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.0.6</span>
+                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.0.7</span>
 </div>
 <p>__DATE__ · 全区公告分类明细</p>
 </div>
@@ -562,9 +576,18 @@ const CAT_ICON = {
 
 function shortArea(name) {
     if (!name) { return '全区'; }
-    if (name === '崇左阳光采购') { return '崇左阳光采购'; }
+    if (name === '崇左阳光采购') { return '崇左'; }
     if (name.indexOf('自治区') === 0) { return '区中心'; }
     return name.replace(/市$/, '');
+}
+
+function shortSource(d) {
+    if (d.source) { return d.source; }
+    var link = d.link || '';
+    if (link.indexOf('cz.gxygcg.com') !== -1 || link.indexOf('gxygcg.com') !== -1 || d.areaname === '崇左阳光采购') {
+        return '崇左阳光';
+    }
+    return '广西公资';
 }
 
 function esc(s) {
@@ -620,6 +643,7 @@ function build() {
                       + ' data-focus="' + (d.is_focus ? 1 : 0) + '"'
                       + ' href="' + esc(d.link) + '" rel="noopener noreferrer" target="_blank"'
                       + ' title="' + esc(d.title) + '">';
+                html += '<span class="source-tag">' + esc(shortSource(d)) + '</span>';
                 html += '<span class="city-tag">' + esc(shortArea(d.areaname)) + '</span>';
                 html += '<span class="notice-title">' + esc(d.title) + EXT_ICON + '</span>';
                 if (d.is_focus) {
