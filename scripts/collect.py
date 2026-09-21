@@ -284,10 +284,28 @@ def collect(day, centers=None, save_raw=True, quiet=False, page_size=None):
 
     # 额外补充采集【崇左阳光采购平台】工程类公告
     try:
-        from scripts.collect_cz_ygcg import collect_cz_ygcg
-        cz_rows, _ = collect_cz_ygcg(day)
-        for cr in cz_rows:
-            merged.setdefault(cr["infoid"], cr)
+        collect_cz_func = None
+        try:
+            from scripts.collect_cz_ygcg import collect_cz_ygcg as collect_cz_func
+        except (ImportError, ModuleNotFoundError):
+            try:
+                from collect_cz_ygcg import collect_cz_ygcg as collect_cz_func
+            except (ImportError, ModuleNotFoundError):
+                import importlib.util
+                cz_path = Path(__file__).resolve().parent / "collect_cz_ygcg.py"
+                if cz_path.exists():
+                    spec = importlib.util.spec_from_file_location("collect_cz_ygcg", cz_path)
+                    mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(mod)
+                    collect_cz_func = getattr(mod, "collect_cz_ygcg", None)
+
+        if collect_cz_func:
+            cz_rows, _ = collect_cz_func(day)
+            for cr in cz_rows:
+                merged.setdefault(cr["infoid"], cr)
+        else:
+            if not quiet:
+                print("   [警告] 未能加载崇左阳光采购采集模块 collect_cz_ygcg")
     except Exception as e_cz:
         if not quiet:
             print("   [警告] 崇左阳光采购平台采集失败：", e_cz)

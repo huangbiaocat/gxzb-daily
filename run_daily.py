@@ -101,6 +101,37 @@ def reconcile(day, mode):
         print("   无采集文件，跳过合并：", collect_file)
         return 0
     collected = json.loads(collect_file.read_text(encoding="utf-8"))
+    # 兜底核验：如果当前采集结果尚未包含崇左阳光采购数据，自动补充采集
+    has_cz = any(r.get("source") == "崇左阳光采购" or "cz.gxygcg.com" in str(r.get("link", "")) for r in collected)
+    if not has_cz:
+        try:
+            collect_cz_func = None
+            try:
+                from scripts.collect_cz_ygcg import collect_cz_ygcg as collect_cz_func
+            except (ImportError, ModuleNotFoundError):
+                try:
+                    from collect_cz_ygcg import collect_cz_ygcg as collect_cz_func
+                except (ImportError, ModuleNotFoundError):
+                    import importlib.util
+                    cz_path = SCRIPT / "collect_cz_ygcg.py"
+                    if cz_path.exists():
+                        spec = importlib.util.spec_from_file_location("collect_cz_ygcg", cz_path)
+                        mod = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(mod)
+                        collect_cz_func = getattr(mod, "collect_cz_ygcg", None)
+            if collect_cz_func:
+                cz_rows, _ = collect_cz_func(day)
+                if cz_rows:
+                    c_ids = {str(r.get("infoid")) for r in collected if r.get("infoid")}
+                    for cr in cz_rows:
+                        if str(cr.get("infoid")) not in c_ids:
+                            collected.append(cr)
+                            c_ids.add(str(cr.get("infoid")))
+                    collect_file.write_text(json.dumps(collected, ensure_ascii=False, indent=1), encoding="utf-8")
+                    print("   [补充] 崇左阳光采购平台自动补充入库 %d 条" % len(cz_rows))
+        except Exception as exc_cz_rec:
+            print("   [提示] 崇左阳光采购对账补充抓取异常：", exc_cz_rec)
+
     daily = json.loads(daily_file.read_text(encoding="utf-8")) if daily_file.exists() else []
     known = {str(r.get("infoid") or r.get("id")) for r in daily}
     added = [r for r in collected if str(r.get("infoid")) not in known]

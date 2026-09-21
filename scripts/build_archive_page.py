@@ -29,7 +29,7 @@ def rebuild_archive_json():
     daily_dir = getattr(config, "DAILY_DIR", config.DATA_DIR / "daily")
     archive = {
         "site": "广西招投标公告日报",
-        "subtitle": "广西公共资源交易 · 工程建设类公告每日归档",
+        "subtitle": "广西公共资源交易 · 崇左阳光采购平台公告每日归档",
         "generated": config.now_stamp(),
         "day_count": 0,
         "total_all": 0,
@@ -389,7 +389,7 @@ PAGE = """<!DOCTYPE html>
 <div class="brand-text">
 <div style="display: flex; align-items: center; gap: 8px;">
 <h1 style="margin: 0;">招投标每日简报</h1>
-                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.1.2</span>
+                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.1.3</span>
 </div>
 <p>历史归档与数据追溯中心</p>
 </div>

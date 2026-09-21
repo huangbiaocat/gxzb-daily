@@ -43,7 +43,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.1.2</span>
+                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.1.3</span>
                     </div>
                     <p class="text-xs text-slate-500">Tender Data Control & Settings Center</p>
                 </div>
@@ -598,6 +598,10 @@
                                 <span class="text-xs font-semibold">仅抓取数据</span>
                                 <span class="text-[10px] text-slate-400 mt-0.5">collect.py</span>
                             </button>
+                            <button onclick="triggerTask('collect_cz')" class="btn-action flex flex-col items-center justify-center p-3 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 text-amber-800 transition">
+                                <span class="text-xs font-semibold">单采崇左阳光采购</span>
+                                <span class="text-[10px] text-amber-600 mt-0.5">collect_cz_ygcg.py</span>
+                            </button>
                             <button onclick="triggerTask('build')" class="btn-action flex flex-col items-center justify-center p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
                                 <span class="text-xs font-semibold">重新生成页面</span>
                                 <span class="text-[10px] text-slate-400 mt-0.5">build_daily.py</span>
@@ -789,7 +793,8 @@
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.1.2</span>
+        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.1.3</span>
+        · <span class="text-slate-400">已接入: 广西公共资源交易平台 · 崇左阳光采购服务平台</span>
     </footer>
 
     <script>
@@ -1261,6 +1266,7 @@
             const endpoints = {
                 "daily": "/api/run_daily",
                 "collect": "/api/run_collect",
+                "collect_cz": "/api/run_collect_cz",
                 "build": "/api/run_build",
                 "upload": "/api/run_upload",
                 "upgrade": "/api/run_upgrade"

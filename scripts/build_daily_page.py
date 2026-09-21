@@ -736,6 +736,50 @@ function build() {
             html += '</div></div>';
         });
 
+        const otherStages = list.filter(function (d) { return STAGE_ORDER.indexOf(d.stage) === -1; });
+        if (otherStages.length > 0) {
+            html += '<div class="type-block" data-type="其他环节">';
+            html += '<div class="type-head"><span class="type-bar"></span>'
+                  + '<span class="type-name">其他公告</span>'
+                  + '<span class="type-count" data-total="' + otherStages.length + '">(' + otherStages.length + ' 条)</span></div>';
+            html += '<div class="notice-list">';
+            otherStages.forEach(function (d) {
+                var isCz = (d.source === '崇左阳光采购' || (d.link && d.link.indexOf('gxygcg.com') !== -1) || d.areaname === '崇左阳光采购');
+                html += '<a class="notice-item"'
+                      + ' data-title="' + esc(d.title) + '"'
+                      + ' data-industry="' + esc(d.industry) + '"'
+                      + ' data-source="' + (isCz ? '崇左阳光采购' : '广西公共资源交易平台') + '"'
+                      + ' data-city="' + esc(d.areaname || '崇左市') + '"'
+                      + ' data-stage="' + esc(d.stage || '其他') + '"'
+                      + ' data-focus="' + (d.is_focus ? 1 : 0) + '"'
+                      + ' href="' + esc(d.link) + '" rel="noopener noreferrer" target="_blank"'
+                      + ' title="' + esc(d.title) + '">';
+                html += '<span class="city-tag">' + esc(shortArea(d.areaname || '崇左市')) + '</span>';
+                if (isCz) {
+                    html += '<span class="city-tag source-tag" style="background:#fef3c7;color:#92400e;border-color:#fde68a;">崇左阳光采购</span>';
+                }
+                html += '<span class="notice-title">' + esc(d.title) + EXT_ICON + '</span>';
+                if (d.is_focus) {
+                    var tags = d.focus_tags;
+                    if (!tags || !tags.length) { tags = ["重点预警"]; }
+                    for (var ti = 0; ti < tags.length; ti++) {
+                        var tname = tags[ti];
+                        var cls = "focus-chip";
+                        if (tname === "重点项目") cls += " focus-chip-project";
+                        else if (tname === "重点业主") cls += " focus-chip-owner";
+                        else if (tname === "重点关键词") cls += " focus-chip-keyword";
+                        else if (tname === "重点类型") cls += " focus-chip-type";
+                        else cls += " focus-chip-project";
+                        var rtip = Array.isArray(d.focus_reason) ? d.focus_reason.join("; ") : (d.focus_reason || tname);
+                        html += '<span class="' + cls + '" title="' + esc(rtip) + '">' + esc(tname) + '</span>';
+                    }
+                }
+                html += '<span class="notice-time">' + esc(String(d.pub_time || '').substring(5, 16)) + '</span>';
+                html += '</a>';
+            });
+            html += '</div></div>';
+        }
+
         html += '</section>';
     });
     container.innerHTML = html;

@@ -717,6 +717,13 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             self.send_json({"ok": ok, "msg": msg})
             return
 
+        if path == "/api/run_collect_cz":
+            target_date = post_data.get("date", "").strip() or date.today().isoformat()
+            cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "collect_cz_ygcg.py"), "--date", target_date]
+            ok, msg = PROC_MGR.start_task(f"单采崇左阳光采购 ({target_date})", cmd)
+            self.send_json({"ok": ok, "msg": msg})
+            return
+
         if path == "/api/run_build":
             target_date = post_data.get("date", "").strip() or date.today().isoformat()
             cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "build_daily_page.py"), "--date", target_date]

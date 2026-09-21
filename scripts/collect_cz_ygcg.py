@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""崇左阳光采购平台采集模块（仅采工程类）。
+"""崇左阳光采购平台采集模块。
 
 平台地址: https://cz.gxygcg.com/purchase/list
 列表接口: https://cz.gxygcg.com/bbw_prod/bbw_notice/list
@@ -50,15 +50,19 @@ CZ_NOTICE_TYPE_MAP = {
 }
 
 def get_cz_stage_and_category(ntype: int, title: str = ""):
-    if ntype in CZ_NOTICE_TYPE_MAP:
-        return CZ_NOTICE_TYPE_MAP[ntype]["stage"], CZ_NOTICE_TYPE_MAP[ntype]["categorynum"]
     t = title.lower()
     if any(k in t for k in ["候选人", "候选"]):
         return "中标公示", "001001001005"
     if any(k in t for k in ["中标", "成交", "结果"]):
         return "中标公告", "001001001006"
-    if any(k in t for k in ["变更", "澄清", "答疑", "补充", "更正", "修改"]):
+    if any(k in t for k in ["控制价", "最高限价", "招标控制价"]):
+        return "控制价公示", "001001001007"
+    if any(k in t for k in ["变更", "澄清", "答疑", "补充", "更正", "修改", "废标", "终止", "流标", "异常"]):
         return "澄清/答疑", "001001001003"
+    if any(k in t for k in ["计划", "意向"]):
+        return "招标计划", "001001001001"
+    if ntype in CZ_NOTICE_TYPE_MAP:
+        return CZ_NOTICE_TYPE_MAP[ntype]["stage"], CZ_NOTICE_TYPE_MAP[ntype]["categorynum"]
     return "招标公告", "001001001002"
 
 def _open_url(url, timeout=8):
@@ -104,8 +108,16 @@ def normalize_cz_record(it, day=None):
     ntype = int(it.get("noticeType") or 1)
     stage, categorynum = get_cz_stage_and_category(ntype, title)
 
-    # 阳光采购平台工程类统一归入“房建市政工程”，与全区规范分类严格对齐
-    industry = "房建市政工程"
+    # 行业归类：优先按交通、水利、房建市政划分，其余归入其他项目
+    pt_name = str(it.get("purchaseProjectTypeName") or "").strip()
+    if any(k in title for k in ["公路", "道路", "交通", "桥梁", "路桥", "航道", "港口", "高速"]):
+        industry = "交通运输工程"
+    elif any(k in title for k in ["水利", "水库", "堤防", "灌区", "防洪", "灌溉", "水闸", "清淤"]):
+        industry = "水利水运工程"
+    elif pt_name == "工程" or any(k in title for k in ["工程", "施工", "EPC", "总承包", "厂房", "装修改造", "改造", "充电站", "配套项目", "修缮", "配电", "基建", "建筑", "市政", "绿化", "检测", "监理", "勘察", "设计"]):
+        industry = "房建市政工程"
+    else:
+        industry = "其他项目"
     stage_key = config.STAGE_KEY_MAP.get(stage, "other")
     badge_class = config.BADGE_CLASS_MAP.get(stage, "badge-gray")
 
@@ -191,26 +203,26 @@ def normalize_cz_record(it, day=None):
         "detail_url": detail_url,
         "is_focus": is_focus,
         "focus_tags": focus_tags,
-        "focus_reason": reasons,
+        "focus_reason": " | ".join(reasons) if reasons else "",
         "owner": owner,
     }
 
 
 def collect_cz_ygcg(day, max_pages=80):
-    """从崇左阳光采购平台采集当日【工程类】公告。
+    """从崇左阳光采购平台采集当日公告。
     
-    严格锁定 project_type: '工程'，其下项目有一个算一个全部采集，不做标题二次过滤。
+    按崇左市区域代码采集全部采购公告（含工程类及工程相关服务、物资项目），
+    不因单一字段缺失而遗漏任何标讯。
     """
     params = {
         "region_code": CZ_REGION_CODE,
-        "project_type": "工程",
         "page_size": 10,
     }
     
     collected_rows = []
     raw_records = []
 
-    print(f"-> 正在采集【崇左阳光采购】工程类公告 (日期: {day})...", flush=True)
+    print(f"-> 正在采集【崇左阳光采购】公告 (日期: {day})...", flush=True)
     for page in range(1, max_pages + 1):
         params["page"] = page
         query_str = urllib.parse.urlencode(params)
@@ -260,9 +272,31 @@ def collect_cz_ygcg(day, max_pages=80):
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="采集崇左阳光采购平台工程类公告")
+    parser = argparse.ArgumentParser(description="采集崇左阳光采购平台公告")
     parser.add_argument("--date", default=config.today(), help="采集日期 YYYY-MM-DD")
     args = parser.parse_args()
     rows, _ = collect_cz_ygcg(args.date)
     for r in rows:
         print(f"[{r['stage']}] {r['areaname']} - {r['pub_time']} - {r['title']} - {r['link']}")
+
+    # 独立运行或被编排调用时，将采集结果写入/合并到 data/collect/
+    if rows:
+        collect_file = config.COLLECT_DIR / f"{args.date}.json"
+        existing = []
+        if collect_file.exists():
+            try:
+                existing = json.loads(collect_file.read_text(encoding="utf-8"))
+            except Exception:
+                existing = []
+        known_ids = {str(r.get("infoid")) for r in existing if r.get("infoid")}
+        added = 0
+        for r in rows:
+            iid = str(r.get("infoid"))
+            if iid not in known_ids:
+                existing.append(r)
+                known_ids.add(iid)
+                added += 1
+        existing.sort(key=lambda x: (x.get("pub_time") or "", x.get("infoid") or ""))
+        collect_file.parent.mkdir(parents=True, exist_ok=True)
+        collect_file.write_text(json.dumps(existing, ensure_ascii=False, indent=1), encoding="utf-8")
+        print(f"   [写入] 已将 {len(rows)} 条崇左数据合并写入 {collect_file} (新增 {added} 条)", flush=True)

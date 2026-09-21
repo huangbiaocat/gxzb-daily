@@ -32,8 +32,8 @@ import config
 
 def parse_args():
     p = argparse.ArgumentParser(description="历史数据批量补扫调度工具")
-    p.add_argument("--start-date", required=True, help="起始补扫日期 YYYY-MM-DD")
-    p.add_argument("--end-date", required=True, help="截止补扫日期 YYYY-MM-DD")
+    p.add_argument("--start-date", "--start", dest="start_date", required=True, help="起始补扫日期 YYYY-MM-DD")
+    p.add_argument("--end-date", "--end", dest="end_date", required=True, help="截止补扫日期 YYYY-MM-DD")
     p.add_argument("--skip-upload", action="store_true", help="完成补扫后跳过自动上传 VPS")
     return p.parse_args()
 
