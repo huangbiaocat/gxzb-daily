@@ -61,23 +61,37 @@ def get_cz_stage_and_category(ntype: int, title: str = ""):
         return "澄清/答疑", "001001001003"
     return "招标公告", "001001001002"
 
-def _open_url(url, timeout=5):
-    """带重试与绕过系统代理的请求。"""
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+def _open_url(url, timeout=8):
+    """带重试、放宽 SSL 验证与双通道代理适应的请求。"""
+    import ssl
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
     headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Referer": f"{CZ_BASE_URL}/purchase/list",
         "Accept": "application/json, text/plain, */*",
     }
     req = urllib.request.Request(url, headers=headers)
-    for attempt in range(2):
-        try:
-            with opener.open(req, timeout=timeout) as resp:
-                return resp.read()
-        except Exception as e:
-            if attempt == 1:
-                raise e
-            time.sleep(0.5)
+
+    # 优先尝试直连（绕过系统代理），如网络环境受限则回退到系统代理通道
+    openers = [
+        urllib.request.build_opener(urllib.request.ProxyHandler({}), urllib.request.HTTPSHandler(context=ctx)),
+        urllib.request.build_opener(urllib.request.HTTPSHandler(context=ctx)),
+    ]
+
+    last_err = None
+    for opener in openers:
+        for attempt in range(2):
+            try:
+                with opener.open(req, timeout=timeout) as resp:
+                    return resp.read()
+            except Exception as e:
+                last_err = e
+                time.sleep(0.5)
+    if last_err:
+        raise last_err
 
 
 def normalize_cz_record(it, day=None):
@@ -90,8 +104,8 @@ def normalize_cz_record(it, day=None):
     ntype = int(it.get("noticeType") or 1)
     stage, categorynum = get_cz_stage_and_category(ntype, title)
 
-    # 阳光采购平台工程类均归入房建市政/工程类别
-    industry = "房建市政"
+    # 阳光采购平台工程类统一归入“房建市政工程”，与全区规范分类严格对齐
+    industry = "房建市政工程"
     stage_key = config.STAGE_KEY_MAP.get(stage, "other")
     badge_class = config.BADGE_CLASS_MAP.get(stage, "badge-gray")
 
@@ -137,7 +151,11 @@ def normalize_cz_record(it, day=None):
         if min_amount > 0:
             amt = config.extract_amount_from_title(title)
             if amt is not None and amt >= min_amount:
-                from extractors.normalize import format_money
+                try:
+                    from extractors.normalize import format_money
+                except ImportError:
+                    def format_money(v):
+                        return f"{v/10000:.2f}万" if v >= 10000 else f"{v:.2f}元"
                 kw_hits = raw_kw_hits
                 reasons.extend(["命中关键词: %s (金额%s >= 门槛%s)" % (k, format_money(amt), format_money(min_amount)) for k in kw_hits])
         else:
@@ -178,7 +196,7 @@ def normalize_cz_record(it, day=None):
     }
 
 
-def collect_cz_ygcg(day, max_pages=25):
+def collect_cz_ygcg(day, max_pages=80):
     """从崇左阳光采购平台采集当日【工程类】公告。
     
     严格锁定 project_type: '工程'，其下项目有一个算一个全部采集，不做标题二次过滤。

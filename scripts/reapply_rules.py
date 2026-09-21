@@ -24,6 +24,67 @@ if str(REPO_ROOT) not in sys.path:
 import config
 from scripts.collect import normalize
 
+def _reapply_item(item, day):
+    """重新应用规则：区分崇左阳光采购与普通公共资源交易中心公告。"""
+    is_cz = (
+        item.get("source") == "崇左阳光采购"
+        or "cz.gxygcg.com" in str(item.get("link", ""))
+        or "gxygcg.com" in str(item.get("link", ""))
+        or item.get("areaname") == "崇左阳光采购"
+    )
+    if is_cz:
+        # 崇左阳光采购：保留原始 link、pub_time、source、areaname，仅刷新重点关注规则
+        title = item.get("title", "")
+        owner = item.get("owner", "")
+        industry = "房建市政工程" if item.get("industry") in ("房建市政", "房建市政工程") else item.get("industry", "房建市政工程")
+        item["industry"] = industry
+        item["source"] = "崇左阳光采购"
+        item["areaname"] = "崇左市"
+
+        reasons = []
+        proj_hits = [p for p in getattr(config, "FOCUS_PROJECTS", []) if config.fuzzy_match(p, title)]
+        if proj_hits:
+            reasons.extend(["命中重点项目: %s" % p for p in proj_hits])
+
+        owner_hits = [o for o in getattr(config, "FOCUS_OWNERS", []) if (config.fuzzy_match(o, title) or (owner and config.fuzzy_match(o, owner)))]
+        if owner_hits:
+            reasons.extend(["命中重点业主: %s" % o for o in owner_hits])
+
+        type_hits = [t for t in getattr(config, "FOCUS_PROJECT_TYPES", []) if t in industry or config.fuzzy_match(t, title)]
+        if type_hits:
+            reasons.extend(["命中重点类型: %s" % t for t in type_hits])
+
+        raw_kw_hits = [k for k in getattr(config, "FOCUS_KEYWORDS", []) if k in title]
+        kw_hits = []
+        if raw_kw_hits:
+            min_amount = getattr(config, "FOCUS_MIN_AMOUNT", 0.0) or 0.0
+            if min_amount > 0:
+                amt = config.extract_amount_from_title(title)
+                if amt is not None and amt >= min_amount:
+                    try:
+                        from extractors.normalize import format_money
+                    except ImportError:
+                        def format_money(v):
+                            return f"{v/10000:.2f}万" if v >= 10000 else f"{v:.2f}元"
+                    kw_hits = raw_kw_hits
+                    reasons.extend(["命中关键词: %s (金额%s >= 门槛%s)" % (k, format_money(amt), format_money(min_amount)) for k in kw_hits])
+            else:
+                kw_hits = raw_kw_hits
+                reasons.extend(["命中关键词: %s" % k for k in kw_hits])
+
+        item["is_focus"] = 1 if (proj_hits or owner_hits or type_hits or kw_hits) else 0
+        item["focus_reason"] = reasons
+        item["focus_reasons"] = reasons
+        focus_tags = []
+        if proj_hits: focus_tags.append("重点项目")
+        if owner_hits: focus_tags.append("重点业主")
+        if type_hits: focus_tags.append("重点类型")
+        if kw_hits: focus_tags.append("重点关键词")
+        item["focus_tags"] = focus_tags
+        return item
+    else:
+        return normalize(item, day)
+
 
 def reapply_for_date(day: str) -> dict:
     """针对单一日期执行业务规则重标与页面重建。"""
@@ -42,7 +103,7 @@ def reapply_for_date(day: str) -> dict:
             if isinstance(items, list):
                 new_items = []
                 for item in items:
-                    norm = normalize(item, day)
+                    norm = _reapply_item(item, day)
                     if norm:
                         new_items.append(norm)
                         if norm.get("is_focus"):
@@ -61,7 +122,7 @@ def reapply_for_date(day: str) -> dict:
             if isinstance(items, list):
                 new_items = []
                 for item in items:
-                    norm = normalize(item, day)
+                    norm = _reapply_item(item, day)
                     if norm:
                         new_items.append(norm)
                         if norm.get("is_focus"):

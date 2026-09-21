@@ -104,8 +104,22 @@ def reconcile(day, mode):
     daily = json.loads(daily_file.read_text(encoding="utf-8")) if daily_file.exists() else []
     known = {str(r.get("infoid") or r.get("id")) for r in daily}
     added = [r for r in collected if str(r.get("infoid")) not in known]
+    # 对已有记录进行字段修补（例如此前存在 pub_time 为空或崇左阳光采购字段不完整的情况）
+    coll_map = {str(r.get("infoid")): r for r in collected if r.get("infoid")}
+    repaired = 0
+    updated_daily = []
+    for r in daily:
+        iid = str(r.get("infoid") or r.get("id"))
+        if iid in coll_map:
+            cr = coll_map[iid]
+            if cr.get("source") == "崇左阳光采购" or not r.get("pub_time") or "gxygcg.com" in str(cr.get("link", "")):
+                r = {**r, **cr}
+                repaired += 1
+        updated_daily.append(r)
+    daily = updated_daily
+
     print("   采集 %d 条 | 已入库 %d 条 | 待补 %d 条" % (len(collected), len(daily), len(added)))
-    if mode != "merge" or not added:
+    if mode != "merge" or (not added and repaired == 0):
         return len(added)
     merged = daily + added
     merged.sort(key=lambda r: (str(r.get("pub_time") or ""), str(r.get("infoid"))))

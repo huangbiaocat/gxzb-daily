@@ -108,9 +108,17 @@ for it in items:
 
     if it.get("source") == "崇左阳光采购" and ("gxygcg.com" in link_candidate):
         it["link"] = link_candidate
+    elif it.get("source") == "崇左阳光采购":
+        pid = it.get("purchaseProjectsIds") or it.get("purchase_projects_ids") or ""
+        ntype = it.get("noticeType") or it.get("notice_type") or 1
+        it["link"] = f"https://cz.gxygcg.com/purchase/detail/?purchase_projects_ids={pid}&notice_type={ntype}&notice_id={it['infoid']}"
     else:
         it["link"] = DETAIL_TPL.format(infoid=it["infoid"], categorynum=it["categorynum"])
-    
+
+    # 规范化行业分类（崇左阳光采购的“房建市政”对齐为“房建市政工程”）
+    if it.get("industry") in ("房建市政", "房建市政工程"):
+        it["industry"] = "房建市政工程"
+
     # 依据最新配置动态补充重点预警标记
     title = it.get("title", "")
     industry = it.get("industry", "")
@@ -661,6 +669,11 @@ let focusOnly = false;
 /* 三级明细渲染：工程类别 → 公告类型（业务环节）→ 条目 */
 function build() {
     let html = '';
+    // 预先归一化 industry，防止意外值导致公告被跳过
+    RAW_DATA.forEach(function(d) {
+        if (d.industry === '房建市政') { d.industry = '房建市政工程'; }
+        if (IND_ORDER.indexOf(d.industry) === -1) { d.industry = '其他项目'; }
+    });
     IND_ORDER.forEach(function (ind) {
         const list = RAW_DATA.filter(function (d) { return d.industry === ind; });
         if (!list.length) { return; }
