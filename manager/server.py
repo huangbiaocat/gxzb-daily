@@ -181,10 +181,11 @@ def get_git_info():
         )
         if res.returncode == 0:
             commit = res.stdout.strip()
-            return {"commit": commit, "version": f"Git #{commit}"}
+            app_ver = getattr(config, "APP_VERSION", "v0.0.9")
+            return {"commit": commit, "version": f"{app_ver} (#{commit})"}
     except Exception:
         pass
-    return {"commit": "release", "version": "v0.0.8"}
+    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.0.9")}
 
 def get_scheduled_task_status():
     """检测 Windows 计划任务 ZtbCollector_Sync 的运行/就绪/启用状态"""
