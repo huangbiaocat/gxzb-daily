@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -19,6 +20,27 @@ def main():
     
     remote_target = f"{user}@{host}:{remote_path}"
     
+    # 1. 优先尝试 rsync 增量同步（支持 --delete，自动清理远端已删除的历史页面）
+    rsync_bin = shutil.which("rsync")
+    if rsync_bin:
+        ssh_opt = f"ssh -p {port} -o BatchMode=yes -o ConnectTimeout=15 -o StrictHostKeyChecking=no"
+        cmd = [
+            rsync_bin,
+            "-avz",
+            "-e", ssh_opt,
+            "--delete",
+            "--exclude=logs/",
+            "--exclude=*.zip.tmp",
+            f"{str(dist)}/",
+            remote_target
+        ]
+        print(f"[VPS] 尝试通过 rsync 同步 {dist}/ -> {remote_target} (自动删除远端冗余页面)")
+        res = subprocess.run(cmd)
+        if res.returncode == 0:
+            print("[VPS] 恭喜！rsync 同步上传 VPS 成功（远端站点已与本地完全同步）")
+            return 0
+        print(f"[VPS] rsync 执行失败 (退出码: {res.returncode})，降级使用 scp 上传...")
+
     items = []
     for name in ["index.html", "archive.html", "search.html"]:
         p = dist / name

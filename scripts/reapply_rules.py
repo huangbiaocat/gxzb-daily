@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""根据当前最新的业务过滤与展示基础配置（重点关键词/项目/业主/类型/金额门槛），
+"""根据当前最新的重点跟踪信息与展示基础配置（重点关键词/项目/业主/类型/金额门槛），
 重新计算并标注历史指定日期或全部历史日期的入库数据（data/daily 与 data/collect），
 并自动触发重新生成历史日期的 HTML 页面和首页归档。
 
@@ -98,7 +98,7 @@ def reapply_for_date(day: str) -> dict:
 
 
 def main():
-    ap = argparse.ArgumentParser(description="根据当前最新的业务过滤与展示基础配置重新计算并标注历史数据")
+    ap = argparse.ArgumentParser(description="根据当前最新的重点跟踪信息与展示基础配置重新计算并标注历史数据")
     ap.add_argument("--date", help="指定历史日期 YYYY-MM-DD，缺省时如果指定 --all 则处理全部")
     ap.add_argument("--all", action="store_true", help="重新计算并标注所有历史日期")
     args = ap.parse_args()
@@ -139,6 +139,20 @@ def main():
         print("首页/归档索引更新成功")
     else:
         print(f"build_archive_page.py 失败:\n{sub.stderr}")
+
+    # 5. 自动同步 VPS（若开启）
+    if getattr(config, "AUTO_UPLOAD_VPS", True):
+        print("-> 自动同步最新页面至 VPS 云端站点...")
+        sub_vps = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts" / "upload_vps.py")],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True
+        )
+        if sub_vps.returncode == 0:
+            print("VPS 云端同步成功！")
+        else:
+            print(f"VPS 同步告警:\n{sub_vps.stderr or sub_vps.stdout}")
 
     print("全部重新计算与标注完成！")
 

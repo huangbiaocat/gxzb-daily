@@ -41,6 +41,7 @@ def parse_args(argv=None):
     ap = argparse.ArgumentParser(description="生成每日明细页")
     ap.add_argument("--date", default=None, help="目标日期 YYYY-MM-DD，默认今天")
     ap.add_argument("--refetch", action="store_true", help="只列出日志中待重取的条目")
+    ap.add_argument("--no-vps", action="store_true", help="跳过自动同步上传 VPS")
     return ap.parse_args(argv)
 
 
@@ -98,7 +99,14 @@ for it in items:
     it["infoid"] = str(it.get("infoid") or it.get("id") or "")
     assert it["infoid"], "条目缺少官方唯一识别码 infoid，拒绝生成页面：%r" % it.get("title", "")[:40]
     link_candidate = it.get("link") or it.get("url") or ""
-    if it.get("areaname") == "崇左阳光采购" and ("gxygcg.com" in link_candidate):
+    s_raw = it.get("source") or ""
+    if "阳光" in s_raw or it.get("areaname") == "崇左阳光采购" or "cz.gxygcg.com" in link_candidate:
+        it["source"] = "崇左阳光采购"
+        it["areaname"] = "崇左市"
+    else:
+        it["source"] = "广西公共资源交易平台"
+
+    if it.get("source") == "崇左阳光采购" and ("gxygcg.com" in link_candidate):
         it["link"] = link_candidate
     else:
         it["link"] = DETAIL_TPL.format(infoid=it["infoid"], categorynum=it["categorynum"])
@@ -108,6 +116,7 @@ for it in items:
     industry = it.get("industry", "")
     owner = it.get("owner", "")
     reasons = list(it.get("focus_reason") or [])
+    focus_tags = list(it.get("focus_tags") or [])
     
     proj_hits = [p for p in getattr(config, "FOCUS_PROJECTS", []) if config.fuzzy_match(p, title)]
     if proj_hits:
@@ -115,6 +124,8 @@ for it in items:
             msg = "命中重点项目: %s" % p
             if msg not in reasons:
                 reasons.append(msg)
+        if "重点项目" not in focus_tags:
+            focus_tags.append("重点项目")
                 
     owner_hits = [o for o in getattr(config, "FOCUS_OWNERS", []) if ((owner and config.fuzzy_match(o, owner)) or config.fuzzy_match(o, title))]
     if owner_hits:
@@ -122,6 +133,8 @@ for it in items:
             msg = "命中重点业主: %s" % o
             if msg not in reasons:
                 reasons.append(msg)
+        if "重点业主" not in focus_tags:
+            focus_tags.append("重点业主")
                 
     type_hits = [t for t in getattr(config, "FOCUS_PROJECT_TYPES", []) if (t in industry or config.fuzzy_match(t, title))]
     if type_hits:
@@ -129,6 +142,8 @@ for it in items:
             msg = "命中重点类型: %s" % t
             if msg not in reasons:
                 reasons.append(msg)
+        if "重点类型" not in focus_tags:
+            focus_tags.append("重点类型")
                 
     raw_kw_hits = [k for k in getattr(config, "FOCUS_KEYWORDS", []) if k in title]
     kw_hits = []
@@ -157,16 +172,25 @@ for it in items:
                     msg = "命中关键词: %s (金额%s >= 门槛%s)" % (k, format_money(amt), format_money(min_amount))
                     if msg not in reasons:
                         reasons.append(msg)
+                if "重点关键词" not in focus_tags:
+                    focus_tags.append("重点关键词")
         else:
             kw_hits = raw_kw_hits
             for k in kw_hits:
                 msg = "命中关键词: %s" % k
                 if msg not in reasons:
                     reasons.append(msg)
+            if "重点关键词" not in focus_tags:
+                focus_tags.append("重点关键词")
                 
     if proj_hits or owner_hits or type_hits or kw_hits:
         it["is_focus"] = 1
         it["focus_reason"] = reasons
+        it["focus_tags"] = focus_tags
+    elif it.get("is_focus"):
+        it["focus_tags"] = focus_tags if focus_tags else ["重点关注"]
+    else:
+        it["focus_tags"] = []
 
 # ------------------------------------------------------------------ 0.5 运行日志与 infoid 台账
 # 官方接口返回的 infoid 即公告唯一识别码，直接作为入库判重 / 失败重查 / 跨日去重的主键。
@@ -286,6 +310,29 @@ DAILY_CSS = """
             color: var(--danger-text);
             border: 1px solid #fecaca;
             margin-top: 1px;
+            letter-spacing: 0.02em;
+            display: inline-flex;
+            align-items: center;
+        }
+        .focus-chip-project {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+        .focus-chip-owner {
+            background: #fffbeb;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+        .focus-chip-keyword {
+            background: #f5f3ff;
+            color: #6d28d9;
+            border: 1px solid #ddd6fe;
+        }
+        .focus-chip-type {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
         }
 
         @media (max-width: 640px) {
@@ -422,7 +469,7 @@ __DAILY_CSS__
 <div class="brand-text">
 <div style="display: flex; align-items: center; gap: 8px;">
 <h1 style="margin: 0;">招投标每日简报</h1>
-                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.0.9</span>
+                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.1.0</span>
 </div>
 <p>__DATE__ · 全区公告分类明细</p>
 </div>
@@ -498,6 +545,11 @@ __DAILY_CSS__
                 <option value="房建市政工程">房建市政工程</option>
                 <option value="其他项目">其他项目</option>
             </select>
+            <select class="select-input" id="sourceFilter">
+                <option value="">全部网站 (来源平台)</option>
+                <option value="广西公共资源交易平台">广西公共资源交易平台</option>
+                <option value="崇左阳光采购">崇左阳光采购</option>
+            </select>
             <select class="select-input" id="cityFilter">
                 <option value="">全部地市 (全区15个交易中心)</option>
                 <option value="自治区">自治区本级</option>
@@ -515,7 +567,6 @@ __DAILY_CSS__
                 <option value="河池市">河池市</option>
                 <option value="来宾市">来宾市</option>
                 <option value="崇左市">崇左市</option>
-                <option value="崇左阳光采购">崇左阳光采购</option>
             </select>
             <select class="select-input" id="stageFilter">
                 <option value="">全部环节 (6大业务环节)</option>
@@ -594,6 +645,7 @@ const empty = document.getElementById('emptySearch');
 const hint = document.getElementById('filterResultCount');
 const searchInput = document.getElementById('searchInput');
 const industryFilter = document.getElementById('industryFilter');
+const sourceFilter = document.getElementById('sourceFilter');
 const cityFilter = document.getElementById('cityFilter');
 const stageFilter = document.getElementById('stageFilter');
 const btnFocus = document.getElementById('btnFocusOnly');
@@ -626,24 +678,37 @@ function build() {
                   + '<span class="type-count" data-total="' + sub.length + '">(' + sub.length + ' 条)</span></div>';
             html += '<div class="notice-list">';
             sub.forEach(function (d) {
+                var isCz = (d.source === '崇左阳光采购' || (d.link && d.link.indexOf('gxygcg.com') !== -1) || d.areaname === '崇左阳光采购');
                 html += '<a class="notice-item"'
                       + ' data-title="' + esc(d.title) + '"'
                       + ' data-industry="' + esc(d.industry) + '"'
-                      + ' data-city="' + esc(d.areaname) + '"'
+                      + ' data-source="' + (isCz ? '崇左阳光采购' : '广西公共资源交易平台') + '"'
+                      + ' data-city="' + esc(d.areaname || '崇左市') + '"'
                       + ' data-stage="' + esc(d.stage) + '"'
                       + ' data-focus="' + (d.is_focus ? 1 : 0) + '"'
                       + ' href="' + esc(d.link) + '" rel="noopener noreferrer" target="_blank"'
                       + ' title="' + esc(d.title) + '">';
-                var link = d.link || '';
-                var isCz = (link.indexOf('cz.gxygcg.com') !== -1 || link.indexOf('gxygcg.com') !== -1 || d.areaname === '崇左阳光采购' || d.source_channel === '崇左阳光采购');
+                html += '<span class="city-tag">' + esc(shortArea(d.areaname || '崇左市')) + '</span>';
                 if (isCz) {
-                    html += '<span class="source-tag">崇左阳光采购</span>';
-                } else {
-                    html += '<span class="city-tag">' + esc(shortArea(d.areaname)) + '</span>';
+                    html += '<span class="city-tag source-tag" style="background:#fef3c7;color:#92400e;border-color:#fde68a;">崇左阳光采购</span>';
                 }
                 html += '<span class="notice-title">' + esc(d.title) + EXT_ICON + '</span>';
                 if (d.is_focus) {
-                    html += '<span class="focus-chip" title="' + esc(d.focus_reason || '重点预警') + '">重点</span>';
+                    var tags = d.focus_tags;
+                    if (!tags || !tags.length) {
+                        tags = ["重点预警"];
+                    }
+                    for (var ti = 0; ti < tags.length; ti++) {
+                        var tname = tags[ti];
+                        var cls = "focus-chip";
+                        if (tname === "重点项目") cls += " focus-chip-project";
+                        else if (tname === "重点业主") cls += " focus-chip-owner";
+                        else if (tname === "重点关键词") cls += " focus-chip-keyword";
+                        else if (tname === "重点类型") cls += " focus-chip-type";
+                        else cls += " focus-chip-project";
+                        var rtip = Array.isArray(d.focus_reason) ? d.focus_reason.join("; ") : (d.focus_reason || tname);
+                        html += '<span class="' + cls + '" title="' + esc(rtip) + '">' + esc(tname) + '</span>';
+                    }
                 }
                 html += '<span class="notice-time">' + esc(String(d.pub_time || '').substring(5, 16)) + '</span>';
                 html += '</a>';
@@ -660,6 +725,7 @@ function build() {
 function apply() {
     const q = (searchInput.value || '').trim().toLowerCase();
     const ind = industryFilter.value;
+    const src = sourceFilter ? sourceFilter.value : '';
     const city = cityFilter.value;
     const stage = stageFilter.value;
     let shown = 0;
@@ -671,7 +737,17 @@ function apply() {
             if (hay.indexOf(q) === -1) { ok = false; }
         }
         if (ok && ind && it.getAttribute('data-industry') !== ind) { ok = false; }
-        if (ok && city && it.getAttribute('data-city') !== city) { ok = false; }
+        if (ok && src && it.getAttribute('data-source') !== src) { ok = false; }
+        if (ok && city) {
+            const itemCity = it.getAttribute('data-city') || '';
+            if (city === '崇左市') {
+                if (itemCity.indexOf('崇左') === -1 && itemCity.indexOf('龙州') === -1 && itemCity.indexOf('扶绥') === -1 && itemCity.indexOf('宁明') === -1 && itemCity.indexOf('凭祥') === -1 && itemCity.indexOf('大新') === -1 && itemCity.indexOf('天等') === -1) {
+                    ok = false;
+                }
+            } else if (itemCity.indexOf(city) === -1) {
+                ok = false;
+            }
+        }
         if (ok && stage && it.getAttribute('data-stage') !== stage) { ok = false; }
         if (ok && focusOnly && it.getAttribute('data-focus') !== '1') { ok = false; }
         it.hidden = !ok;
@@ -714,6 +790,7 @@ function apply() {
 
 searchInput.addEventListener('input', apply);
 industryFilter.addEventListener('change', apply);
+if (sourceFilter) sourceFilter.addEventListener('change', apply);
 cityFilter.addEventListener('change', apply);
 stageFilter.addEventListener('change', apply);
 
@@ -726,6 +803,7 @@ btnFocus.addEventListener('click', function () {
 document.getElementById('btnReset').addEventListener('click', function () {
     searchInput.value = '';
     industryFilter.value = '';
+    if (sourceFilter) sourceFilter.value = '';
     cityFilter.value = '';
     stageFilter.value = '';
     focusOnly = false;
@@ -812,7 +890,7 @@ check("唯一识别码", len({r["infoid"] for r in raw_rows}) == total_n, "infoi
 check("官方链接", all(("projectDetails.html?infoid=" in r["link"] or "cz.gxygcg.com" in r["link"]) for r in raw_rows))
 check("无自造编号", ("code-tag" not in out) and ("data-code" not in out) and ("GX%s" % DAY_KEY) not in out)
 check("指标卡", static.count('class="sb-label"') == 6, json.dumps(stat_map, ensure_ascii=False))
-check("筛选控件", static.count('class="select-input"') == 3 and "仅看重点预警" in static and "重置所有筛选" in static)
+check("筛选控件", static.count('class="select-input"') == 4 and "仅看重点预警" in static and "重置所有筛选" in static)
 check("静态 div 配平", static.count("<div") == static.count("</div>"))
 check("外部依赖", not any(k in out.lower() for k in ("tailwind", "all.min.css", "saved_resource", "file://")))
 check("运行日志", log_rows == total_n, "%s 行=%d 待重取=%d" % (LOG, log_rows, len(log_pending)))
@@ -843,5 +921,11 @@ try:
         print("归档首页同步完成")
     else:
         print("WARN: 归档首页生成返回异常码 %d" % rc)
+
+    # 联动同步 VPS
+    if getattr(config, "AUTO_UPLOAD_VPS", True) and not getattr(ARGS, "no_vps", False):
+        upload_script = _REPO / "scripts" / "upload_vps.py"
+        if upload_script.exists():
+            subprocess.run([sys.executable, str(upload_script)], check=False)
 except Exception as exc:
     print("WARN: 同步归档首页失败: %s" % exc)

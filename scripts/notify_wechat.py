@@ -158,38 +158,51 @@ def send_alert(day: str, error_msg: str, step_name: str = "每日定时任务") 
 
 
 
-def check_push_condition(force: bool = False, total_count: int = 0, focus_count: int = 0):
+def check_push_condition(force: bool = False, total_count: int = 0, focus_count: int = 0, max_amount: float = 0.0):
     """
-    检查当前时刻与采集数据是否满足推送条件：
+    检查当前时刻与采集数据是否满足推送条件（支持多条规则同时生效）：
     1. force=True：手动触发或强制模式，直接放行。
-    2. PUSH_ALERT_FOCUS 为 True 且命中重点跟踪项目/业主/预警词时优先强推。
-    3. PUSH_MIN_COUNT 最低门槛过滤。
-    4. 根据 PUSH_TRIGGER_MODE:
-       - any_complete: 每次采集入库完成均推送
-       - focus_only: 仅在发现重点标讯时推送
-       - batch_time: 仅在设定批次时段推送
+    2. 多规则评估（支持多规则并行生效，满足任意已启用的规则即触发）：
+       - 'focus': 命中重点跟踪标讯即时强推（不受最低标讯数门槛限制）
+       - 'large_amount': 单笔标讯金额达到设定特大门槛即时预警
+       - 'complete': 每次全流程采集入库完成后推送
+       - 'batch_time': 到达每日指定批次时段集中归集推送
     返回 (should_push: bool, reason: str)
     """
     if force:
         return True, "手动/强制触发"
 
+    # 获取当前启用的全部推送规则清单
+    active_rules = list(getattr(config, "PUSH_TRIGGER_RULES", []))
+    if not active_rules:
+        # 兼容旧版配置项
+        if getattr(config, "PUSH_ALERT_FOCUS", True):
+            active_rules.append("focus")
+        old_mode = getattr(config, "PUSH_TRIGGER_MODE", "any_complete")
+        if old_mode == "any_complete":
+            active_rules.append("complete")
+        elif old_mode == "batch_time":
+            active_rules.append("batch_time")
+        elif old_mode == "focus_only":
+            if "focus" not in active_rules:
+                active_rules.append("focus")
+
+    # 1. 优先评估优先级最高、不受数量门槛限制的即时预警规则
+    if "focus" in active_rules and focus_count > 0:
+        return True, f"命中重点跟踪规则：发现 {focus_count} 条重点标讯，触发即时强推"
+
+    large_amt_threshold = float(getattr(config, "PUSH_LARGE_AMOUNT", 5000.0) or 5000.0)
+    if "large_amount" in active_rules and max_amount >= large_amt_threshold:
+        return True, f"命中大额预警规则：单笔标讯最高金额达 {max_amount:.2f} 万元 (≥ 门槛 {large_amt_threshold:.0f} 万元)，触发即时推送"
+
+    # 2. 最低数量门槛限制（仅针对常规全量或定时归集推送）
     min_cnt = int(getattr(config, "PUSH_MIN_COUNT", 1))
     if total_count > 0 and total_count < min_cnt:
-        return False, f"当日标讯总数 ({total_count}) 低于设定的最低推送门槛 ({min_cnt} 条)，跳过推送"
+        return False, f"当日标讯总数 ({total_count}) 低于设定的最低推送门槛 ({min_cnt} 条)，跳过常规推送"
 
-    trigger_mode = getattr(config, "PUSH_TRIGGER_MODE", "any_complete")
-    alert_focus = getattr(config, "PUSH_ALERT_FOCUS", True)
-
-    if alert_focus and focus_count > 0:
-        return True, f"命中重点跟踪标讯 ({focus_count} 条)，触发即时重点推送"
-
-    if trigger_mode == "focus_only":
-        if focus_count <= 0:
-            return False, "当前推送策略设为「仅重点标讯推送」，本次未发现重点标讯，跳过推送"
-        return True, f"发现重点标讯 ({focus_count} 条)，符合重点推送条件"
-
-    if trigger_mode == "any_complete":
-        return True, f"推送策略设为「采集完成即推送」，当日共归集 {total_count} 条标讯"
+    # 3. 采集完成即时全量推送
+    if "complete" in active_rules:
+        return True, f"命中采集完成规则：全流程采集入库完成，当日共归集 {total_count} 条标讯"
 
     from datetime import datetime, time
     import sqlite3
@@ -206,45 +219,32 @@ def check_push_condition(force: bool = False, total_count: int = 0, focus_count:
             state = {}
             
     today_str = now.strftime("%Y-%m-%d")
-    
-    # 批次1：下午 17:30 - 18:00
-    if time(17, 30) <= cur_time <= time(18, 0):
-        if state.get("last_afternoon_push_date") == today_str:
-            return False, "今日下午 17:30 批次已推送过，跳过重复推送"
-        return True, "命中下午 17:30 常规推送时段"
-        
-    # 批次2：早上 08:00 - 08:30
-    elif time(8, 0) <= cur_time <= time(8, 30):
-        if state.get("last_morning_push_date") == today_str:
-            return False, "今日早晨 08:00 批次已推送过，跳过重复推送"
-            
-        last_push_time_str = state.get("last_regular_push_time")
-        if not last_push_time_str:
-            # 默认使用昨天下午 17:30
-            from datetime import timedelta
-            yesterday_1730 = (now - timedelta(days=1)).strftime("%Y-%m-%d 17:30:00")
-            last_push_time_str = yesterday_1730
-            
-        # 查询从 last_push_time_str 以来是否有新增公告
-        new_cnt = 0
-        db_path = getattr(config, "DB_PATH", Path("data/gxzb.sqlite3"))
-        if db_path.exists():
+
+    # 4. 定时批次时段归集推送
+    if "batch_time" in active_rules:
+        batch_hours_str = getattr(config, "PUSH_BATCH_HOURS", "08:00, 17:30")
+        for hour_item in batch_hours_str.replace("，", ",").split(","):
+            hour_item = hour_item.strip()
+            if not hour_item:
+                continue
             try:
-                with sqlite3.connect(str(db_path)) as conn:
-                    c = conn.cursor()
-                    c.execute("SELECT count(*) FROM notices WHERE created_at > ?", (last_push_time_str,))
-                    row = c.fetchone()
-                    if row:
-                        new_cnt = row[0]
-            except Exception as e:
-                print(f"[微信推送] 查询新增公告失败: {e}")
-                
-        if new_cnt > 0:
-            return True, f"命中早间 08:00 推送时段（自 {last_push_time_str} 以来新增 {new_cnt} 条公告）"
-        else:
-            return False, f"早间 08:00 检查：自 {last_push_time_str} 以来无新增公告，跳过推送"
-            
-    return False, f"非指定常规推送时间窗口（17:30-18:00 或 08:00-08:30），当前时间 {cur_time.strftime('%H:%M')}"
+                parts = hour_item.split(":")
+                bh = int(parts[0])
+                bm = int(parts[1]) if len(parts) > 1 else 0
+                # 检查当前时间是否在设定批次后 30 分钟窗口内
+                start_sec = bh * 3600 + bm * 60
+                end_sec = start_sec + 30 * 60
+                now_sec = cur_time.hour * 3600 + cur_time.minute * 60 + cur_time.second
+                if start_sec <= now_sec <= end_sec:
+                    batch_key = f"batch_{bh:02d}{bm:02d}_{today_str}"
+                    if state.get(batch_key):
+                        return False, f"今日 [{hour_item}] 批次已推送过，避免重复推送"
+                    return True, f"命中定时批次规则：当前处于批次时段 [{hour_item}] 窗口内"
+            except Exception:
+                continue
+        return False, f"当前未处于任何设定的定时批次时段窗口 ({batch_hours_str})，当前时间 {cur_time.strftime('%H:%M')}"
+
+    return False, f"当前未满足任何已启用的推送规则 (当前启用规则: {', '.join(active_rules) if active_rules else '无'})"
 
 
 def record_push_success():

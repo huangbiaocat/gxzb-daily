@@ -77,13 +77,14 @@ def normalize_cz_record(it, day=None):
     stage_key = config.STAGE_KEY_MAP[stage]
     badge_class = config.BADGE_CLASS_MAP[stage]
 
-    # 发布时间
-    ntime = it.get("noticeTime")
-    if ntime:
-        try:
-            pub_time = datetime.datetime.fromtimestamp(ntime / 1000).strftime("%Y-%m-%d %H:%M:%S")
-        except Exception:
-            pub_time = str(it.get("publishDate") or "")
+   # 发布时间
+   ntime = it.get("noticeTime")
+   if ntime:
+       try:
+            tz_bj = datetime.timezone(datetime.timedelta(hours=8))
+            pub_time = datetime.datetime.fromtimestamp(ntime / 1000, tz=tz_bj).strftime("%Y-%m-%d %H:%M:%S")
+       except Exception:
+           pub_time = str(it.get("publishDate") or "")
     else:
         pub_time = str(it.get("publishDate") or "")
 
@@ -119,34 +120,46 @@ def normalize_cz_record(it, day=None):
                 from extractors.normalize import format_money
                 kw_hits = raw_kw_hits
                 reasons.extend(["命中关键词: %s (金额%s >= 门槛%s)" % (k, format_money(amt), format_money(min_amount)) for k in kw_hits])
-        else:
-            kw_hits = raw_kw_hits
-            reasons.extend(["命中关键词: %s" % k for k in kw_hits])
+       else:
+           kw_hits = raw_kw_hits
+           reasons.extend(["命中关键词: %s" % k for k in kw_hits])
 
-    is_focus = 1 if (proj_hits or owner_hits or type_hits or kw_hits) else 0
+   is_focus = 1 if (proj_hits or owner_hits or type_hits or kw_hits) else 0
+    focus_tags = []
+    if proj_hits:
+        focus_tags.append("重点项目")
+    if owner_hits:
+        focus_tags.append("重点业主")
+    if kw_hits:
+        focus_tags.append("重点关键词")
+    if type_hits:
+        focus_tags.append("重点类型")
+    if is_focus and not focus_tags:
+        focus_tags.append("重点关注")
 
-    return {
-        "infoid": infoid,
-        "title": title,
-        "categorynum": categorynum,
-        "industry": industry,
-        "stage": stage,
-        "stage_key": stage_key,
-        "badge_class": badge_class,
-        "areacode": "451400",
-        "areaname": "崇左阳光采购",
-        "source": "崇左阳光",
-        "pub_time": pub_time,
-        "link": link,
-        "detail_url": detail_url,
-        "is_focus": is_focus,
-        "focus_reason": reasons,
-        "owner": "",
-    }
+   return {
+       "infoid": infoid,
+       "title": title,
+       "categorynum": categorynum,
+       "industry": industry,
+       "stage": stage,
+       "stage_key": stage_key,
+       "badge_class": badge_class,
+       "areacode": "451400",
+        "areaname": "崇左市",
+        "source": "崇左阳光采购",
+       "pub_time": pub_time,
+       "link": link,
+       "detail_url": detail_url,
+       "is_focus": is_focus,
+        "focus_tags": focus_tags,
+       "focus_reason": reasons,
+       "owner": "",
+   }
 
 
-def collect_cz_ygcg(day, max_pages=10):
-    """从崇左阳光采购平台采集当日【工程类】公告。
+def collect_cz_ygcg(day, max_pages=25):
+   """从崇左阳光采购平台采集当日【工程类】公告。
     
     严格锁定 project_type: '工程'，其下项目有一个算一个全部采集，不做标题二次过滤。
     """
@@ -181,13 +194,14 @@ def collect_cz_ygcg(day, max_pages=10):
         raw_records.extend(items)
         has_current_or_newer = False
 
-        for it in items:
-            ntime = it.get("noticeTime")
-            if not ntime:
-                continue
-            item_date = datetime.datetime.fromtimestamp(ntime / 1000).strftime("%Y-%m-%d")
-            
-            if item_date == day:
+       for it in items:
+           ntime = it.get("noticeTime")
+           if not ntime:
+               continue
+            tz_bj = datetime.timezone(datetime.timedelta(hours=8))
+            item_date = datetime.datetime.fromtimestamp(ntime / 1000, tz=tz_bj).strftime("%Y-%m-%d")
+           
+           if item_date == day:
                 has_current_or_newer = True
                 norm = normalize_cz_record(it, day=day)
                 if norm:

@@ -181,11 +181,11 @@ def get_git_info():
         )
         if res.returncode == 0:
             commit = res.stdout.strip()
-            app_ver = getattr(config, "APP_VERSION", "v0.0.9")
+            app_ver = getattr(config, "APP_VERSION", "v0.1.0")
             return {"commit": commit, "version": f"{app_ver} (#{commit})"}
     except Exception:
         pass
-    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.0.9")}
+    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.1.0")}
 
 def get_scheduled_task_status():
     """检测 Windows 计划任务 ZtbCollector_Sync 的运行/就绪/启用状态"""
@@ -405,6 +405,9 @@ def read_config_env():
         "PUSH_MIN_COUNT": getattr(config, "PUSH_MIN_COUNT", 1),
         "PUSH_NOTIFY_ERROR": "true" if getattr(config, "PUSH_NOTIFY_ERROR", True) else "false",
         "PUSH_BATCH_HOURS": getattr(config, "PUSH_BATCH_HOURS", "08:00, 17:30"),
+        "PUSH_TRIGGER_RULES": getattr(config, "PUSH_TRIGGER_RULES", ["focus", "complete", "error"]),
+        "PUSH_TRIGGER_RULES_STR": ",".join(getattr(config, "PUSH_TRIGGER_RULES", ["focus", "complete", "error"])),
+        "PUSH_LARGE_AMOUNT": getattr(config, "PUSH_LARGE_AMOUNT", 5000),
         "MONITOR_START_TIME": getattr(config, "MONITOR_START_TIME", "08:00"),
         "MONITOR_END_TIME": getattr(config, "MONITOR_END_TIME", "20:00"),
         "MONITOR_INTERVAL_MINUTES": getattr(config, "MONITOR_INTERVAL_MINUTES", 10),
@@ -451,6 +454,8 @@ def save_config_env(data):
         "PUSH_MIN_COUNT": str(data.get("PUSH_MIN_COUNT", "1")).strip(),
         "PUSH_NOTIFY_ERROR": data.get("PUSH_NOTIFY_ERROR", "true").strip().lower(),
         "PUSH_BATCH_HOURS": data.get("PUSH_BATCH_HOURS", "08:00, 17:30").strip(),
+        "PUSH_TRIGGER_RULES": data.get("PUSH_TRIGGER_RULES", "focus,complete,error").strip(),
+        "PUSH_LARGE_AMOUNT": str(data.get("PUSH_LARGE_AMOUNT", "5000")).strip(),
         "MONITOR_START_TIME": data.get("MONITOR_START_TIME", "08:00").strip(),
         "MONITOR_END_TIME": data.get("MONITOR_END_TIME", "20:00").strip(),
         "MONITOR_INTERVAL_MINUTES": str(data.get("MONITOR_INTERVAL_MINUTES", "10")).strip(),
@@ -729,56 +734,92 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             return
 
         if path == "/api/delete_date":
-            target_date = post_data.get("date", "").strip()
-            if not target_date or not re.match(r"^\d{4}-\d{2}-\d{2}$", target_date):
-                self.send_json({"ok": False, "msg": "无效的日期格式，必须为 YYYY-MM-DD"})
+            # 支持批量删除：可接收 dates 列表、或 date 单一日期、或 start_date / end_date 区间
+            target_dates = []
+            if isinstance(post_data.get("dates"), list):
+                for d in post_data["dates"]:
+                    d = str(d).strip()
+                    if re.match(r"^\d{4}-\d{2}-\d{2}$", d) and d not in target_dates:
+                        target_dates.append(d)
+
+            single_date = post_data.get("date", "").strip()
+            if single_date and re.match(r"^\d{4}-\d{2}-\d{2}$", single_date) and single_date not in target_dates:
+                target_dates.append(single_date)
+
+            start_date = post_data.get("start_date", "").strip()
+            end_date = post_data.get("end_date", "").strip()
+            if start_date and end_date and re.match(r"^\d{4}-\d{2}-\d{2}$", start_date) and re.match(r"^\d{4}-\d{2}-\d{2}$", end_date):
+                from datetime import datetime, timedelta
+                try:
+                    dt_s = datetime.strptime(start_date, "%Y-%m-%d")
+                    dt_e = datetime.strptime(end_date, "%Y-%m-%d")
+                    if dt_s > dt_e:
+                        dt_s, dt_e = dt_e, dt_s
+                    cur = dt_s
+                    while cur <= dt_e:
+                        d_str = cur.strftime("%Y-%m-%d")
+                        if d_str not in target_dates:
+                            target_dates.append(d_str)
+                        cur += timedelta(days=1)
+                except Exception:
+                    pass
+
+            if not target_dates:
+                self.send_json({"ok": False, "msg": "请提供有效的删除日期 (YYYY-MM-DD) 或日期列表/区间"})
                 return
 
-            deleted_files = []
+            deleted_files_total = []
             site_dir = get_site_dir()
-            # 1. 删除 HTML 文件
-            for html_cand in [site_dir / f"{target_date}.html", ROOT_DIR / "dist" / f"{target_date}.html"]:
-                if html_cand.exists():
+            db_file = getattr(config, "DB_PATH", ROOT_DIR / "data" / "gxzb.sqlite3")
+
+            for target_date in target_dates:
+                # 1. 删除 HTML 文件
+                for html_cand in [site_dir / f"{target_date}.html", ROOT_DIR / "dist" / f"{target_date}.html"]:
+                    if html_cand.exists():
+                        try:
+                            html_cand.unlink()
+                            deleted_files_total.append(html_cand.name)
+                        except Exception:
+                            pass
+
+                # 2. 删除 JSON 数据文件
+                for p in [
+                    getattr(config, "COLLECT_DIR", ROOT_DIR / "data" / "collect") / f"{target_date}.json",
+                    getattr(config, "DAILY_DIR", ROOT_DIR / "data" / "daily") / f"{target_date}.json",
+                    getattr(config, "DAILY_DIR", ROOT_DIR / "data" / "daily") / f"{target_date}.meta.json",
+                    ROOT_DIR / "data" / f"{target_date}.json",
+                    ROOT_DIR / "dist" / "logs" / f"{target_date}.jsonl",
+                    ROOT_DIR / "dist" / "reports" / f"collect-reconcile-{target_date}.json",
+                ]:
+                    if p.exists():
+                        try:
+                            p.unlink()
+                            deleted_files_total.append(str(p.name))
+                        except Exception:
+                            pass
+
+                # 3. 清理数据库记录
+                if db_file.exists():
                     try:
-                        html_cand.unlink()
-                        deleted_files.append(html_cand.name)
-                    except Exception:
-                        pass
+                        import sqlite3
+                        conn = sqlite3.connect(db_file)
+                        cur = conn.cursor()
+                        # 清理 notice_fields
+                        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='notice_fields'")
+                        if cur.fetchone():
+                            cur.execute("DELETE FROM notice_fields WHERE infoid IN (SELECT infoid FROM notices WHERE date = ? OR pub_time LIKE ?)", (target_date, f"{target_date}%"))
+                        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='notices'")
+                        if cur.fetchone():
+                            cur.execute("DELETE FROM notices WHERE date = ? OR pub_time LIKE ?", (target_date, f"{target_date}%"))
+                        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='runs'")
+                        if cur.fetchone():
+                            cur.execute("DELETE FROM runs WHERE day = ?", (target_date,))
+                        conn.commit()
+                        conn.close()
+                    except Exception as e_db:
+                        print(f"[警告] 删除数据库记录异常: {e_db}")
 
-            # 2. 删除 JSON 数据文件
-            for p in [
-                getattr(config, "COLLECT_DIR", ROOT_DIR / "data" / "collect") / f"{target_date}.json",
-                getattr(config, "DAILY_DIR", ROOT_DIR / "data" / "daily") / f"{target_date}.json",
-                ROOT_DIR / "data" / f"{target_date}.json",
-                ROOT_DIR / "dist" / "logs" / f"{target_date}.jsonl",
-                ROOT_DIR / "dist" / "reports" / f"collect-reconcile-{target_date}.json",
-            ]:
-                if p.exists():
-                    try:
-                        p.unlink()
-                        deleted_files.append(str(p.name))
-                    except Exception:
-                        pass
-
-            # 3. 清理数据库记录
-            db_file = getattr(config, "DB_PATH", ROOT_DIR / "ztb.db")
-            if db_file.exists():
-                try:
-                    import sqlite3
-                    conn = sqlite3.connect(db_file)
-                    cur = conn.cursor()
-                    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='notices'")
-                    if cur.fetchone():
-                        cur.execute("DELETE FROM notices WHERE date = ? OR pub_time LIKE ?", (target_date, f"{target_date}%"))
-                    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='runs'")
-                    if cur.fetchone():
-                        cur.execute("DELETE FROM runs WHERE day = ?", (target_date,))
-                    conn.commit()
-                    conn.close()
-                except Exception as e_db:
-                    print(f"[警告] 删除数据库记录异常: {e_db}")
-
-            # 4. 重新构建历史归档总索引 (index.html 与 archive.json)
+            # 4. 重新构建历史归档总索引 (自动剔除已删除日期并重构 index.html 与 archive.json)
             try:
                 build_archive = ROOT_DIR / "scripts" / "build_archive_page.py"
                 if build_archive.exists():
@@ -786,11 +827,48 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             except Exception as e_arc:
                 print(f"[警告] 重建归档总索引异常: {e_arc}")
 
+            # 5. 自动同步 VPS 云端站点（通过 rsync --delete 彻底清理云端已删除文件并更新首页）
+            vps_synced = False
+            if getattr(config, "AUTO_UPLOAD_VPS", True):
+                try:
+                    upload_script = ROOT_DIR / "scripts" / "upload_vps.py"
+                    if upload_script.exists():
+                        res_up = subprocess.run([py_exe, "-u", str(upload_script)], capture_output=True, text=True)
+                        vps_synced = (res_up.returncode == 0)
+                except Exception as e_vps:
+                    print(f"[警告] 同步 VPS 异常: {e_vps}")
+
+            vps_text = "，并已彻底同步清理 VPS 云端站点" if vps_synced else ""
+            target_desc = f"{len(target_dates)} 个日期 ({', '.join(target_dates[:3])}{'...' if len(target_dates) > 3 else ''})"
             self.send_json({
                 "ok": True,
-                "msg": f"已彻底删除 {target_date} 的全部数据与日报页面，并刷新归档大屏索引！",
-                "deleted_files": deleted_files
+                "msg": f"已彻底删除 {target_desc} 的全部数据与日报页面，首页归档已自动同步刷新{vps_text}！",
+                "deleted_dates": target_dates,
+                "deleted_files": deleted_files_total
             })
+            return
+
+        if path == "/api/refresh_index":
+            try:
+                build_archive = ROOT_DIR / "scripts" / "build_archive_page.py"
+                res_arc = subprocess.run([py_exe, "-u", str(build_archive)], capture_output=True, text=True)
+                if res_arc.returncode != 0:
+                    self.send_json({"ok": False, "msg": f"重新构建首页索引失败: {res_arc.stderr}"})
+                    return
+
+                vps_msg = ""
+                if getattr(config, "AUTO_UPLOAD_VPS", True):
+                    upload_script = ROOT_DIR / "scripts" / "upload_vps.py"
+                    if upload_script.exists():
+                        res_vps = subprocess.run([py_exe, "-u", str(upload_script)], capture_output=True, text=True)
+                        if res_vps.returncode == 0:
+                            vps_msg = "，并已同步发布至 VPS 云端站点"
+                        else:
+                            vps_msg = f" (VPS 同步输出: {res_vps.stderr or res_vps.stdout})"
+
+                self.send_json({"ok": True, "msg": f"首页归档索引已重新计算生成{vps_msg}！"})
+            except Exception as e:
+                self.send_json({"ok": False, "msg": f"刷新首页异常: {str(e)}"})
             return
 
         if path == "/api/run_reapply":
@@ -798,10 +876,10 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             reapply_all = post_data.get("all", False)
             if reapply_all or not target_date:
                 cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "reapply_rules.py"), "--all"]
-                task_title = "按新业务配置重新标注并重建所有历史数据"
+                task_title = "按最新重点规则重新标注并重建所有历史数据"
             else:
                 cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "reapply_rules.py"), "--date", target_date]
-                task_title = f"按新业务配置重新标注历史数据 ({target_date})"
+                task_title = f"按最新重点规则重新标注历史数据 ({target_date})"
             ok, msg = PROC_MGR.start_task(task_title, cmd)
             self.send_json({"ok": ok, "msg": msg})
             return

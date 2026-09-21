@@ -59,31 +59,36 @@ def main():
 
     for idx, day_str in enumerate(target_dates, 1):
         t_start = time.time()
+        pct = int(idx / len(target_dates) * 100)
         print(f"\n" + "-" * 50, flush=True)
-        print(f">>> [{idx}/{len(target_dates)}] 正在补扫执行日期: {day_str} ...", flush=True)
-        # 1. 执行单日采集 (含公共资源交易中心与崇左阳光采购)
-        print(f"    [步骤 1/3] 抓取当日公告数据 (公共资源 + 崇左阳光采购)...", flush=True)
-        cmd_collect = [py_exe, "-u", str(ROOT_DIR / "scripts" / "collect.py"), "--date", day_str]
-        res1 = subprocess.run(cmd_collect)
-        if res1.returncode != 0:
-            print(f"    [警告] {day_str} 采集脚本退出码异常: {res1.returncode}", flush=True)
+        print(f">>> [{idx}/{len(target_dates)} - 进度 {pct}%] 正在补扫执行日期: {day_str} ...", flush=True)
+        try:
+            # 1. 执行单日采集 (含公共资源交易中心与崇左阳光采购)
+            print(f"    [步骤 1/3] 抓取当日公告数据 (公共资源 + 崇左阳光采购)...", flush=True)
+            cmd_collect = [py_exe, "-u", str(ROOT_DIR / "scripts" / "collect.py"), "--date", day_str]
+            res1 = subprocess.run(cmd_collect)
+            if res1.returncode != 0:
+                print(f"    [警告] {day_str} 采集脚本退出码异常: {res1.returncode}", flush=True)
 
-        # 2. 数据合并入库 (reconcile)
-        print(f"    [步骤 2/3] 合并数据入库 (reconcile)...", flush=True)
-        from run_daily import reconcile
-        reconcile(day_str, "merge")
+            # 2. 数据合并入库 (reconcile)
+            print(f"    [步骤 2/3] 合并数据入库 (reconcile)...", flush=True)
+            from run_daily import reconcile
+            reconcile(day_str, "merge")
 
-        # 3. 构建每日 HTML 页面
-        print(f"    [步骤 3/3] 构建每日日报 HTML 页面...", flush=True)
-        cmd_build = [py_exe, "-u", str(ROOT_DIR / "scripts" / "build_daily_page.py"), "--date", day_str]
-        res2 = subprocess.run(cmd_build)
-        elapsed = time.time() - t_start
-        if res2.returncode == 0:
-            success_days.append(day_str)
-            print(f"✔ 日期 {day_str} 采集并构建完成！(耗时: {elapsed:.1f}s)", flush=True)
-        else:
+            # 3. 构建每日 HTML 页面（单日补扫跳过逐日上传 VPS，全量结束后统一发布）
+            print(f"    [步骤 3/3] 构建每日日报 HTML 页面...", flush=True)
+            cmd_build = [py_exe, "-u", str(ROOT_DIR / "scripts" / "build_daily_page.py"), "--date", day_str, "--no-vps"]
+            res2 = subprocess.run(cmd_build)
+            elapsed = time.time() - t_start
+            if res2.returncode == 0:
+                success_days.append(day_str)
+                print(f"✔ 日期 {day_str} 采集并构建完成！(耗时: {elapsed:.1f}s)", flush=True)
+            else:
+                failed_days.append(day_str)
+                print(f"✘ 日期 {day_str} 构建失败，返回码: {res2.returncode} (耗时: {elapsed:.1f}s)", flush=True)
+        except Exception as e_day:
             failed_days.append(day_str)
-            print(f"✘ 日期 {day_str} 构建失败，返回码: {res2.returncode} (耗时: {elapsed:.1f}s)", flush=True)
+            print(f"✘ 日期 {day_str} 调度过程发生未捕获异常: {e_day}，继续处理下一日...", flush=True)
 
     # 4. 全部补扫完成后，全量重构归档总表（index.html）
     print("\n" + "=" * 68, flush=True)
@@ -91,7 +96,7 @@ def main():
     subprocess.run([py_exe, "-u", str(ROOT_DIR / "scripts" / "build_archive_page.py")])
 
     # 5. 若配置了自动上传，统一同步云端
-    if not args.skip_upload and getattr(config, "AUTO_UPLOAD_VPS", False):
+    if not args.skip_upload and getattr(config, "AUTO_UPLOAD_VPS", True):
         print("\n★ 正在将全量补扫数据与网页同步发布到云端服务器 ...")
         upload_script = ROOT_DIR / "scripts" / "upload_vps.py"
         if upload_script.exists():

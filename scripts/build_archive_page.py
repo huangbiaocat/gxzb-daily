@@ -24,6 +24,52 @@ SAMPLE = config.TEMPLATE_ARCHIVE_SAMPLE
 ARCHIVE = config.DATA_DIR / "archive.json"
 OUT_DIR = config.SITE_DIR
 
+def rebuild_archive_json():
+    """全量扫描 daily 目录，彻底重新生成 archive.json，确保已删除日期被彻底清除，天数与总数绝对准确"""
+    daily_dir = getattr(config, "DAILY_DIR", config.DATA_DIR / "daily")
+    archive = {
+        "site": "广西招投标公告日报",
+        "subtitle": "广西公共资源交易 · 工程建设类公告每日归档",
+        "generated": config.now_stamp(),
+        "day_count": 0,
+        "total_all": 0,
+        "days": []
+    }
+    days_list = []
+    if daily_dir.exists():
+        for f in sorted(daily_dir.glob("*.json"), reverse=True):
+            day = f.stem
+            if not (len(day) == 10 and day[4] == "-" and day[7] == "-"):
+                continue
+            try:
+                rows = json.loads(f.read_text(encoding="utf-8"))
+                if not isinstance(rows, list):
+                    continue
+                groups = {}
+                for r in rows:
+                    ind = r.get("industry", "") or "其他"
+                    groups[ind] = groups.get(ind, 0) + 1
+                entry = {
+                    "date": day,
+                    "file": f"{day}.html",
+                    "total": len(rows),
+                    "cities": len({r.get("areaname", "") for r in rows if r.get("areaname")}),
+                    "cat_count": len(groups),
+                    "groups": groups,
+                    "updated": config.now_stamp()
+                }
+                days_list.append(entry)
+            except Exception as e:
+                print(f"[警告] 读取每日归档文件 {f} 异常: {e}")
+    days_list.sort(key=lambda d: d.get("date", ""), reverse=True)
+    archive["days"] = days_list
+    archive["day_count"] = len(days_list)
+    archive["total_all"] = sum(int(d.get("total") or 0) for d in days_list)
+    archive["generated"] = config.now_stamp()
+    ARCHIVE.parent.mkdir(parents=True, exist_ok=True)
+    ARCHIVE.write_text(json.dumps(archive, ensure_ascii=False, indent=1), encoding="utf-8")
+    return archive
+
 WEEK = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 CAT_COLORS = ["#0284c7", "#0891b2", "#6366f1", "#0d9488", "#64748b"]
 
@@ -166,6 +212,7 @@ extra_style = """
 """
 
 # ---------- 数据 ----------
+rebuild_archive_json()
 arc = json.loads(ARCHIVE.read_text(encoding="utf-8"))
 days = sorted(arc["days"], key=lambda d: d["date"], reverse=True)
 day_map = {d["date"]: d for d in days}
@@ -342,7 +389,7 @@ PAGE = """<!DOCTYPE html>
 <div class="brand-text">
 <div style="display: flex; align-items: center; gap: 8px;">
 <h1 style="margin: 0;">招投标每日简报</h1>
-                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.0.9</span>
+                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.1.0</span>
 </div>
 <p>历史归档与数据追溯中心</p>
 </div>

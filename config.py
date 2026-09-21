@@ -20,7 +20,7 @@ else:
     REPO_ROOT = Path(__file__).resolve().parent
 
 # ------------------------------------------------------------------ 统一版本
-APP_VERSION = "v0.0.9"
+APP_VERSION = "v0.1.0"
 
 # ------------------------------------------------------------------ .env 解析
 def load_env_file(path=None):
@@ -327,7 +327,30 @@ PUSH_ALERT_FOCUS = get("PUSH_ALERT_FOCUS", "true").strip().lower() in ("true", "
 PUSH_MIN_COUNT = int(get("PUSH_MIN_COUNT", "1"))
 PUSH_NOTIFY_ERROR = get("PUSH_NOTIFY_ERROR", "true").strip().lower() in ("true", "1", "yes", "on")
 PUSH_BATCH_HOURS = get("PUSH_BATCH_HOURS", "08:00, 17:30").strip()
-AUTO_UPLOAD_VPS = get("AUTO_UPLOAD_VPS", "false").strip().lower() in ("true", "1", "yes", "on")
+
+# 触发推送多规则配置 (允许多条规则同时生效)
+# 可选规则: 'focus'(重点标讯即时推送), 'batch_time'(定时批次归集), 'complete'(采集完成推送), 'large_amount'(特大金额预警), 'error'(系统异常告警)
+PUSH_TRIGGER_RULES_RAW = get("PUSH_TRIGGER_RULES", "").strip()
+if PUSH_TRIGGER_RULES_RAW:
+    PUSH_TRIGGER_RULES = [r.strip() for r in PUSH_TRIGGER_RULES_RAW.split(",") if r.strip()]
+else:
+    # 兼容历史单选模式与开关
+    _rules = []
+    if PUSH_ALERT_FOCUS:
+        _rules.append("focus")
+    if PUSH_TRIGGER_MODE == "any_complete":
+        _rules.append("complete")
+    elif PUSH_TRIGGER_MODE == "batch_time":
+        _rules.append("batch_time")
+    elif PUSH_TRIGGER_MODE == "focus_only":
+        if "focus" not in _rules:
+            _rules.append("focus")
+    if PUSH_NOTIFY_ERROR:
+        _rules.append("error")
+    PUSH_TRIGGER_RULES = _rules
+
+PUSH_LARGE_AMOUNT = float(get("PUSH_LARGE_AMOUNT", "5000").strip() or 5000)
+AUTO_UPLOAD_VPS = get("AUTO_UPLOAD_VPS", "true").strip().lower() in ("true", "1", "yes", "on")
 VPS_HOST = get("VPS_HOST", "217.142.149.2").strip()
 VPS_PORT = get("VPS_PORT", "22").strip()
 VPS_USER = get("VPS_USER", "root").strip()

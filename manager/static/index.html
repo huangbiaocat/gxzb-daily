@@ -43,7 +43,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.0.9</span>
+                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.1.0</span>
                     </div>
                     <p class="text-xs text-slate-500">Tender Data Control & Settings Center</p>
                 </div>
@@ -55,7 +55,7 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
                     </svg>
-                    <span>业务过滤配置</span>
+                    <span>重点跟踪信息管理</span>
                 </button>
                 <button id="tab-btn-env" onclick="switchTab('env')" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-blue-600 flex items-center space-x-1.5 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,47 +130,47 @@
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
         <!-- ============================================== -->
-        <!-- TAB 1: 业务过滤配置 (独立单页，保留4项 + 触发推送条件) -->
+        <!-- TAB 1: 重点跟踪信息管理 (独立单页，重点项目/业主/预警词与金额门槛 + 触发推送多规则) -->
         <!-- ============================================== -->
         <div id="tab-content-business" class="space-y-6">
             <div class="bg-white p-6 sm:p-8 rounded-xl border border-slate-200/80 shadow-sm space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
                     <div>
-                        <h2 class="text-lg font-bold text-slate-900">业务过滤与触发推送配置</h2>
-                        <p class="text-xs text-slate-500 mt-0.5">定制专属工程标讯筛选规则与自动化推送触发条件，修改后直接写入本地 <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600">.env</code> 并实时生效。</p>
+                        <h2 class="text-lg font-bold text-slate-900">重点跟踪信息与触发推送管理</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">管理重点跟踪项目、重点业主名单、核心预警规则及微信推送触发条件，修改后直接写入本地 <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600">.env</code> 并实时生效。</p>
                     </div>
                     <div class="flex items-center space-x-2">
                         <button type="button" onclick="fetchConfig()" class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">重置/重新载入</button>
-                        <button type="submit" form="business-form" class="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition">保存业务与推送配置</button>
+                        <button type="submit" form="business-form" class="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition">保存重点跟踪与推送配置</button>
                     </div>
                 </div>
 
                 <form id="business-form" onsubmit="saveConfig(event)" class="space-y-8">
-                    <!-- 核心业务过滤规则 (只保留 重点跟踪项目、重点跟踪业主、常规通用预警关键词、常规关键词激活金额门槛) -->
+                    <!-- 重点跟踪核心规则 -->
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-2">
                                 <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span>
-                                <h3 class="text-sm font-bold text-slate-800">业务过滤核心规则</h3>
+                                <h3 class="text-sm font-bold text-slate-800">重点跟踪核心规则</h3>
                             </div>
                             <button type="button" onclick="triggerReapplyRules()" class="px-3 py-1 bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300 rounded-lg text-xs font-medium transition flex items-center space-x-1 shadow-sm" title="保存配置后，点击重新计算历史所有日期的重点关注并刷新大屏">
                                 <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                 </svg>
-                                <span>按新业务配置重新标注历史日期</span>
+                                <span>按最新重点规则重新标注历史日期</span>
                             </button>
                         </div>
 
-                        <!-- 1 重点跟踪项目 与 2 重点跟踪业主 -->
+                        <!-- 独立触发规则：1 重点跟踪项目 与 2 重点跟踪业主 -->
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
                             <!-- 1 重点跟踪项目 -->
                             <div class="flex flex-col bg-slate-50/60 p-4 rounded-xl border border-slate-200">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                                         <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[11px] font-black">1</span>
-                                        重点跟踪项目 (FOCUS_PROJECTS)
+                                        重点跟踪项目清单 (FOCUS_PROJECTS)
                                     </label>
-                                    <span class="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-medium">支持智能模糊匹配</span>
+                                    <span class="text-[10px] text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded font-medium">独立规则·命中即重点</span>
                                 </div>
                                 <textarea id="cfg-focus-projects" rows="8" placeholder="粘贴重点关注的项目名称，每行一个。例如：
 平陆运河
@@ -178,7 +178,7 @@
 环北部湾水资源配置工程
 金秀县大瑶山生态保护工程
 江南区旧城改造项目" class="w-full text-xs rounded-lg border border-slate-300 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono resize-y shadow-inner leading-relaxed"></textarea>
-                                <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">已支持智能模糊匹配：官方发布时中间多字（如插“广西/标段/一期”）、中英文标点括号、同义简称（如“中医院”与“中医医院”）均可自动命中；亦支持空格分隔多词（同时包含）或竖线“|”（任一满足）。</p>
+                                <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">独立强规则：只要标讯标题命中指定项目名称，即无条件判定为重点标讯（不受金额门槛限制）。已支持智能模糊匹配与分词匹配。</p>
                             </div>
 
                             <!-- 2 重点跟踪业主 -->
@@ -186,9 +186,9 @@
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                                         <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-black">2</span>
-                                        重点跟踪业主 (FOCUS_OWNERS)
+                                        重点跟踪业主名单 (FOCUS_OWNERS)
                                     </label>
-                                    <span class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded font-medium">支持多行批量粘贴</span>
+                                    <span class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded font-medium">独立规则·命中即重点</span>
                                 </div>
                                 <textarea id="cfg-focus-owners" rows="8" placeholder="粘贴重点跟踪的业主/招标人，每行一个。例如：
 广西交投
@@ -196,86 +196,136 @@
 南宁市住房和城乡建设局
 广西水利发展集团
 南宁轨道交通集团" class="w-full text-xs rounded-lg border border-slate-300 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono resize-y shadow-inner leading-relaxed"></textarea>
-                                <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">支持每行输入一个业主单位全称或简称（也支持半角逗号分隔）。当抓取到该单位或标题含该单位时标记为重点。</p>
+                                <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">独立强规则：当招标人或标讯标题包含指定业主单位全称或简称时，直接判定为重点标讯（不受金额门槛限制）。</p>
                             </div>
                         </div>
 
-                        <!-- 3 常规通用预警关键词 与 4 常规关键词激活金额门槛 -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                            <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-200">
-                                <label class="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                        <!-- 组合规则：3 常规通用预警关键词 ＆ 激活金额门槛（两者为【且】的关系，不是独立规则） -->
+                        <div class="bg-slate-50/70 p-4 rounded-xl border-2 border-emerald-200/80 space-y-3">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2 border-b border-slate-200/80">
+                                <label class="text-xs font-bold text-slate-800 flex items-center gap-2">
                                     <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-black">3</span>
-                                    常规通用预警关键词 (FOCUS_KEYWORDS)
+                                    <span>常规通用预警关键词 ＆ 激活金额门槛</span>
                                 </label>
-                                <input id="cfg-focus-keywords" type="text" placeholder="公路,医院,学校,安置,水库,治理,灌区,道路" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono mt-1.5">
-                                <span class="text-[11px] text-slate-400 mt-1 block">单行半角逗号分隔。作为大范围通用筛选词汇。</span>
+                                <span class="text-[11px] text-amber-800 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded font-bold inline-flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span>【强关联·且的关系】必须同时满足：命中关键词 且 标讯金额达到门槛</span>
+                                </span>
                             </div>
-                            <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-200">
-                                <label class="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
-                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-600 text-white text-[11px] font-black">4</span>
-                                    常规关键词激活金额门槛 (FOCUS_MIN_AMOUNT)
-                                </label>
-                                <div class="relative mt-1.5">
-                                    <input id="cfg-focus-min-amount" type="number" placeholder="例如: 100" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 pr-12 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                                    <span class="absolute right-3 top-2 text-xs text-slate-400 font-medium">万元</span>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">常规通用预警关键词 (FOCUS_KEYWORDS)</label>
+                                    <input id="cfg-focus-keywords" type="text" placeholder="公路,医院,学校,安置,水库,治理,灌区,道路" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                                    <span class="text-[11px] text-slate-400 mt-1 block">单行半角逗号分隔。作为常规工程大类关注词汇。</span>
                                 </div>
-                                <span class="text-[11px] text-slate-400 mt-1 block">仅对命中第3项「常规关键词」生效；只有公告金额大于等于该门槛才激活重点预警。重点项目/重点业主不受此金额限制。</span>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">关联激活金额门槛 (FOCUS_MIN_AMOUNT)</label>
+                                    <div class="relative">
+                                        <input id="cfg-focus-min-amount" type="number" placeholder="例如: 500" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 pr-12 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                                        <span class="absolute right-3 top-2 text-xs text-slate-400 font-medium">万元</span>
+                                    </div>
+                                    <span class="text-[11px] text-slate-400 mt-1 block">低于该金额或无金额时不激活重点。</span>
+                                </div>
+                            </div>
+
+                            <!-- 核心逻辑解释提示栏 -->
+                            <div class="p-3 rounded-lg bg-emerald-50/80 border border-emerald-200 text-[11px] text-emerald-950 leading-relaxed flex items-start gap-2">
+                                <svg class="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <div>
+                                    <strong>【核心逻辑说明】</strong>常规通用预警关键词与金额门槛为强关联的<strong>「且」</strong>关系，不是独立规则。爬虫分析标讯时，必须同时满足<strong>「标题包含预警词」且「标讯金额 ≥ 指定门槛」</strong>才会激活判定为重点关注标讯；若仅包含词但无金额或金额不足，则不作为重点打扰。（注：第1项重点项目与第2项重点业主为独立规则，只要命中即无条件判定为重点，不受金额门槛限制）。若金额门槛留空或设为0，则只要命中关键词即标记为重点。
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 触发推送条件设置 -->
+                    <!-- 触发推送条件设置 (支持多条规则同时生效) -->
                     <div class="space-y-4 pt-4 border-t border-slate-100">
-                        <div class="flex items-center space-x-2">
-                            <span class="w-1.5 h-4 bg-purple-600 rounded-full"></span>
-                            <h3 class="text-sm font-bold text-slate-800">触发推送条件设置</h3>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-1.5 h-4 bg-purple-600 rounded-full"></span>
+                                <h3 class="text-sm font-bold text-slate-800">微信推送触发规则管理 (支持多条规则同时生效)</h3>
+                            </div>
+                            <span class="text-xs text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded font-medium">支持多规则并行生效，满足任一启用的规则即触发</span>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- 推送触发策略 -->
-                            <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-200">
-                                <label class="block text-xs font-bold text-slate-800 mb-1">推送触发策略 (PUSH_TRIGGER_MODE)</label>
-                                <select id="cfg-push-trigger-mode" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
-                                    <option value="any_complete">每次全流程采集入库完成后推送 (默认实时推送)</option>
-                                    <option value="focus_only">仅在发现重点关注标讯时推送 (无重点不打扰)</option>
-                                    <option value="batch_time">仅在每日定时批次时段推送 (早/晚定时归集)</option>
-                                </select>
-                                <span class="text-[11px] text-slate-400 mt-1 block">决定何时向微信服务号发送每日招投标简报卡片。</span>
-                            </div>
-
-                            <!-- 最低标讯数量门槛 -->
-                            <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-200">
-                                <label class="block text-xs font-bold text-slate-800 mb-1">最低标讯数量门槛 (PUSH_MIN_COUNT)</label>
-                                <div class="relative">
-                                    <input id="cfg-push-min-count" type="number" min="0" value="1" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 pr-12 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                                    <span class="absolute right-3 top-2 text-xs text-slate-400 font-medium">条</span>
-                                </div>
-                                <span class="text-[11px] text-slate-400 mt-1 block">当日归集总标讯数量少于该数值时自动跳过推送，防止发送无内容的空白简报。</span>
-                            </div>
-
-                            <!-- 重点关注强推开关 -->
-                            <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-200 flex items-start space-x-3">
-                                <input type="checkbox" id="cfg-push-alert-focus" class="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
-                                <div>
-                                    <label for="cfg-push-alert-focus" class="text-xs font-bold text-slate-800 cursor-pointer">重点关注即时强推 (PUSH_ALERT_FOCUS)</label>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">当采集到命中「重点跟踪项目」或「重点跟踪业主」的标讯时，优先触发即时微信预警，无论当前处于何种常规时段。</p>
+                            <!-- 规则 1：重点标讯即时强推 -->
+                            <div class="bg-slate-50/70 p-4 rounded-xl border border-slate-200 flex items-start space-x-3">
+                                <input type="checkbox" id="cfg-push-rule-focus" class="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
+                                <div class="flex-1">
+                                    <label for="cfg-push-rule-focus" class="text-xs font-bold text-slate-800 cursor-pointer flex items-center justify-between">
+                                        <span>规则 1：重点跟踪标讯即时强推</span>
+                                        <span class="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">即时/零等待</span>
+                                    </label>
+                                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">抓取到命中重点跟踪项目、重点跟踪业主或通用预警词（达到金额门槛）时，第一时间向微信发送强推预警，不受最低标讯数门槛限制，商机零遗漏。</p>
                                 </div>
                             </div>
 
-                            <!-- 异常失败通知开关 -->
-                            <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-200 flex items-start space-x-3">
-                                <input type="checkbox" id="cfg-push-notify-error" class="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
-                                <div>
-                                    <label for="cfg-push-notify-error" class="text-xs font-bold text-slate-800 cursor-pointer">采集异常告警推送 (PUSH_NOTIFY_ERROR)</label>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">当爬虫采集发生网络熔断、源站不可用或流程执行中断时，第一时间向管理员微信推送错误告警卡片。</p>
+                            <!-- 规则 2：特大金额专属预警 -->
+                            <div class="bg-slate-50/70 p-4 rounded-xl border border-slate-200 flex items-start space-x-3">
+                                <input type="checkbox" id="cfg-push-rule-large" class="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
+                                <div class="flex-1">
+                                    <label for="cfg-push-rule-large" class="text-xs font-bold text-slate-800 cursor-pointer flex items-center justify-between">
+                                        <span>规则 2：特大金额标讯专属预警</span>
+                                        <span class="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">大额预警</span>
+                                    </label>
+                                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">单笔标讯预算或中标金额达到指定特大金额时触发即时推送：</p>
+                                    <div class="relative mt-1.5">
+                                        <input id="cfg-push-large-amount" type="number" placeholder="5000" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-1.5 pr-12 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                        <span class="absolute right-3 top-1.5 text-xs text-slate-400 font-medium">万元</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- 定时批次时段 -->
-                            <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-200 md:col-span-2">
-                                <label class="block text-xs font-bold text-slate-800 mb-1">每日批次推送时段 (PUSH_BATCH_HOURS)</label>
-                                <input id="cfg-push-batch-hours" type="text" value="08:00, 17:30" placeholder="例如: 08:00, 17:30" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                                <span class="text-[11px] text-slate-400 mt-1 block">仅在策略选择「每日定时批次时段推送」时生效，多个时间点使用半角逗号分隔。</span>
+                            <!-- 规则 3：每日定时批次归集推送 -->
+                            <div class="bg-slate-50/70 p-4 rounded-xl border border-slate-200 flex items-start space-x-3">
+                                <input type="checkbox" id="cfg-push-rule-batch" class="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
+                                <div class="flex-1">
+                                    <label for="cfg-push-rule-batch" class="text-xs font-bold text-slate-800 cursor-pointer flex items-center justify-between">
+                                        <span>规则 3：每日定时批次时段归集推送</span>
+                                        <span class="text-[10px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">定时汇总</span>
+                                    </label>
+                                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">到达指定时段集中归集最新标讯并推送简报（支持配置多个批次，半角逗号分隔）：</p>
+                                    <input id="cfg-push-batch-hours" type="text" value="08:00, 17:30" placeholder="例如: 08:00, 17:30" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono mt-1.5">
+                                </div>
+                            </div>
+
+                            <!-- 规则 4：每次采集入库后全量推送 -->
+                            <div class="bg-slate-50/70 p-4 rounded-xl border border-slate-200 flex items-start space-x-3">
+                                <input type="checkbox" id="cfg-push-rule-complete" class="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
+                                <div class="flex-1">
+                                    <label for="cfg-push-rule-complete" class="text-xs font-bold text-slate-800 cursor-pointer flex items-center justify-between">
+                                        <span>规则 4：每次全流程采集入库后推送</span>
+                                        <span class="text-[10px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">全流程即推</span>
+                                    </label>
+                                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">每当定时爬虫全流程执行完毕且入库成功后，立即向微信发送全量标讯简报。</p>
+                                </div>
+                            </div>
+
+                            <!-- 规则 5：采集异常与系统故障告警 -->
+                            <div class="bg-slate-50/70 p-4 rounded-xl border border-slate-200 flex items-start space-x-3">
+                                <input type="checkbox" id="cfg-push-rule-error" class="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
+                                <div class="flex-1">
+                                    <label for="cfg-push-rule-error" class="text-xs font-bold text-slate-800 cursor-pointer flex items-center justify-between">
+                                        <span>规则 5：采集异常中断故障告警</span>
+                                        <span class="text-[10px] text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">故障告警</span>
+                                    </label>
+                                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">当采集发生网络熔断、源站防爬封禁或流程意外中断时，第一时间推送微信告警卡片。</p>
+                                </div>
+                            </div>
+
+                            <!-- 通用数量门槛保护 -->
+                            <div class="bg-slate-50/70 p-4 rounded-xl border border-slate-200 flex items-start space-x-3">
+                                <div class="w-4 h-4 mt-1 flex items-center justify-center text-slate-400">🛡️</div>
+                                <div class="flex-1">
+                                    <label class="block text-xs font-bold text-slate-800 mb-1">通用门槛：最低标讯数量限制 (PUSH_MIN_COUNT)</label>
+                                    <div class="relative mt-1">
+                                        <input id="cfg-push-min-count" type="number" min="0" value="1" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-1.5 pr-12 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                        <span class="absolute right-3 top-1.5 text-xs text-slate-400 font-medium">条</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 mt-1">常规简报需达到该数量才发，防止空发；重点标讯与特大金额预警不受此限制，保证零遗漏。</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -284,7 +334,7 @@
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
                         <span id="save-business-tip" class="text-xs text-slate-500"></span>
                         <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
-                            保存业务过滤与推送配置
+                            保存重点跟踪与推送配置
                         </button>
                     </div>
                 </form>
@@ -592,12 +642,19 @@
                                 <span class="text-xs font-semibold">手动同步云端</span>
                                 <span class="text-[10px] text-slate-400 mt-0.5">upload_vps.py</span>
                             </button>
+                            <button onclick="refreshIndexPage(this)" class="btn-action flex flex-col items-center justify-center p-3 bg-blue-50/80 hover:bg-blue-100 rounded-xl border border-blue-200 text-blue-700 transition shadow-xs">
+                                <div class="flex items-center space-x-1">
+                                    <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                    <span class="text-xs font-semibold">刷新首页信息</span>
+                                </div>
+                                <span class="text-[10px] text-blue-500 mt-0.5">重算索引同步VPS</span>
+                            </button>
                             <button onclick="openDeleteDateModal()" class="btn-action flex flex-col items-center justify-center p-3 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 text-rose-700 transition">
                                 <div class="flex items-center space-x-1">
                                     <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                    <span class="text-xs font-semibold">删除日期内容</span>
+                                    <span class="text-xs font-semibold">删除日期数据</span>
                                 </div>
-                                <span class="text-[10px] text-rose-500 mt-0.5">彻底删除单日数据</span>
+                                <span class="text-[10px] text-rose-500 mt-0.5">单日/批量删除</span>
                             </button>
                             <button onclick="triggerTask('upgrade')" id="btn-dashboard-upgrade" class="btn-action flex flex-col items-center justify-center p-3 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200/80 text-emerald-800 transition col-span-2 sm:col-span-2">
                                 <div class="flex items-center space-x-1.5">
@@ -614,20 +671,33 @@
                     <!-- 历史页面快速查看 -->
                     <div class="pt-4 border-t border-slate-100">
                         <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">最近生成的日报列表</h3>
-                            <span class="text-[11px] text-slate-400">点击在新标签打开</span>
+                            <div class="flex items-center space-x-2">
+                                <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">已生成历史日报</h3>
+                            </div>
+                            <div class="flex items-center space-x-1.5">
+                                <button type="button" onclick="refreshIndexPage(this)" class="px-2 py-1 text-[11px] font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition flex items-center space-x-1" title="重新计算归档索引，刷新首页大屏并同步VPS">
+                                    <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                    <span>刷新首页</span>
+                                </button>
+                                <button type="button" id="btn-batch-delete-pages" onclick="batchDeleteSelectedPages()" class="hidden px-2.5 py-1 text-[11px] font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-md shadow-xs transition">
+                                    批量删除 (<span id="selected-pages-count">0</span>)
+                                </button>
+                            </div>
                         </div>
                         <div class="overflow-hidden border border-slate-100 rounded-lg">
                             <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
                                 <thead class="bg-slate-50 text-slate-500 font-medium">
                                     <tr>
-                                        <th class="px-3 py-2">日期</th>
+                                        <th class="px-2 py-2 w-7 text-center">
+                                            <input type="checkbox" id="select-all-pages" onchange="toggleSelectAllPages(this)" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5" title="全选/取消全选">
+                                        </th>
+                                        <th class="px-3 py-2">发布日期</th>
                                         <th class="px-3 py-2">大小</th>
                                         <th class="px-3 py-2 text-right">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody id="pages-table-body" class="divide-y divide-slate-100 text-slate-700">
-                                    <tr><td colspan="3" class="px-3 py-3 text-center text-slate-400">正在获取...</td></tr>
+                                    <tr><td colspan="4" class="px-3 py-3 text-center text-slate-400">正在获取...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -747,7 +817,7 @@
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.0.9</span>
+        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.1.0</span>
     </footer>
 
     <script>
@@ -1013,6 +1083,9 @@
                         const targetName = p.filename || p.name || (p.date + '.html');
                         return `
                         <tr>
+                            <td class="px-2 py-2 text-center">
+                                <input type="checkbox" class="page-select-checkbox rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5" value="${p.date}" onchange="updateBatchDeleteBtn()">
+                            </td>
                             <td class="px-3 py-2 font-medium">${p.date}</td>
                             <td class="px-3 py-2 text-slate-500">${sizeDisplay}</td>
                             <td class="px-3 py-2 text-right">
@@ -1024,8 +1097,9 @@
                         `;
                     }).join("");
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="3" class="px-3 py-3 text-center text-slate-400">暂无生成的日报页面</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" class="px-3 py-3 text-center text-slate-400">暂无生成的日报页面</td></tr>';
                 }
+                updateBatchDeleteBtn();
             } catch (err) {
                 console.error("获取状态失败", err);
             }
@@ -1049,10 +1123,16 @@
                 setVal("cfg-focus-owners", data.FOCUS_OWNERS || "");
                 setVal("cfg-focus-keywords", data.FOCUS_KEYWORDS_STR || (data.FOCUS_KEYWORDS ? data.FOCUS_KEYWORDS.join(",") : ""));
                 setVal("cfg-focus-min-amount", data.FOCUS_MIN_AMOUNT || "");
-                setVal("cfg-push-trigger-mode", data.PUSH_TRIGGER_MODE || "any_complete");
-                setChecked("cfg-push-alert-focus", data.PUSH_ALERT_FOCUS !== undefined ? data.PUSH_ALERT_FOCUS : true);
+
+                // 多规则微信推送设置加载
+                const activeRules = data.PUSH_TRIGGER_RULES || [];
+                setChecked("cfg-push-rule-focus", activeRules.includes("focus"));
+                setChecked("cfg-push-rule-large", activeRules.includes("large_amount"));
+                setChecked("cfg-push-rule-batch", activeRules.includes("batch_time"));
+                setChecked("cfg-push-rule-complete", activeRules.includes("complete"));
+                setChecked("cfg-push-rule-error", activeRules.includes("error"));
+                setVal("cfg-push-large-amount", data.PUSH_LARGE_AMOUNT || 5000);
                 setVal("cfg-push-min-count", data.PUSH_MIN_COUNT || 1);
-                setChecked("cfg-push-notify-error", data.PUSH_NOTIFY_ERROR !== undefined ? data.PUSH_NOTIFY_ERROR : true);
                 setVal("cfg-push-batch-hours", data.PUSH_BATCH_HOURS || "08:00, 17:30");
 
                 setVal("cfg-site-base-url", data.SITE_BASE_URL || "");
@@ -1098,15 +1178,26 @@
                 return el ? (el.checked ? "true" : "false") : (def ? "true" : "false");
             };
 
+            // 收集多条推送规则
+            const pushRules = [];
+            if (document.getElementById("cfg-push-rule-focus")?.checked) pushRules.push("focus");
+            if (document.getElementById("cfg-push-rule-large")?.checked) pushRules.push("large_amount");
+            if (document.getElementById("cfg-push-rule-batch")?.checked) pushRules.push("batch_time");
+            if (document.getElementById("cfg-push-rule-complete")?.checked) pushRules.push("complete");
+            if (document.getElementById("cfg-push-rule-error")?.checked) pushRules.push("error");
+            const pushRulesStr = pushRules.join(",");
+
             const payload = {
                 FOCUS_PROJECTS: getVal("cfg-focus-projects"),
                 FOCUS_OWNERS: getVal("cfg-focus-owners"),
                 FOCUS_KEYWORDS_STR: getVal("cfg-focus-keywords"),
                 FOCUS_MIN_AMOUNT: getVal("cfg-focus-min-amount"),
-                PUSH_TRIGGER_MODE: getVal("cfg-push-trigger-mode", "any_complete"),
-                PUSH_ALERT_FOCUS: getChecked("cfg-push-alert-focus", true),
+                PUSH_TRIGGER_RULES: pushRulesStr,
+                PUSH_LARGE_AMOUNT: getVal("cfg-push-large-amount", "5000"),
+                PUSH_ALERT_FOCUS: pushRules.includes("focus") ? "true" : "false",
+                PUSH_NOTIFY_ERROR: pushRules.includes("error") ? "true" : "false",
+                PUSH_TRIGGER_MODE: pushRules.includes("complete") ? "any_complete" : (pushRules.includes("batch_time") ? "batch_time" : (pushRules.includes("focus") ? "focus_only" : "any_complete")),
                 PUSH_MIN_COUNT: getVal("cfg-push-min-count", "1"),
-                PUSH_NOTIFY_ERROR: getChecked("cfg-push-notify-error", true),
                 PUSH_BATCH_HOURS: getVal("cfg-push-batch-hours", "08:00, 17:30"),
                 SITE_BASE_URL: getVal("cfg-site-base-url"),
                 AUTO_UPLOAD_VPS: getVal("cfg-vps-auto", "false"),
@@ -1388,7 +1479,9 @@
 
         function startPollingLog(onComplete) {
             if (pollTimer) clearInterval(pollTimer);
+            let pollCount = 0;
             pollTimer = setInterval(async () => {
+                pollCount++;
                 try {
                     const res = await fetch("/api/task_state");
                     const data = await res.json();
@@ -1402,6 +1495,10 @@
                         pill.textContent = "RUNNING";
                         pill.className = "text-[11px] px-2 py-0.5 rounded font-mono bg-amber-500/20 text-amber-400 font-semibold animate-pulse";
                     } else {
+                        // 在前 3 次轮询内若状态依然是 idle，给后台进程启动预留缓冲时间，防止因偶发网络延迟导致首秒误判停止
+                        if ((data.status === "idle" || !data.start_time) && pollCount <= 3) {
+                            return;
+                        }
                         pill.textContent = exitCode === 0 ? "SUCCESS" : (exitCode !== null ? "FAILED (" + exitCode + ")" : "IDLE");
                         pill.className = exitCode === 0 ? "text-[11px] px-2 py-0.5 rounded font-mono bg-emerald-500/20 text-emerald-400 font-semibold" : (exitCode !== null ? "text-[11px] px-2 py-0.5 rounded font-mono bg-red-500/20 text-red-400 font-semibold" : "text-[11px] px-2 py-0.5 rounded font-mono bg-slate-700 text-slate-300");
                         if (!isRunning && pollTimer) {
@@ -1509,6 +1606,26 @@
             document.getElementById("batch-scan-modal").classList.remove("hidden");
         }
 
+        function setBatchDateRange(type) {
+            const today = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const toStr = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+            const endStr = toStr(today);
+            let startStr = endStr;
+
+            if (type === 'month') {
+                startStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-01`;
+            } else if (type === '7d') {
+                const past = new Date(today.getTime() - 6 * 86400000);
+                startStr = toStr(past);
+            } else if (type === '30d') {
+                const past = new Date(today.getTime() - 29 * 86400000);
+                startStr = toStr(past);
+            }
+            document.getElementById("batch-start-date").value = startStr;
+            document.getElementById("batch-end-date").value = endStr;
+        }
+
         function closeBatchScanModal() {
             document.getElementById("batch-scan-modal").classList.add("hidden");
         }
@@ -1530,7 +1647,6 @@
             const logEl = document.getElementById("log-container");
             logEl.textContent = `[Web Controller] 正在启动 ${start} 至 ${end} 的批量补扫任务...
 `;
-            startPollingLog();
 
             try {
                 const res = await fetch("/api/run_batch_scan", {
@@ -1543,7 +1659,9 @@
                     })
                 });
                 const d = await res.json();
-                if (!d.ok) {
+                if (d.ok) {
+                    startPollingLog();
+                } else {
                     alert("启动批量补扫失败: " + d.msg);
                 }
             } catch (err) {
@@ -1709,11 +1827,114 @@
             document.getElementById("run-detail-modal").classList.add("hidden");
         }
 
-        // 删除指定日期内容相关逻辑
+        // 刷新首页信息功能
+        async function refreshIndexPage(btn) {
+            let origHtml = "";
+            if (btn) {
+                origHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = `<svg class="animate-spin -ml-0.5 mr-1 h-3.5 w-3.5 text-blue-600 inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>正在同步...</span>`;
+            }
+            try {
+                const res = await fetch("/api/refresh_index", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                });
+                const d = await res.json();
+                if (d.ok) {
+                    alert("✅ " + (d.msg || "首页归档信息已重新计算生成，并已同步至 VPS！"));
+                    await fetchStatus();
+                } else {
+                    alert("❌ 刷新首页失败: " + (d.msg || "未知错误"));
+                }
+            } catch (err) {
+                alert("❌ 刷新请求异常: " + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
+            }
+        }
+
+        // 表格批量多选逻辑
+        function toggleSelectAllPages(source) {
+            const cbs = document.querySelectorAll(".page-select-checkbox");
+            cbs.forEach(cb => cb.checked = source.checked);
+            updateBatchDeleteBtn();
+        }
+
+        function updateBatchDeleteBtn() {
+            const cbs = document.querySelectorAll(".page-select-checkbox:checked");
+            const count = cbs.length;
+            const btn = document.getElementById("btn-batch-delete-pages");
+            const countSpan = document.getElementById("selected-pages-count");
+            if (countSpan) countSpan.textContent = count;
+            if (btn) {
+                if (count > 0) {
+                    btn.classList.remove("hidden");
+                } else {
+                    btn.classList.add("hidden");
+                }
+            }
+            const selectAll = document.getElementById("select-all-pages");
+            const allCbs = document.querySelectorAll(".page-select-checkbox");
+            if (selectAll && allCbs.length > 0) {
+                selectAll.checked = (count === allCbs.length);
+            }
+        }
+
+        function batchDeleteSelectedPages() {
+            const checked = Array.from(document.querySelectorAll(".page-select-checkbox:checked")).map(cb => cb.value);
+            if (checked.length === 0) {
+                alert("请先勾选需要批量删除的日期！");
+                return;
+            }
+            deleteDateContent(checked);
+        }
+
+        // 删除指定日期相关逻辑 (支持单日/区间/多日期批量)
+        let currentDeleteMode = "single";
+
+        function switchDeleteMode(mode) {
+            currentDeleteMode = mode;
+            ["single", "range", "multi"].forEach(m => {
+                const tabBtn = document.getElementById(`del-mode-tab-${m}`);
+                const panel = document.getElementById(`del-mode-panel-${m}`);
+                if (m === mode) {
+                    if (tabBtn) {
+                        tabBtn.className = "flex-1 py-1.5 rounded-md font-bold bg-white text-rose-700 shadow-xs transition";
+                    }
+                    if (panel) panel.classList.remove("hidden");
+                } else {
+                    if (tabBtn) {
+                        tabBtn.className = "flex-1 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 transition";
+                    }
+                    if (panel) panel.classList.add("hidden");
+                }
+            });
+        }
+
+        function setDeleteRangeDays(days) {
+            const end = new Date();
+            const start = new Date();
+            start.setDate(end.getDate() - days + 1);
+            const formatYMD = d => d.toISOString().slice(0, 10);
+            const sInput = document.getElementById("delete-date-start");
+            const eInput = document.getElementById("delete-date-end");
+            if (sInput) sInput.value = formatYMD(start);
+            if (eInput) eInput.value = formatYMD(end);
+        }
+
         function openDeleteDateModal(day) {
             const todayStr = new Date().toISOString().slice(0, 10);
             const input = document.getElementById("delete-date-input");
             if (input) input.value = day || todayStr;
+            const sInput = document.getElementById("delete-date-start");
+            const eInput = document.getElementById("delete-date-end");
+            if (sInput) sInput.value = day || todayStr;
+            if (eInput) eInput.value = todayStr;
+            switchDeleteMode("single");
             const modal = document.getElementById("delete-date-modal");
             if (modal) modal.classList.remove("hidden");
         }
@@ -1724,35 +1945,62 @@
         }
 
         async function submitDeleteDate(e) {
-            e.preventDefault();
-            const day = document.getElementById("delete-date-input").value;
-            if (!day) return;
+            if (e) e.preventDefault();
+            let datesToDelete = [];
+
+            if (currentDeleteMode === "single") {
+                const val = document.getElementById("delete-date-input").value.trim();
+                if (!val) { alert("请选择要删除的日期！"); return; }
+                datesToDelete = [val];
+            } else if (currentDeleteMode === "range") {
+                const sVal = document.getElementById("delete-date-start").value.trim();
+                const eVal = document.getElementById("delete-date-end").value.trim();
+                if (!sVal || !eVal) { alert("请选择起始日期和结束日期！"); return; }
+                let dtS = new Date(sVal);
+                let dtE = new Date(eVal);
+                if (dtS > dtE) { const tmp = dtS; dtS = dtE; dtE = tmp; }
+                const cur = new Date(dtS);
+                while (cur <= dtE) {
+                    datesToDelete.push(cur.toISOString().slice(0, 10));
+                    cur.setDate(cur.getDate() + 1);
+                }
+            } else if (currentDeleteMode === "multi") {
+                const text = document.getElementById("delete-date-multiline").value.trim();
+                if (!text) { alert("请输入需要删除的日期！"); return; }
+                const matched = text.match(/\d{4}-\d{2}-\d{2}/g);
+                if (!matched || matched.length === 0) {
+                    alert("未在输入中识别到有效的 YYYY-MM-DD 格式日期！");
+                    return;
+                }
+                datesToDelete = Array.from(new Set(matched));
+            }
+
             closeDeleteDateModal();
-            await deleteDateContent(day);
+            await deleteDateContent(datesToDelete);
         }
 
-        async function deleteDateContent(day) {
-            if (!day) {
-                day = prompt("请输入要彻底删除的归档日期 (格式: YYYY-MM-DD):", "");
-                if (!day) return;
+        async function deleteDateContent(targets) {
+            const dates = Array.isArray(targets) ? targets : [targets];
+            if (dates.length === 0) return;
+            for (const d of dates) {
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+                    alert(`日期格式不合法: ${d}，必须为 YYYY-MM-DD！`);
+                    return;
+                }
             }
-            day = day.trim();
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
-                alert("日期格式不合法，必须为 YYYY-MM-DD！");
-                return;
-            }
-            if (!confirm(`确定要彻底删除 ${day} 的全部数据与日报页面吗？\n\n此操作将删除该日期的采集记录、HTML 日报文件，并自动刷新归档总索引大屏。\n注意：此操作不可逆！`)) {
+            const desc = dates.length === 1 ? dates[0] : `选中的 ${dates.length} 个日期 (${dates.slice(0, 3).join(", ")}${dates.length > 3 ? " 等" : ""})`;
+            if (!confirm(`确定要彻底删除 ${desc} 的全部数据与日报页面吗？\n\n此操作将删除这些日期的原始采集、清洗入库记录、HTML 日报，并彻底重新计算归档总索引并同步清理云端 VPS。\n\n⚠️ 注意：此操作不可撤销！`)) {
                 return;
             }
             try {
                 const res = await fetch("/api/delete_date", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ date: day })
+                    body: JSON.stringify({ dates: dates })
                 });
                 const d = await res.json();
                 if (d.ok) {
-                    alert(d.msg || `已成功删除 ${day} 的全部数据与页面！`);
+                    alert(d.msg || `已成功删除 ${desc} 的全部数据与页面！`);
                     await fetchStatus();
                     if (typeof fetchRunsHistory === "function") fetchRunsHistory(0);
                 } else {
@@ -1795,6 +2043,12 @@
             </div>
 
             <form id="batch-scan-form" onsubmit="submitBatchScan(event)" class="space-y-4 mt-4">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[11px] text-slate-500">快捷区间:</span>
+                    <button type="button" onclick="setBatchDateRange('month')" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">本月至今(1日~今天)</button>
+                    <button type="button" onclick="setBatchDateRange('7d')" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">最近7天</button>
+                    <button type="button" onclick="setBatchDateRange('30d')" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">最近30天</button>
+                </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">起始日期</label>
@@ -1918,7 +2172,7 @@
     <!-- 删除日期内容弹窗 (Delete Date Modal)            -->
     <!-- ============================================== -->
     <div id="delete-date-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 animate-in fade-in zoom-in-95 duration-150">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center space-x-2">
                     <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
@@ -1927,8 +2181,8 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-slate-900">删除指定日期数据内容</h3>
-                        <p class="text-[11px] text-slate-400">彻底删除单日数据、HTML 页面并更新归档索引</p>
+                        <h3 class="text-sm font-bold text-slate-900">删除日期历史数据 (支持单日与批量)</h3>
+                        <p class="text-[11px] text-slate-400">彻底清理指定日期的数据、HTML日报，并重构首页大屏与同步VPS</p>
                     </div>
                 </div>
                 <button onclick="closeDeleteDateModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
@@ -1936,10 +2190,49 @@
                 </button>
             </div>
 
+            <!-- 模式切换选项卡 -->
+            <div class="flex p-1 bg-slate-100 rounded-lg mt-3 text-xs">
+                <button type="button" id="del-mode-tab-single" onclick="switchDeleteMode('single')" class="flex-1 py-1.5 rounded-md font-bold bg-white text-rose-700 shadow-xs transition">单日选择</button>
+                <button type="button" id="del-mode-tab-range" onclick="switchDeleteMode('range')" class="flex-1 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 transition">日期区间批量</button>
+                <button type="button" id="del-mode-tab-multi" onclick="switchDeleteMode('multi')" class="flex-1 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 transition">多日期粘贴输入</button>
+            </div>
+
             <form id="delete-date-form" onsubmit="submitDeleteDate(event)" class="space-y-4 mt-4">
-                <div>
+                <!-- 面板 1：单日模式 -->
+                <div id="del-mode-panel-single" class="space-y-2">
                     <label class="block text-xs font-semibold text-slate-700 mb-1">选择要删除的日期</label>
-                    <input type="date" id="delete-date-input" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-rose-500">
+                    <input type="date" id="delete-date-input" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-rose-500">
+                </div>
+
+                <!-- 面板 2：日期区间模式 -->
+                <div id="del-mode-panel-range" class="hidden space-y-2">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">选择批量删除的日期区间</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block mb-0.5">起始日期 (从)</span>
+                            <input type="date" id="delete-date-start" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-rose-500">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 block mb-0.5">结束日期 (至)</span>
+                            <input type="date" id="delete-date-end" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-rose-500">
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-1.5 pt-1">
+                        <span class="text-[10px] text-slate-400">快捷填充:</span>
+                        <button type="button" onclick="setDeleteRangeDays(3)" class="px-2 py-0.5 text-[10px] bg-slate-100 hover:bg-slate-200 rounded text-slate-600">近3天</button>
+                        <button type="button" onclick="setDeleteRangeDays(7)" class="px-2 py-0.5 text-[10px] bg-slate-100 hover:bg-slate-200 rounded text-slate-600">近7天</button>
+                        <button type="button" onclick="setDeleteRangeDays(15)" class="px-2 py-0.5 text-[10px] bg-slate-100 hover:bg-slate-200 rounded text-slate-600">近15天</button>
+                        <button type="button" onclick="setDeleteRangeDays(30)" class="px-2 py-0.5 text-[10px] bg-slate-100 hover:bg-slate-200 rounded text-slate-600">近30天</button>
+                    </div>
+                </div>
+
+                <!-- 面板 3：多日期输入模式 -->
+                <div id="del-mode-panel-multi" class="hidden space-y-2">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">粘贴或输入多个日期 (支持逗号/空格/换行分隔)</label>
+                    <textarea id="delete-date-multiline" rows="4" placeholder="例如：
+2026-09-18
+2026-09-19
+2026-09-20" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-800 font-mono focus:outline-hidden focus:ring-1 focus:ring-rose-500"></textarea>
                 </div>
 
                 <div class="p-3 bg-rose-50/70 border border-rose-200/80 rounded-xl text-rose-800 text-[11px] leading-relaxed">
@@ -1947,7 +2240,7 @@
                         <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                         <span>警告：此操作不可恢复！</span>
                     </div>
-                    确认后将删除该日期的原始采集 JSON、入库清洗数据、日报 HTML 文件，并重新生成归档总索引（index.html）。
+                    确认后将删除目标日期的原始采集 JSON、入库清洗数据、SQLite 记录及 HTML 日报文件；系统将自动重新计算归档总索引并彻底同步清理 VPS 云端站点。
                 </div>
 
                 <div class="pt-2 flex items-center justify-end space-x-3">

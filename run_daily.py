@@ -264,7 +264,7 @@ def main(argv=None):
 
 
     # 7) 自动同步 VPS（可选）
-    if getattr(config, "AUTO_UPLOAD_VPS", False):
+    if getattr(config, "AUTO_UPLOAD_VPS", True):
         banner("7/8", "同步上传静态站点至 VPS")
         rc, ok = run([PY, SCRIPT / "upload_vps.py"], allow_codes=(0,))
         if not ok:
@@ -278,6 +278,19 @@ def main(argv=None):
             # 统计重点条目
             focus_num = 0
             page_path = config.SITE_DIR / f"{day}.html"
+            max_amount = 0.0
+            daily_json = config.DAILY_DIR / f"{day}.json"
+            if daily_json.exists():
+                try:
+                    with open(daily_json, "r", encoding="utf-8") as f:
+                        _items = json.load(f)
+                        if isinstance(_items, list):
+                            for _it in _items:
+                                _amt = config.extract_amount_from_title(_it.get("title", ""))
+                                if _amt and _amt > max_amount:
+                                    max_amount = _amt
+                except Exception:
+                    pass
             if page_path.exists():
                 try:
                     txt = page_path.read_text(encoding="utf-8")
@@ -288,7 +301,7 @@ def main(argv=None):
                 except Exception:
                     pass
             from scripts.notify_wechat import send_daily_summary, send_alert, check_push_condition
-            should_push, reason = check_push_condition(force=False, total_count=total_cnt, focus_count=focus_num)
+            should_push, reason = check_push_condition(force=False, total_count=total_cnt, focus_count=focus_num, max_amount=max_amount)
             if not should_push:
                 print(f"[微信推送跳过] {reason}")
             else:
