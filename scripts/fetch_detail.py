@@ -28,6 +28,14 @@ import argparse
 import json
 import re
 import sys
+# 控制台编码保护
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 from html import unescape
 from pathlib import Path
 
@@ -112,6 +120,86 @@ def _absolute(base_host, href):
 
 def parse_detail(html, infoid="", url=""):
     """从详情页 HTML 解析标题 / 发布时间 / 正文 / 附件。返回 dict。"""
+    trimmed = (html or "").strip()
+    if trimmed.startswith("{") and ("\"notices\"" in trimmed or "\"projectInfo\"" in trimmed):
+        try:
+            d_json = json.loads(trimmed)
+            d_obj = d_json.get("data", {})
+            if isinstance(d_obj, dict):
+                notices = d_obj.get("notices") or []
+                n0 = notices[0] if notices else {}
+                title = str(n0.get("noticeTitle") or "").strip()
+                p_info = d_obj.get("projectInfo") or {}
+                b_sections = d_obj.get("bidSections") or []
+                pub_time = ""
+                ntime = n0.get("noticeTime")
+                if ntime:
+                    try:
+                        import datetime
+                        tz_bj = datetime.timezone(datetime.timedelta(hours=8))
+                        pub_time = datetime.datetime.fromtimestamp(ntime / 1000, tz=tz_bj).strftime("%Y-%m-%d %H:%M:%S")
+                    except Exception:
+                        pub_time = str(n0.get("publicStartTime") or "")
+
+                html_url = n0.get("htmlUrl")
+                if html_url:
+                    try:
+                        req_sub = urllib.request.Request(html_url, headers={"User-Agent": "Mozilla/5.0"})
+                        with urllib.request.urlopen(req_sub, timeout=6) as resp_sub:
+                            sub_html = resp_sub.read().decode("utf-8", errors="replace")
+                            body_text = _strip_noise(html_to_text(sub_html))
+                            if len(body_text) > 50:
+                                return {
+                                    "infoid": infoid,
+                                    "url": url,
+                                    "title": title,
+                                    "pub_time": pub_time,
+                                    "body": body_text,
+                                    "body_len": len(body_text),
+                                    "attachments": [],
+                                    "parse_mode": "cz_ygcg_html",
+                                }
+                    except Exception:
+                        pass
+
+                lines = []
+                if title:
+                    lines.append(title)
+                t_name = p_info.get("tendereeName")
+                if t_name:
+                    lines.append(f"招标人/采购人: {t_name}")
+                a_name = p_info.get("agencyCompanyName")
+                if a_name:
+                    lines.append(f"代理机构: {a_name}")
+                for s in b_sections:
+                    s_name = s.get("bidSectionName")
+                    if s_name:
+                        lines.append(f"标段名称: {s_name}")
+                for nd in n0.get("noticesDetails") or []:
+                    b_name = nd.get("bidderName")
+                    if b_name:
+                        lines.append(f"中标人: {b_name}")
+                    p_val = nd.get("winBidPrice")
+                    if p_val:
+                        try:
+                            p_num = float(p_val)
+                            lines.append(f"中标金额: {p_num/100:.2f} 元 (约 {p_num/1000000:.2f} 万元)")
+                        except Exception:
+                            lines.append(f"中标金额: {p_val}")
+                body_text = "\n".join(lines)
+                return {
+                    "infoid": infoid,
+                    "url": url,
+                    "title": title,
+                    "pub_time": pub_time,
+                    "body": body_text,
+                    "body_len": len(body_text),
+                    "attachments": [],
+                    "parse_mode": "cz_ygcg_json",
+                }
+        except Exception:
+            pass
+
     title = ""
     m = re.search(r'<div[^>]*class="[^"]*\b%s\b[^"]*"[^>]*>(.*?)</div>' % re.escape(config.DETAIL_TITLE_CLASS),
                   html, re.S | re.I)

@@ -43,7 +43,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.1.0</span>
+                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.1.1</span>
                     </div>
                     <p class="text-xs text-slate-500">Tender Data Control & Settings Center</p>
                 </div>
@@ -216,7 +216,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-semibold text-slate-700 mb-1">常规通用预警关键词 (FOCUS_KEYWORDS)</label>
-                                    <input id="cfg-focus-keywords" type="text" placeholder="公路,医院,学校,安置,水库,治理,灌区,道路" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                                    <input id="cfg-focus-keywords" type="text" placeholder="例如: 码头, 港口, 航道（留空则不开启通用词匹配）" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
                                     <span class="text-[11px] text-slate-400 mt-1 block">单行半角逗号分隔。作为常规工程大类关注词汇。</span>
                                 </div>
                                 <div>
@@ -258,32 +258,16 @@
                                         <span>规则 1：重点跟踪标讯即时强推</span>
                                         <span class="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">即时/零等待</span>
                                     </label>
-                                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">抓取到命中重点跟踪项目、重点跟踪业主或通用预警词（达到金额门槛）时，第一时间向微信发送强推预警，不受最低标讯数门槛限制，商机零遗漏。</p>
+                                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">抓取到命中重点跟踪项目或重点跟踪业主时立即强推（无任何金额门槛）；命中通用预警词（达到金额门槛）时亦第一时间发送强推预警，不受最低标讯数门槛限制，商机零遗漏。</p>
                                 </div>
                             </div>
 
-                            <!-- 规则 2：特大金额专属预警 -->
-                            <div class="bg-slate-50/70 p-4 rounded-xl border border-slate-200 flex items-start space-x-3">
-                                <input type="checkbox" id="cfg-push-rule-large" class="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
-                                <div class="flex-1">
-                                    <label for="cfg-push-rule-large" class="text-xs font-bold text-slate-800 cursor-pointer flex items-center justify-between">
-                                        <span>规则 2：特大金额标讯专属预警</span>
-                                        <span class="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">大额预警</span>
-                                    </label>
-                                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">单笔标讯预算或中标金额达到指定特大金额时触发即时推送：</p>
-                                    <div class="relative mt-1.5">
-                                        <input id="cfg-push-large-amount" type="number" placeholder="5000" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-1.5 pr-12 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                                        <span class="absolute right-3 top-1.5 text-xs text-slate-400 font-medium">万元</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 规则 3：每日定时批次归集推送 -->
+                            <!-- 规则 2：每日定时批次归集推送 -->
                             <div class="bg-slate-50/70 p-4 rounded-xl border border-slate-200 flex items-start space-x-3">
                                 <input type="checkbox" id="cfg-push-rule-batch" class="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
                                 <div class="flex-1">
                                     <label for="cfg-push-rule-batch" class="text-xs font-bold text-slate-800 cursor-pointer flex items-center justify-between">
-                                        <span>规则 3：每日定时批次时段归集推送</span>
+                                        <span>规则 2：每日定时批次时段归集推送</span>
                                         <span class="text-[10px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">定时汇总</span>
                                     </label>
                                     <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">到达指定时段集中归集最新标讯并推送简报（支持配置多个批次，半角逗号分隔）：</p>
@@ -291,24 +275,12 @@
                                 </div>
                             </div>
 
-                            <!-- 规则 4：每次采集入库后全量推送 -->
-                            <div class="bg-slate-50/70 p-4 rounded-xl border border-slate-200 flex items-start space-x-3">
-                                <input type="checkbox" id="cfg-push-rule-complete" class="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
-                                <div class="flex-1">
-                                    <label for="cfg-push-rule-complete" class="text-xs font-bold text-slate-800 cursor-pointer flex items-center justify-between">
-                                        <span>规则 4：每次全流程采集入库后推送</span>
-                                        <span class="text-[10px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">全流程即推</span>
-                                    </label>
-                                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">每当定时爬虫全流程执行完毕且入库成功后，立即向微信发送全量标讯简报。</p>
-                                </div>
-                            </div>
-
-                            <!-- 规则 5：采集异常与系统故障告警 -->
+                            <!-- 规则 3：采集异常与系统故障告警 -->
                             <div class="bg-slate-50/70 p-4 rounded-xl border border-slate-200 flex items-start space-x-3">
                                 <input type="checkbox" id="cfg-push-rule-error" class="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
                                 <div class="flex-1">
                                     <label for="cfg-push-rule-error" class="text-xs font-bold text-slate-800 cursor-pointer flex items-center justify-between">
-                                        <span>规则 5：采集异常中断故障告警</span>
+                                        <span>规则 3：采集异常中断故障告警</span>
                                         <span class="text-[10px] text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">故障告警</span>
                                     </label>
                                     <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">当采集发生网络熔断、源站防爬封禁或流程意外中断时，第一时间推送微信告警卡片。</p>
@@ -324,7 +296,7 @@
                                         <input id="cfg-push-min-count" type="number" min="0" value="1" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-1.5 pr-12 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
                                         <span class="absolute right-3 top-1.5 text-xs text-slate-400 font-medium">条</span>
                                     </div>
-                                    <p class="text-[11px] text-slate-400 mt-1">常规简报需达到该数量才发，防止空发；重点标讯与特大金额预警不受此限制，保证零遗漏。</p>
+                                    <p class="text-[11px] text-slate-400 mt-1">常规简报需达到该数量才发，防止空发；重点标讯预警不受此限制，保证零遗漏。</p>
                                 </div>
                             </div>
                         </div>
@@ -817,7 +789,7 @@
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.1.0</span>
+        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.1.1</span>
     </footer>
 
     <script>
@@ -1127,11 +1099,8 @@
                 // 多规则微信推送设置加载
                 const activeRules = data.PUSH_TRIGGER_RULES || [];
                 setChecked("cfg-push-rule-focus", activeRules.includes("focus"));
-                setChecked("cfg-push-rule-large", activeRules.includes("large_amount"));
                 setChecked("cfg-push-rule-batch", activeRules.includes("batch_time"));
-                setChecked("cfg-push-rule-complete", activeRules.includes("complete"));
                 setChecked("cfg-push-rule-error", activeRules.includes("error"));
-                setVal("cfg-push-large-amount", data.PUSH_LARGE_AMOUNT || 5000);
                 setVal("cfg-push-min-count", data.PUSH_MIN_COUNT || 1);
                 setVal("cfg-push-batch-hours", data.PUSH_BATCH_HOURS || "08:00, 17:30");
 
@@ -1181,9 +1150,7 @@
             // 收集多条推送规则
             const pushRules = [];
             if (document.getElementById("cfg-push-rule-focus")?.checked) pushRules.push("focus");
-            if (document.getElementById("cfg-push-rule-large")?.checked) pushRules.push("large_amount");
             if (document.getElementById("cfg-push-rule-batch")?.checked) pushRules.push("batch_time");
-            if (document.getElementById("cfg-push-rule-complete")?.checked) pushRules.push("complete");
             if (document.getElementById("cfg-push-rule-error")?.checked) pushRules.push("error");
             const pushRulesStr = pushRules.join(",");
 
@@ -1193,10 +1160,9 @@
                 FOCUS_KEYWORDS_STR: getVal("cfg-focus-keywords"),
                 FOCUS_MIN_AMOUNT: getVal("cfg-focus-min-amount"),
                 PUSH_TRIGGER_RULES: pushRulesStr,
-                PUSH_LARGE_AMOUNT: getVal("cfg-push-large-amount", "5000"),
                 PUSH_ALERT_FOCUS: pushRules.includes("focus") ? "true" : "false",
                 PUSH_NOTIFY_ERROR: pushRules.includes("error") ? "true" : "false",
-                PUSH_TRIGGER_MODE: pushRules.includes("complete") ? "any_complete" : (pushRules.includes("batch_time") ? "batch_time" : (pushRules.includes("focus") ? "focus_only" : "any_complete")),
+                PUSH_TRIGGER_MODE: pushRules.includes("batch_time") ? "batch_time" : (pushRules.includes("focus") ? "focus_only" : "batch_time"),
                 PUSH_MIN_COUNT: getVal("cfg-push-min-count", "1"),
                 PUSH_BATCH_HOURS: getVal("cfg-push-batch-hours", "08:00, 17:30"),
                 SITE_BASE_URL: getVal("cfg-site-base-url"),

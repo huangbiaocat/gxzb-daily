@@ -20,7 +20,7 @@ else:
     REPO_ROOT = Path(__file__).resolve().parent
 
 # ------------------------------------------------------------------ 统一版本
-APP_VERSION = "v0.1.0"
+APP_VERSION = "v0.1.1"
 
 # ------------------------------------------------------------------ .env 解析
 def load_env_file(path=None):
@@ -69,10 +69,11 @@ _ENV = load_env_file()
 def get(key, default=""):
     """环境变量优先，其次 .env，最后默认值。"""
     val = os.environ.get(key)
-    if val:
+    if val is not None and val != "":
         return val
-    val = _ENV.get(key)
-    return default if not val else val
+    if key in _ENV:
+        return _ENV[key]
+    return default
 
 
 def get_path(key, default):
@@ -182,14 +183,14 @@ BADGE_CLASS_MAP = {
     "中标公告": "bg-green-100 text-green-800 border-green-200",
 }
 # 重点预警关键词：标题命中即标记，纯规则判断，不依赖人工
-FOCUS_KEYWORDS = [k.strip() for k in get("FOCUS_KEYWORDS", "公路,医院,学校,安置,水库,治理,灌区,道路").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
+FOCUS_KEYWORDS = [k.strip() for k in get("FOCUS_KEYWORDS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
 FOCUS_PROJECTS = [k.strip() for k in get("FOCUS_PROJECTS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
 FOCUS_OWNERS = [k.strip() for k in get("FOCUS_OWNERS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
 FOCUS_PROJECT_TYPES = [k.strip() for k in get("FOCUS_PROJECT_TYPES", "").replace("\n", ",").split(",") if k.strip()]
 FOCUS_MIN_AMOUNT_RAW = get("FOCUS_MIN_AMOUNT", "").strip()
 
 def parse_min_amount_val(val: str) -> float:
-    """解析金额阈值字符串为元数值（float）。"""
+    """解析金额阈值字符串为元数值（float）。界面输入默认单位为万元。"""
     if not val:
         return 0.0
     s = str(val).replace(",", "").replace("，", "").strip()
@@ -200,7 +201,11 @@ def parse_min_amount_val(val: str) -> float:
             return float(s.replace("万", "").replace("元", "").strip()) * 10000.0
         elif "元" in s:
             return float(s.replace("元", "").strip())
-        return float(s)
+        num = float(s)
+        # 纯数字录入时默认单位为万元（如 500 表示 500 万元）
+        if num > 0 and num < 1000000:
+            return num * 10000.0
+        return num
     except Exception:
         return 0.0
 
@@ -329,7 +334,7 @@ PUSH_NOTIFY_ERROR = get("PUSH_NOTIFY_ERROR", "true").strip().lower() in ("true",
 PUSH_BATCH_HOURS = get("PUSH_BATCH_HOURS", "08:00, 17:30").strip()
 
 # 触发推送多规则配置 (允许多条规则同时生效)
-# 可选规则: 'focus'(重点标讯即时推送), 'batch_time'(定时批次归集), 'complete'(采集完成推送), 'large_amount'(特大金额预警), 'error'(系统异常告警)
+# 可选规则: 'focus'(重点标讯即时推送), 'batch_time'(定时批次归集), 'error'(系统异常告警)
 PUSH_TRIGGER_RULES_RAW = get("PUSH_TRIGGER_RULES", "").strip()
 if PUSH_TRIGGER_RULES_RAW:
     PUSH_TRIGGER_RULES = [r.strip() for r in PUSH_TRIGGER_RULES_RAW.split(",") if r.strip()]
@@ -338,18 +343,17 @@ else:
     _rules = []
     if PUSH_ALERT_FOCUS:
         _rules.append("focus")
-    if PUSH_TRIGGER_MODE == "any_complete":
-        _rules.append("complete")
-    elif PUSH_TRIGGER_MODE == "batch_time":
+    if PUSH_TRIGGER_MODE == "batch_time":
         _rules.append("batch_time")
     elif PUSH_TRIGGER_MODE == "focus_only":
         if "focus" not in _rules:
             _rules.append("focus")
     if PUSH_NOTIFY_ERROR:
         _rules.append("error")
+    if not _rules:
+        _rules = ["focus", "batch_time", "error"]
     PUSH_TRIGGER_RULES = _rules
 
-PUSH_LARGE_AMOUNT = float(get("PUSH_LARGE_AMOUNT", "5000").strip() or 5000)
 AUTO_UPLOAD_VPS = get("AUTO_UPLOAD_VPS", "true").strip().lower() in ("true", "1", "yes", "on")
 VPS_HOST = get("VPS_HOST", "217.142.149.2").strip()
 VPS_PORT = get("VPS_PORT", "22").strip()

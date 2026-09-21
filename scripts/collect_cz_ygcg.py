@@ -7,10 +7,18 @@
 前端详情: https://cz.gxygcg.com/purchase/detail/?purchase_projects_ids={pid}&notice_type={ntype}&notice_id={nid}
 """
 
+import sys
+# 控制台编码保护
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import datetime
 import json
 import re
-import sys
 import time
 import urllib.parse
 import urllib.request
@@ -41,6 +49,18 @@ CZ_NOTICE_TYPE_MAP = {
     5: {"stage": "中标公告", "categorynum": "001001001006"},
 }
 
+def get_cz_stage_and_category(ntype: int, title: str = ""):
+    if ntype in CZ_NOTICE_TYPE_MAP:
+        return CZ_NOTICE_TYPE_MAP[ntype]["stage"], CZ_NOTICE_TYPE_MAP[ntype]["categorynum"]
+    t = title.lower()
+    if any(k in t for k in ["候选人", "候选"]):
+        return "中标公示", "001001001005"
+    if any(k in t for k in ["中标", "成交", "结果"]):
+        return "中标公告", "001001001006"
+    if any(k in t for k in ["变更", "澄清", "答疑", "补充", "更正", "修改"]):
+        return "澄清/答疑", "001001001003"
+    return "招标公告", "001001001002"
+
 def _open_url(url, timeout=5):
     """带重试与绕过系统代理的请求。"""
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -68,25 +88,25 @@ def normalize_cz_record(it, day=None):
         return None
 
     ntype = int(it.get("noticeType") or 1)
-    mapping = CZ_NOTICE_TYPE_MAP.get(ntype, {"stage": "招标公告", "categorynum": "001001001002"})
-    stage = mapping["stage"]
-    categorynum = mapping["categorynum"]
+    stage, categorynum = get_cz_stage_and_category(ntype, title)
 
     # 阳光采购平台工程类均归入房建市政/工程类别
     industry = "房建市政"
-    stage_key = config.STAGE_KEY_MAP[stage]
-    badge_class = config.BADGE_CLASS_MAP[stage]
+    stage_key = config.STAGE_KEY_MAP.get(stage, "other")
+    badge_class = config.BADGE_CLASS_MAP.get(stage, "badge-gray")
 
-   # 发布时间
-   ntime = it.get("noticeTime")
-   if ntime:
-       try:
+    # 发布时间
+    ntime = it.get("noticeTime")
+    if ntime:
+        try:
             tz_bj = datetime.timezone(datetime.timedelta(hours=8))
             pub_time = datetime.datetime.fromtimestamp(ntime / 1000, tz=tz_bj).strftime("%Y-%m-%d %H:%M:%S")
-       except Exception:
-           pub_time = str(it.get("publishDate") or "")
+        except Exception:
+            pub_time = str(it.get("publishDate") or "")
     else:
         pub_time = str(it.get("publishDate") or "")
+
+    owner = str(it.get("tendererName") or it.get("creatorName") or "").strip()
 
     # 目标链接与详情 API 链接
     pid = str(it.get("purchaseProjectsIds") or "")
@@ -94,13 +114,13 @@ def normalize_cz_record(it, day=None):
     detail_url = f"{CZ_DETAIL_API}?purchase_projects_ids={pid}&notice_type={ntype}&notice_id={infoid}"
 
     reasons = []
-    # 1. 重点跟踪项目
+    # 1. 重点跟踪项目（无任何金额门槛，命中即触发）
     proj_hits = [p for p in getattr(config, "FOCUS_PROJECTS", []) if config.fuzzy_match(p, title)]
     if proj_hits:
         reasons.extend(["命中重点项目: %s" % p for p in proj_hits])
 
-    # 2. 重点业主
-    owner_hits = [o for o in getattr(config, "FOCUS_OWNERS", []) if config.fuzzy_match(o, title)]
+    # 2. 重点跟踪业主（无任何金额门槛，命中即触发）
+    owner_hits = [o for o in getattr(config, "FOCUS_OWNERS", []) if (config.fuzzy_match(o, title) or (owner and config.fuzzy_match(o, owner)))]
     if owner_hits:
         reasons.extend(["命中重点业主: %s" % o for o in owner_hits])
 
@@ -109,7 +129,7 @@ def normalize_cz_record(it, day=None):
     if type_hits:
         reasons.extend(["命中重点类型: %s" % t for t in type_hits])
 
-    # 4. 重点预警关键词
+    # 4. 重点预警关键词（若设置了金额门槛则需达到金额门槛）
     raw_kw_hits = [k for k in getattr(config, "FOCUS_KEYWORDS", []) if k in title]
     kw_hits = []
     if raw_kw_hits:
@@ -120,11 +140,11 @@ def normalize_cz_record(it, day=None):
                 from extractors.normalize import format_money
                 kw_hits = raw_kw_hits
                 reasons.extend(["命中关键词: %s (金额%s >= 门槛%s)" % (k, format_money(amt), format_money(min_amount)) for k in kw_hits])
-       else:
-           kw_hits = raw_kw_hits
-           reasons.extend(["命中关键词: %s" % k for k in kw_hits])
+        else:
+            kw_hits = raw_kw_hits
+            reasons.extend(["命中关键词: %s" % k for k in kw_hits])
 
-   is_focus = 1 if (proj_hits or owner_hits or type_hits or kw_hits) else 0
+    is_focus = 1 if (proj_hits or owner_hits or type_hits or kw_hits) else 0
     focus_tags = []
     if proj_hits:
         focus_tags.append("重点项目")
@@ -137,29 +157,29 @@ def normalize_cz_record(it, day=None):
     if is_focus and not focus_tags:
         focus_tags.append("重点关注")
 
-   return {
-       "infoid": infoid,
-       "title": title,
-       "categorynum": categorynum,
-       "industry": industry,
-       "stage": stage,
-       "stage_key": stage_key,
-       "badge_class": badge_class,
-       "areacode": "451400",
+    return {
+        "infoid": infoid,
+        "title": title,
+        "categorynum": categorynum,
+        "industry": industry,
+        "stage": stage,
+        "stage_key": stage_key,
+        "badge_class": badge_class,
+        "areacode": "451400",
         "areaname": "崇左市",
         "source": "崇左阳光采购",
-       "pub_time": pub_time,
-       "link": link,
-       "detail_url": detail_url,
-       "is_focus": is_focus,
+        "pub_time": pub_time,
+        "link": link,
+        "detail_url": detail_url,
+        "is_focus": is_focus,
         "focus_tags": focus_tags,
-       "focus_reason": reasons,
-       "owner": "",
-   }
+        "focus_reason": reasons,
+        "owner": owner,
+    }
 
 
 def collect_cz_ygcg(day, max_pages=25):
-   """从崇左阳光采购平台采集当日【工程类】公告。
+    """从崇左阳光采购平台采集当日【工程类】公告。
     
     严格锁定 project_type: '工程'，其下项目有一个算一个全部采集，不做标题二次过滤。
     """
@@ -185,23 +205,26 @@ def collect_cz_ygcg(day, max_pages=25):
             break
 
         data_obj = resp.get("data")
-        if not isinstance(data_obj, dict):
-            break
-        items = data_obj.get("data") or []
+        if isinstance(data_obj, dict):
+            items = data_obj.get("data") or []
+        elif isinstance(data_obj, list):
+            items = data_obj
+        else:
+            items = []
         if not items:
             break
 
         raw_records.extend(items)
         has_current_or_newer = False
 
-       for it in items:
-           ntime = it.get("noticeTime")
-           if not ntime:
-               continue
+        for it in items:
+            ntime = it.get("noticeTime")
+            if not ntime:
+                continue
             tz_bj = datetime.timezone(datetime.timedelta(hours=8))
             item_date = datetime.datetime.fromtimestamp(ntime / 1000, tz=tz_bj).strftime("%Y-%m-%d")
            
-           if item_date == day:
+            if item_date == day:
                 has_current_or_newer = True
                 norm = normalize_cz_record(it, day=day)
                 if norm:

@@ -103,12 +103,15 @@ class ProcessManager:
                 # 使用 unbuffered 运行
                 env = os.environ.copy()
                 env["PYTHONUNBUFFERED"] = "1"
+                env["PYTHONIOENCODING"] = "utf-8"
                 proc = subprocess.Popen(
                     cmd,
                     cwd=str(ROOT_DIR),
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
+                    encoding="utf-8",
+                    errors="replace",
                     bufsize=1,
                     env=env
                 )
@@ -181,11 +184,11 @@ def get_git_info():
         )
         if res.returncode == 0:
             commit = res.stdout.strip()
-            app_ver = getattr(config, "APP_VERSION", "v0.1.0")
+            app_ver = getattr(config, "APP_VERSION", "v0.1.1")
             return {"commit": commit, "version": f"{app_ver} (#{commit})"}
     except Exception:
         pass
-    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.1.0")}
+    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.1.1")}
 
 def get_scheduled_task_status():
     """检测 Windows 计划任务 ZtbCollector_Sync 的运行/就绪/启用状态"""
@@ -383,7 +386,7 @@ def read_config_env():
                 raw_env[k.strip()] = val
 
     res = {
-        "FOCUS_KEYWORDS": getattr(config, "FOCUS_KEYWORDS", ["公路", "医院", "学校", "水利", "防洪", "大桥"]),
+        "FOCUS_KEYWORDS": getattr(config, "FOCUS_KEYWORDS", []),
         "FOCUS_KEYWORDS_STR": ",".join(getattr(config, "FOCUS_KEYWORDS", [])) if getattr(config, "FOCUS_KEYWORDS", None) else "",
         "FOCUS_PROJECTS": "\n".join(getattr(config, "FOCUS_PROJECTS", [])) if getattr(config, "FOCUS_PROJECTS", None) else "",
         "FOCUS_OWNERS": "\n".join(getattr(config, "FOCUS_OWNERS", [])) if getattr(config, "FOCUS_OWNERS", None) else "",
@@ -405,9 +408,8 @@ def read_config_env():
         "PUSH_MIN_COUNT": getattr(config, "PUSH_MIN_COUNT", 1),
         "PUSH_NOTIFY_ERROR": "true" if getattr(config, "PUSH_NOTIFY_ERROR", True) else "false",
         "PUSH_BATCH_HOURS": getattr(config, "PUSH_BATCH_HOURS", "08:00, 17:30"),
-        "PUSH_TRIGGER_RULES": getattr(config, "PUSH_TRIGGER_RULES", ["focus", "complete", "error"]),
-        "PUSH_TRIGGER_RULES_STR": ",".join(getattr(config, "PUSH_TRIGGER_RULES", ["focus", "complete", "error"])),
-        "PUSH_LARGE_AMOUNT": getattr(config, "PUSH_LARGE_AMOUNT", 5000),
+        "PUSH_TRIGGER_RULES": getattr(config, "PUSH_TRIGGER_RULES", ["focus", "batch_time", "error"]),
+        "PUSH_TRIGGER_RULES_STR": ",".join(getattr(config, "PUSH_TRIGGER_RULES", ["focus", "batch_time", "error"])),
         "MONITOR_START_TIME": getattr(config, "MONITOR_START_TIME", "08:00"),
         "MONITOR_END_TIME": getattr(config, "MONITOR_END_TIME", "20:00"),
         "MONITOR_INTERVAL_MINUTES": getattr(config, "MONITOR_INTERVAL_MINUTES", 10),

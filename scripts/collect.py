@@ -34,6 +34,14 @@
 import argparse
 import json
 import sys
+# 控制台编码保护
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parent.parent

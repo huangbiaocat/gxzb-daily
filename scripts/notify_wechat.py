@@ -6,9 +6,17 @@
 4. 消息点击直达 VPS 对应日期的日报明细或首页，无外部三方依赖（纯标准库 urllib）
 """
 
+import sys
+# 控制台编码保护
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import json
 import logging
-import sys
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -163,9 +171,7 @@ def check_push_condition(force: bool = False, total_count: int = 0, focus_count:
     检查当前时刻与采集数据是否满足推送条件（支持多条规则同时生效）：
     1. force=True：手动触发或强制模式，直接放行。
     2. 多规则评估（支持多规则并行生效，满足任意已启用的规则即触发）：
-       - 'focus': 命中重点跟踪标讯即时强推（不受最低标讯数门槛限制）
-       - 'large_amount': 单笔标讯金额达到设定特大门槛即时预警
-       - 'complete': 每次全流程采集入库完成后推送
+       - 'focus': 命中重点项目、重点业主（无门槛立即推）或通用预警词（达金额门槛立即推），不受最低标讯数门槛限制
        - 'batch_time': 到达每日指定批次时段集中归集推送
     返回 (should_push: bool, reason: str)
     """
@@ -178,31 +184,23 @@ def check_push_condition(force: bool = False, total_count: int = 0, focus_count:
         # 兼容旧版配置项
         if getattr(config, "PUSH_ALERT_FOCUS", True):
             active_rules.append("focus")
-        old_mode = getattr(config, "PUSH_TRIGGER_MODE", "any_complete")
-        if old_mode == "any_complete":
-            active_rules.append("complete")
-        elif old_mode == "batch_time":
+        old_mode = getattr(config, "PUSH_TRIGGER_MODE", "")
+        if old_mode == "batch_time":
             active_rules.append("batch_time")
         elif old_mode == "focus_only":
             if "focus" not in active_rules:
                 active_rules.append("focus")
+        if not active_rules:
+            active_rules = ["focus", "batch_time", "error"]
 
-    # 1. 优先评估优先级最高、不受数量门槛限制的即时预警规则
+    # 1. 优先评估不受数量门槛限制的即时预警规则（重点项目与重点业主无金额门槛，命中即推）
     if "focus" in active_rules and focus_count > 0:
-        return True, f"命中重点跟踪规则：发现 {focus_count} 条重点标讯，触发即时强推"
+        return True, f"命中重点跟踪规则：发现 {focus_count} 条重点标讯（重点项目/重点业主/达标预警词），触发即时强推"
 
-    large_amt_threshold = float(getattr(config, "PUSH_LARGE_AMOUNT", 5000.0) or 5000.0)
-    if "large_amount" in active_rules and max_amount >= large_amt_threshold:
-        return True, f"命中大额预警规则：单笔标讯最高金额达 {max_amount:.2f} 万元 (≥ 门槛 {large_amt_threshold:.0f} 万元)，触发即时推送"
-
-    # 2. 最低数量门槛限制（仅针对常规全量或定时归集推送）
+    # 2. 最低数量门槛限制（针对定时归集推送）
     min_cnt = int(getattr(config, "PUSH_MIN_COUNT", 1))
     if total_count > 0 and total_count < min_cnt:
         return False, f"当日标讯总数 ({total_count}) 低于设定的最低推送门槛 ({min_cnt} 条)，跳过常规推送"
-
-    # 3. 采集完成即时全量推送
-    if "complete" in active_rules:
-        return True, f"命中采集完成规则：全流程采集入库完成，当日共归集 {total_count} 条标讯"
 
     from datetime import datetime, time
     import sqlite3
@@ -220,7 +218,7 @@ def check_push_condition(force: bool = False, total_count: int = 0, focus_count:
             
     today_str = now.strftime("%Y-%m-%d")
 
-    # 4. 定时批次时段归集推送
+    # 3. 定时批次时段归集推送
     if "batch_time" in active_rules:
         batch_hours_str = getattr(config, "PUSH_BATCH_HOURS", "08:00, 17:30")
         for hour_item in batch_hours_str.replace("，", ",").split(","):

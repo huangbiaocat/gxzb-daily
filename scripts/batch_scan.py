@@ -11,6 +11,14 @@
     python scripts/batch_scan.py --start-date 2026-09-01 --end-date 2026-09-15
 """
 import sys
+# 控制台编码保护，彻底避免 Windows GBK 环境下 UnicodeEncodeError 中断批量调度
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import time
 import argparse
 import subprocess
@@ -51,7 +59,7 @@ def main():
         curr += timedelta(days=1)
 
     print("=" * 68)
-    print(f"★ 启动历史日期批量补扫任务：共 {len(target_dates)} 天 ({target_dates[0]} 至 {target_dates[-1]})")
+    print(f"[*] 启动历史日期批量补扫任务：共 {len(target_dates)} 天 ({target_dates[0]} 至 {target_dates[-1]})", flush=True)
     print("=" * 68)
 
     success_days = []
@@ -72,8 +80,11 @@ def main():
 
             # 2. 数据合并入库 (reconcile)
             print(f"    [步骤 2/3] 合并数据入库 (reconcile)...", flush=True)
-            from run_daily import reconcile
-            reconcile(day_str, "merge")
+            from run_daily import reconcile, refresh_archive
+            try:
+                reconcile(day_str, "merge")
+            except Exception as e_rec:
+                print(f"    [警告] {day_str} 合并入库异常: {e_rec}", flush=True)
 
             # 3. 构建每日 HTML 页面（单日补扫跳过逐日上传 VPS，全量结束后统一发布）
             print(f"    [步骤 3/3] 构建每日日报 HTML 页面...", flush=True)
@@ -82,30 +93,34 @@ def main():
             elapsed = time.time() - t_start
             if res2.returncode == 0:
                 success_days.append(day_str)
-                print(f"✔ 日期 {day_str} 采集并构建完成！(耗时: {elapsed:.1f}s)", flush=True)
+                print(f"[OK] 日期 {day_str} 采集并构建完成！(耗时: {elapsed:.1f}s)", flush=True)
+                try:
+                    refresh_archive(day_str)
+                except Exception:
+                    pass
             else:
                 failed_days.append(day_str)
-                print(f"✘ 日期 {day_str} 构建失败，返回码: {res2.returncode} (耗时: {elapsed:.1f}s)", flush=True)
+                print(f"[FAIL] 日期 {day_str} 构建失败，返回码: {res2.returncode} (耗时: {elapsed:.1f}s)", flush=True)
         except Exception as e_day:
             failed_days.append(day_str)
-            print(f"✘ 日期 {day_str} 调度过程发生未捕获异常: {e_day}，继续处理下一日...", flush=True)
+            print(f"[FAIL] 日期 {day_str} 调度过程发生未捕获异常: {e_day}，继续处理下一日...", flush=True)
 
     # 4. 全部补扫完成后，全量重构归档总表（index.html）
     print("\n" + "=" * 68, flush=True)
-    print("★ 所有指定日期已完成扫描，正在刷新更新历史归档总索引 (index.html) ...", flush=True)
+    print("[*] 所有指定日期已完成扫描，正在刷新更新历史归档总索引 (index.html) ...", flush=True)
     subprocess.run([py_exe, "-u", str(ROOT_DIR / "scripts" / "build_archive_page.py")])
 
     # 5. 若配置了自动上传，统一同步云端
     if not args.skip_upload and getattr(config, "AUTO_UPLOAD_VPS", True):
-        print("\n★ 正在将全量补扫数据与网页同步发布到云端服务器 ...")
+        print("\n[*] 正在将全量补扫数据与网页同步发布到云端服务器 ...", flush=True)
         upload_script = ROOT_DIR / "scripts" / "upload_vps.py"
         if upload_script.exists():
             subprocess.run([py_exe, "-u", str(upload_script)])
 
     print("\n" + "=" * 68)
-    print(f"★ 批量补扫总结: 成功 {len(success_days)} 天，失败 {len(failed_days)} 天")
+    print(f"[*] 批量补扫总结: 成功 {len(success_days)} 天，失败 {len(failed_days)} 天", flush=True)
     if failed_days:
-        print(f"失败日期列表: {failed_days}")
+        print(f"失败日期列表: {failed_days}", flush=True)
     print("=" * 68)
 
 

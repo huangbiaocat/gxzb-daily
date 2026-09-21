@@ -115,8 +115,8 @@ for it in items:
     title = it.get("title", "")
     industry = it.get("industry", "")
     owner = it.get("owner", "")
-    reasons = list(it.get("focus_reason") or [])
-    focus_tags = list(it.get("focus_tags") or [])
+    reasons = []
+    focus_tags = []
     
     proj_hits = [p for p in getattr(config, "FOCUS_PROJECTS", []) if config.fuzzy_match(p, title)]
     if proj_hits:
@@ -187,10 +187,17 @@ for it in items:
         it["is_focus"] = 1
         it["focus_reason"] = reasons
         it["focus_tags"] = focus_tags
-    elif it.get("is_focus"):
-        it["focus_tags"] = focus_tags if focus_tags else ["重点关注"]
     else:
+        it["is_focus"] = 0
+        it["focus_reason"] = []
         it["focus_tags"] = []
+
+# 回写清洗更新后的 items 到当日 JSON 文件，彻底消除历史脏数据残留
+if DATA.exists():
+    try:
+        DATA.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as _e:
+        pass
 
 # ------------------------------------------------------------------ 0.5 运行日志与 infoid 台账
 # 官方接口返回的 infoid 即公告唯一识别码，直接作为入库判重 / 失败重查 / 跨日去重的主键。
@@ -469,7 +476,7 @@ __DAILY_CSS__
 <div class="brand-text">
 <div style="display: flex; align-items: center; gap: 8px;">
 <h1 style="margin: 0;">招投标每日简报</h1>
-                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.1.0</span>
+                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.1.1</span>
 </div>
 <p>__DATE__ · 全区公告分类明细</p>
 </div>
