@@ -1426,7 +1426,7 @@
                             type: "error",
                             title: "同步升级遇到问题",
                             badgeText: "升级失败",
-                            message: "未能成功同步最新代码。可能原因包括：网络暂时无法访问 GitHub、本地存在未提交代码冲突等。\n详情请查看调度监控日志输出。",
+                            message: "未能成功同步最新代码。可能原因：国内网络直连 GitHub 访问超时或 Git 本地存在未提交冲突。\n若多次重试受阻，可在项目根目录双击运行【scripts/sync_from_server.bat】使用专线云镜像秒级升级。",
                             commit: commitInfo
                         });
                     }
