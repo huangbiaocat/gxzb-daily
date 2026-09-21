@@ -58,7 +58,7 @@ def main():
             fp = REPO / rel
             if fp.exists():
                 data = fp.read_bytes()
-                if fp.suffix.lower() == ".bat":
+                if fp.suffix.lower() in [".bat", ".cmd", ".ps1"]:
                     data = data.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
                 zf.writestr(rel, data)
                 print(f"  + 添加: {rel}")
