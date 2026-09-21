@@ -2,7 +2,15 @@
 rem ========================================================
 rem  Sync and Update from Server (Compatible with all CMD/ANSI)
 rem ========================================================
-cd /d "%~dp0.."
+if "%~1"=="--in-temp" goto DO_SYNC
+
+copy /y "%~f0" "%TEMP%\ztb_sync_tmp.bat" >nul
+call "%TEMP%\ztb_sync_tmp.bat" --in-temp "%~dp0.."
+del "%TEMP%\ztb_sync_tmp.bat" >nul 2>&1
+exit /b
+
+:DO_SYNC
+cd /d "%~2"
 
 echo [1/3] Fetching update_i5.zip from cloud server...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri ('https://ztb.139771.xyz/update_i5.zip?t=' + [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()) -OutFile 'update_i5.zip' -UseBasicParsing -TimeoutSec 30; Write-Host '[OK] Download successful.' } catch { Write-Host '[FAIL] Download error:' $_.Exception.Message; exit 1 }"

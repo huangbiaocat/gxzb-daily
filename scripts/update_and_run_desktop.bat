@@ -1,6 +1,14 @@
 @echo off
 chcp 65001 >nul
-cd /d "%~dp0\.."
+if "%~1"=="--in-temp" goto RUN_APP
+
+copy /y "%~f0" "%TEMP%\ztb_run_tmp.bat" >nul
+call "%TEMP%\ztb_run_tmp.bat" --in-temp "%~dp0.."
+del "%TEMP%\ztb_run_tmp.bat" >nul 2>&1
+exit /b
+
+:RUN_APP
+cd /d "%~2"
 
 echo ========================================================
 echo   正在启动 招投标桌面控制中心 (自动热更新 + 端口守护)

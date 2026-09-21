@@ -57,7 +57,10 @@ def main():
         for rel in FILES_TO_PACK:
             fp = REPO / rel
             if fp.exists():
-                zf.write(fp, rel)
+                data = fp.read_bytes()
+                if fp.suffix.lower() == ".bat":
+                    data = data.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+                zf.writestr(rel, data)
                 print(f"  + 添加: {rel}")
             else:
                 print(f"  ! 跳过不存在的文件: {rel}")
