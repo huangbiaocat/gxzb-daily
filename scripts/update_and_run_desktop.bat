@@ -7,7 +7,7 @@ echo   正在启动 招投标桌面控制中心 (自动热更新 + 端口守护)
 echo ========================================================
 
 echo [1/3] 正在检查并获取云端最新版本...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri ('https://ztb.139771.xyz/update_i5.zip?t=' + [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()) -OutFile 'update_i5.zip' -UseBasicParsing -TimeoutSec 15; Expand-Archive -Path 'update_i5.zip' -DestinationPath '.' -Force; Remove-Item 'update_i5.zip' -Force; Write-Host '[Update] 已成功同步云端最新程序版本！' } catch { Write-Host '[Update] 网络离线或跳过，使用本机现有版本继续启动。' }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri ('https://ztb.139771.xyz/update_i5.zip?t=' + [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()) -OutFile 'update_i5.zip' -UseBasicParsing -TimeoutSec 15; Expand-Archive -Path 'update_i5.zip' -DestinationPath '.' -Force; Remove-Item 'update_i5.zip' -Force; $v = ''; if (Test-Path 'config.py') { $l = Get-Content 'config.py' | Select-String 'APP_VERSION'; if ($l -match '[\x22\x27]([^\x22\x27]+)[\x22\x27]') { $v = ' (' + $matches[1] + ')' } }; Write-Host ('[Update] 已成功同步云端最新程序版本' + $v + '！') -ForegroundColor Green } catch { Write-Host '[Update] 网络离线或跳过，使用本机现有版本继续启动。' }"
 
 echo [2/3] 正在守护端口，清理可能残留的 8089 僵死进程...
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr :8089 ^| findstr LISTENING') do (

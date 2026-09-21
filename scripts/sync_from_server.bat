@@ -15,10 +15,8 @@ if not exist "update_i5.zip" (
 echo [2/3] Extracting and updating files...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Expand-Archive -Path 'update_i5.zip' -DestinationPath '.' -Force; Remove-Item 'update_i5.zip' -Force; Write-Host '[OK] Update extracted.' } catch { Write-Host '[FAIL] Extract error:' $_.Exception.Message; exit 1 }"
 
-echo [3/3] Update completed successfully!
-echo ========================================================
-echo  All scripts and templates updated to latest version.
-echo ========================================================
+echo [3/3] Checking updated system version...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $v = 'v0.1.4'; if (Test-Path 'config.py') { $l = Get-Content 'config.py' | Select-String 'APP_VERSION'; if ($l -match '[\x22\x27]([^\x22\x27]+)[\x22\x27]') { $v = $matches[1] } }; Write-Host '========================================================' -ForegroundColor Green; Write-Host ('  [OK] 恭喜！已成功升级至最新版本: ' + $v) -ForegroundColor Green; Write-Host '========================================================' -ForegroundColor Green"
 
 :END
 pause
