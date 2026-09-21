@@ -110,6 +110,8 @@ def send_daily_summary(day: str, total_count: int, focus_count: int, failed_step
 
 def send_alert(day: str, error_msg: str, step_name: str = "每日定时任务") -> bool:
     """发送异常告警模版消息"""
+    if not getattr(config, "PUSH_NOTIFY_ERROR", True):
+        return False
     appid = config.WECHAT_APPID
     appsecret = config.WECHAT_APPSECRET
     touser = config.WECHAT_TOUSER
@@ -156,20 +158,39 @@ def send_alert(day: str, error_msg: str, step_name: str = "每日定时任务") 
 
 
 
-def check_push_condition(force: bool = False):
+def check_push_condition(force: bool = False, total_count: int = 0, focus_count: int = 0):
     """
-    检查当前时刻是否满足推送条件：
+    检查当前时刻与采集数据是否满足推送条件：
     1. force=True：手动触发或强制模式，直接放行。
-    2. 下午17:30批次（17:30-18:00）：发送日常常规推送（记录推送信标）。
-    3. 早上08:00批次（08:00-08:30）：
-       检查从昨天17:30（或上次常规推送时间）至今天早上08:00之间，是否有新公告入库。
-       - 有新公告：触发早上推送；
-       - 无新公告：跳过推送，避免无实质更新的打扰。
+    2. PUSH_ALERT_FOCUS 为 True 且命中重点跟踪项目/业主/预警词时优先强推。
+    3. PUSH_MIN_COUNT 最低门槛过滤。
+    4. 根据 PUSH_TRIGGER_MODE:
+       - any_complete: 每次采集入库完成均推送
+       - focus_only: 仅在发现重点标讯时推送
+       - batch_time: 仅在设定批次时段推送
     返回 (should_push: bool, reason: str)
     """
     if force:
         return True, "手动/强制触发"
-    
+
+    min_cnt = int(getattr(config, "PUSH_MIN_COUNT", 1))
+    if total_count > 0 and total_count < min_cnt:
+        return False, f"当日标讯总数 ({total_count}) 低于设定的最低推送门槛 ({min_cnt} 条)，跳过推送"
+
+    trigger_mode = getattr(config, "PUSH_TRIGGER_MODE", "any_complete")
+    alert_focus = getattr(config, "PUSH_ALERT_FOCUS", True)
+
+    if alert_focus and focus_count > 0:
+        return True, f"命中重点跟踪标讯 ({focus_count} 条)，触发即时重点推送"
+
+    if trigger_mode == "focus_only":
+        if focus_count <= 0:
+            return False, "当前推送策略设为「仅重点标讯推送」，本次未发现重点标讯，跳过推送"
+        return True, f"发现重点标讯 ({focus_count} 条)，符合重点推送条件"
+
+    if trigger_mode == "any_complete":
+        return True, f"推送策略设为「采集完成即推送」，当日共归集 {total_count} 条标讯"
+
     from datetime import datetime, time
     import sqlite3
     now = datetime.now()

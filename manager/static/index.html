@@ -51,7 +51,13 @@
 
             <!-- Tab 切换导航 -->
             <div class="flex items-center space-x-1 border-b border-transparent">
-                <button id="tab-btn-settings" onclick="switchTab('settings')" class="tab-btn active px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-blue-600 flex items-center space-x-1.5 transition-colors">
+                <button id="tab-btn-business" onclick="switchTab('business')" class="tab-btn active px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-blue-600 flex items-center space-x-1.5 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                    </svg>
+                    <span>业务过滤配置</span>
+                </button>
+                <button id="tab-btn-env" onclick="switchTab('env')" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-blue-600 flex items-center space-x-1.5 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -73,6 +79,14 @@
             </div>
 
             <div class="flex items-center space-x-2 sm:space-x-3">
+                <!-- 删除指定日期内容按钮 -->
+                <button onclick="openDeleteDateModal()" class="text-xs font-semibold px-2.5 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg border border-rose-200 transition flex items-center space-x-1 shadow-xs" title="彻底删除指定日期的全部采集数据与日报">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    <span class="hidden sm:inline">删除日期内容</span>
+                </button>
+
                 <!-- 快捷监控启停开关 -->
                 <button id="btn-top-monitor" onclick="toggleMonitor()" class="text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center space-x-1.5 shadow-xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" title="快捷开启或暂停计划任务后台轮询采集">
                     <span id="top-monitor-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -96,8 +110,8 @@
                 </button>
 
                 <!-- 刷新状态 -->
-                <button onclick="refreshAll()" class="p-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition" title="刷新页面状态与配置">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="btn-top-refresh" onclick="refreshAll()" class="p-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition" title="刷新页面状态与配置">
+                    <svg class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
                 </button>
@@ -116,46 +130,47 @@
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
         <!-- ============================================== -->
-        <!-- TAB 1: 设置界面 (默认第一屏幕显示) -->
+        <!-- TAB 1: 业务过滤配置 (独立单页，保留4项 + 触发推送条件) -->
         <!-- ============================================== -->
-        <div id="tab-content-settings" class="space-y-6">
+        <div id="tab-content-business" class="space-y-6">
             <div class="bg-white p-6 sm:p-8 rounded-xl border border-slate-200/80 shadow-sm space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
                     <div>
-                        <h2 class="text-lg font-bold text-slate-900">运行参数配置与凭证中心</h2>
-                        <p class="text-xs text-slate-500 mt-0.5">各项参数直接保存在本地 <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600">.env</code> 配置文件中，修改后即时生效。</p>
+                        <h2 class="text-lg font-bold text-slate-900">业务过滤与触发推送配置</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">定制专属工程标讯筛选规则与自动化推送触发条件，修改后直接写入本地 <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600">.env</code> 并实时生效。</p>
                     </div>
                     <div class="flex items-center space-x-2">
                         <button type="button" onclick="fetchConfig()" class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">重置/重新载入</button>
-                        <button type="submit" form="config-form" class="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition">保存所有配置</button>
+                        <button type="submit" form="business-form" class="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition">保存业务与推送配置</button>
                     </div>
                 </div>
 
-                <form id="config-form" onsubmit="saveConfig(event)" class="space-y-8">
-                    <!-- 业务与基础配置 -->
+                <form id="business-form" onsubmit="saveConfig(event)" class="space-y-8">
+                    <!-- 核心业务过滤规则 (只保留 重点跟踪项目、重点跟踪业主、常规通用预警关键词、常规关键词激活金额门槛) -->
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-2">
                                 <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span>
-                                <h3 class="text-sm font-bold text-slate-800">业务过滤与展示基础配置</h3>
+                                <h3 class="text-sm font-bold text-slate-800">业务过滤核心规则</h3>
                             </div>
-                            <button type="button" onclick="triggerReapplyRules()" class="px-3 py-1 bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300 rounded-lg text-xs font-medium transition flex items-center space-x-1 shadow-sm" title="保存上方配置后，点击重新计算历史所有日期的重点关注与类别并刷新页面">
+                            <button type="button" onclick="triggerReapplyRules()" class="px-3 py-1 bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300 rounded-lg text-xs font-medium transition flex items-center space-x-1 shadow-sm" title="保存配置后，点击重新计算历史所有日期的重点关注并刷新大屏">
                                 <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                 </svg>
                                 <span>按新业务配置重新标注历史日期</span>
                             </button>
                         </div>
-                        <!-- 重点跟踪：项目 / 业主 / 项目类型 大版面 -->
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+                        <!-- 1 重点跟踪项目 与 2 重点跟踪业主 -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
                             <!-- 1 重点跟踪项目 -->
-                            <div class="flex flex-col bg-slate-50/60 p-3.5 rounded-xl border border-slate-200">
+                            <div class="flex flex-col bg-slate-50/60 p-4 rounded-xl border border-slate-200">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                                         <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[11px] font-black">1</span>
                                         重点跟踪项目 (FOCUS_PROJECTS)
                                     </label>
-                                    <span class="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-medium">已开启智能模糊匹配</span>
+                                    <span class="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-medium">支持智能模糊匹配</span>
                                 </div>
                                 <textarea id="cfg-focus-projects" rows="8" placeholder="粘贴重点关注的项目名称，每行一个。例如：
 平陆运河
@@ -167,7 +182,7 @@
                             </div>
 
                             <!-- 2 重点跟踪业主 -->
-                            <div class="flex flex-col bg-slate-50/60 p-3.5 rounded-xl border border-slate-200">
+                            <div class="flex flex-col bg-slate-50/60 p-4 rounded-xl border border-slate-200">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                                         <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-black">2</span>
@@ -183,49 +198,118 @@
 南宁轨道交通集团" class="w-full text-xs rounded-lg border border-slate-300 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono resize-y shadow-inner leading-relaxed"></textarea>
                                 <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">支持每行输入一个业主单位全称或简称（也支持半角逗号分隔）。当抓取到该单位或标题含该单位时标记为重点。</p>
                             </div>
-
-                            <!-- 3 重点跟踪项目类型 -->
-                            <div class="flex flex-col bg-slate-50/60 p-3.5 rounded-xl border border-slate-200">
-                                <div class="flex items-center justify-between mb-2">
-                                    <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                                        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-black">3</span>
-                                        重点跟踪项目类型 (FOCUS_PROJECT_TYPES)
-                                    </label>
-                                    <span class="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-medium">支持多行批量粘贴</span>
-                                </div>
-                                <textarea id="cfg-focus-project-types" rows="8" placeholder="粘贴关注的工程行业或类型，每行一个。例如：
-房建
-市政
-水利
-公路
-轨道交通
-信息化" class="w-full text-xs rounded-lg border border-slate-300 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono resize-y shadow-inner leading-relaxed"></textarea>
-                                <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">支持每行输入一个工程行业或专业类别（如水利、公路、房建、市政等）。匹配后将自动标记为重点。</p>
-                            </div>
                         </div>
 
-                        <!-- 基础辅助项 -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">常规通用预警关键词 (FOCUS_KEYWORDS)</label>
-                                <input id="cfg-focus-keywords" type="text" placeholder="公路,医院,学校,安置,水库,治理,灌区,道路" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                                <span class="text-[11px] text-slate-400 mt-1 block">单行半角逗号分隔。与上方 1、2、3 项共同生效，作为补充词汇。</span>
+                        <!-- 3 常规通用预警关键词 与 4 常规关键词激活金额门槛 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                            <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-200">
+                                <label class="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-black">3</span>
+                                    常规通用预警关键词 (FOCUS_KEYWORDS)
+                                </label>
+                                <input id="cfg-focus-keywords" type="text" placeholder="公路,医院,学校,安置,水库,治理,灌区,道路" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono mt-1.5">
+                                <span class="text-[11px] text-slate-400 mt-1 block">单行半角逗号分隔。作为大范围通用筛选词汇。</span>
                             </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">常规关键词激活金额门槛 (FOCUS_MIN_AMOUNT)</label>
-                                <input id="cfg-focus-min-amount" type="text" placeholder="如 500万、1000万、5000000（留空或0不限）" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                                <span class="text-[11px] text-slate-400 mt-1 block">仅对命中常规关键词生效；只有大于等于该金额才激活重点预警。重点项目/业主/类型不受此限制。</span>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">展示页面线上基准域名 (SITE_BASE_URL)</label>
-                                <input id="cfg-site-base-url" type="text" placeholder="https://ztb.139771.xyz" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                                <span class="text-[11px] text-slate-400 mt-1 block">微信通知卡片点击后跳转访问的线上主站链接。</span>
+                            <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-200">
+                                <label class="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-600 text-white text-[11px] font-black">4</span>
+                                    常规关键词激活金额门槛 (FOCUS_MIN_AMOUNT)
+                                </label>
+                                <div class="relative mt-1.5">
+                                    <input id="cfg-focus-min-amount" type="number" placeholder="例如: 100" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 pr-12 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                    <span class="absolute right-3 top-2 text-xs text-slate-400 font-medium">万元</span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 mt-1 block">仅对命中第3项「常规关键词」生效；只有公告金额大于等于该门槛才激活重点预警。重点项目/重点业主不受此金额限制。</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 自动化监控与定时调度配置 -->
+                    <!-- 触发推送条件设置 -->
                     <div class="space-y-4 pt-4 border-t border-slate-100">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-1.5 h-4 bg-purple-600 rounded-full"></span>
+                            <h3 class="text-sm font-bold text-slate-800">触发推送条件设置</h3>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- 推送触发策略 -->
+                            <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-200">
+                                <label class="block text-xs font-bold text-slate-800 mb-1">推送触发策略 (PUSH_TRIGGER_MODE)</label>
+                                <select id="cfg-push-trigger-mode" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
+                                    <option value="any_complete">每次全流程采集入库完成后推送 (默认实时推送)</option>
+                                    <option value="focus_only">仅在发现重点关注标讯时推送 (无重点不打扰)</option>
+                                    <option value="batch_time">仅在每日定时批次时段推送 (早/晚定时归集)</option>
+                                </select>
+                                <span class="text-[11px] text-slate-400 mt-1 block">决定何时向微信服务号发送每日招投标简报卡片。</span>
+                            </div>
+
+                            <!-- 最低标讯数量门槛 -->
+                            <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-200">
+                                <label class="block text-xs font-bold text-slate-800 mb-1">最低标讯数量门槛 (PUSH_MIN_COUNT)</label>
+                                <div class="relative">
+                                    <input id="cfg-push-min-count" type="number" min="0" value="1" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 pr-12 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                    <span class="absolute right-3 top-2 text-xs text-slate-400 font-medium">条</span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 mt-1 block">当日归集总标讯数量少于该数值时自动跳过推送，防止发送无内容的空白简报。</span>
+                            </div>
+
+                            <!-- 重点关注强推开关 -->
+                            <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-200 flex items-start space-x-3">
+                                <input type="checkbox" id="cfg-push-alert-focus" class="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
+                                <div>
+                                    <label for="cfg-push-alert-focus" class="text-xs font-bold text-slate-800 cursor-pointer">重点关注即时强推 (PUSH_ALERT_FOCUS)</label>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">当采集到命中「重点跟踪项目」或「重点跟踪业主」的标讯时，优先触发即时微信预警，无论当前处于何种常规时段。</p>
+                                </div>
+                            </div>
+
+                            <!-- 异常失败通知开关 -->
+                            <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-200 flex items-start space-x-3">
+                                <input type="checkbox" id="cfg-push-notify-error" class="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
+                                <div>
+                                    <label for="cfg-push-notify-error" class="text-xs font-bold text-slate-800 cursor-pointer">采集异常告警推送 (PUSH_NOTIFY_ERROR)</label>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">当爬虫采集发生网络熔断、源站不可用或流程执行中断时，第一时间向管理员微信推送错误告警卡片。</p>
+                                </div>
+                            </div>
+
+                            <!-- 定时批次时段 -->
+                            <div class="bg-slate-50/60 p-4 rounded-xl border border-slate-200 md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-800 mb-1">每日批次推送时段 (PUSH_BATCH_HOURS)</label>
+                                <input id="cfg-push-batch-hours" type="text" value="08:00, 17:30" placeholder="例如: 08:00, 17:30" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                <span class="text-[11px] text-slate-400 mt-1 block">仅在策略选择「每日定时批次时段推送」时生效，多个时间点使用半角逗号分隔。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作提交栏 -->
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <span id="save-business-tip" class="text-xs text-slate-500"></span>
+                        <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+                            保存业务过滤与推送配置
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 2: 环境配置 (调度、VPS、微信、基准域名)        -->
+        <!-- ============================================== -->
+        <div id="tab-content-env" class="space-y-6 hidden">
+            <div class="bg-white p-6 sm:p-8 rounded-xl border border-slate-200/80 shadow-sm space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">环境与服务凭证配置</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">配置定时自动化调度、微信服务号凭证、云端 VPS 同步与主站展示域名。</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" onclick="fetchConfig()" class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">重置/重新载入</button>
+                        <button type="submit" form="env-form" class="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition">保存环境配置</button>
+                    </div>
+                </div>
+
+                <form id="env-form" onsubmit="saveConfig(event)" class="space-y-8">
+                    <!-- 自动化监控与定时调度配置 -->
+                    <div class="space-y-4">
                         <div class="flex items-center space-x-2">
                             <span class="w-1.5 h-4 bg-amber-500 rounded-full"></span>
                             <h3 class="text-sm font-bold text-slate-800">监控时间与定时刷新频率</h3>
@@ -248,40 +332,6 @@
                                     <span class="absolute right-3 top-2 text-xs text-slate-400">分钟</span>
                                 </div>
                                 <span class="text-[11px] text-slate-400 mt-1 block">默认 10 分钟自动轮询刷新一次</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- VPS 云端同步配置 -->
-                    <div class="space-y-4 pt-4 border-t border-slate-100">
-                        <div class="flex items-center space-x-2">
-                            <span class="w-1.5 h-4 bg-indigo-600 rounded-full"></span>
-                            <h3 class="text-sm font-bold text-slate-800">云端服务器同步 (SCP / SSH)</h3>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">自动同步 VPS (AUTO_UPLOAD_VPS)</label>
-                                <select id="cfg-vps-auto" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="false">关闭 (False) - 仅本地生成</option>
-                                    <option value="true">开启 (True) - 生成后自动上传</option>
-                                </select>
-                                <span class="text-[11px] text-slate-400 mt-1 block">开启后，每日自动化调度运行结束将直接通过 SSH 上传至云服务器。</span>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">云端服务器 IP 地址 (VPS_HOST)</label>
-                                <input id="cfg-vps-host" type="text" placeholder="217.142.149.2" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">SSH 端口 (VPS_PORT)</label>
-                                <input id="cfg-vps-port" type="text" placeholder="22" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">SSH 登录用户名 (VPS_USER)</label>
-                                <input id="cfg-vps-user" type="text" placeholder="root" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                            </div>
-                            <div class="sm:col-span-2">
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">云端 Web 根目录路径 (VPS_PATH)</label>
-                                <input id="cfg-vps-path" type="text" placeholder="/opt/1panel/www/tender_site/" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
                             </div>
                         </div>
                     </div>
@@ -325,17 +375,63 @@
                         </div>
                     </div>
 
+                    <!-- VPS 云端同步配置 -->
+                    <div class="space-y-4 pt-4 border-t border-slate-100">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-1.5 h-4 bg-indigo-600 rounded-full"></span>
+                            <h3 class="text-sm font-bold text-slate-800">云端服务器同步 (SCP / SSH)</h3>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">自动同步 VPS (AUTO_UPLOAD_VPS)</label>
+                                <select id="cfg-vps-auto" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="false">关闭 (False) - 仅本地生成</option>
+                                    <option value="true">开启 (True) - 生成后自动上传</option>
+                                </select>
+                                <span class="text-[11px] text-slate-400 mt-1 block">开启后，每日自动化调度运行结束将直接通过 SSH 上传至云服务器。</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">云端服务器 IP 地址 (VPS_HOST)</label>
+                                <input id="cfg-vps-host" type="text" placeholder="217.142.149.2" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">SSH 端口 (VPS_PORT)</label>
+                                <input id="cfg-vps-port" type="text" placeholder="22" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">SSH 登录用户名 (VPS_USER)</label>
+                                <input id="cfg-vps-user" type="text" placeholder="root" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">云端 Web 根目录路径 (VPS_PATH)</label>
+                                <input id="cfg-vps-path" type="text" placeholder="/opt/1panel/www/tender_site/" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 线上展示基准域名 -->
+                    <div class="space-y-4 pt-4 border-t border-slate-100">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-1.5 h-4 bg-sky-500 rounded-full"></span>
+                            <h3 class="text-sm font-bold text-slate-800">展示基准域名</h3>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">展示页面线上基准域名 (SITE_BASE_URL)</label>
+                            <input id="cfg-site-base-url" type="text" placeholder="https://ztb.139771.xyz" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                            <span class="text-[11px] text-slate-400 mt-1 block">微信通知卡片点击后跳转访问的线上主站链接。</span>
+                        </div>
+                    </div>
+
                     <!-- 操作提交栏 -->
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                        <span id="save-status-tip" class="text-xs text-slate-500"></span>
+                        <span id="save-env-tip" class="text-xs text-slate-500"></span>
                         <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
-                            保存并应用配置
+                            保存环境与服务配置
                         </button>
                     </div>
                 </form>
             </div>
         </div>
-
         <!-- ============================================== -->
         <!-- TAB 2: 监控与调度界面 -->
         <!-- ============================================== -->
@@ -410,7 +506,7 @@
                         </svg>
                         <span>展厅监控</span>
                     </button>
-                    <button onclick="switchTab('settings')" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium shadow-xs transition text-xs">
+                    <button onclick="switchTab('env')" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium shadow-xs transition text-xs">
                         周期设置 &rarr;
                     </button>
                 </div>
@@ -495,6 +591,13 @@
                             <button onclick="triggerTask('upload')" class="btn-action flex flex-col items-center justify-center p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
                                 <span class="text-xs font-semibold">手动同步云端</span>
                                 <span class="text-[10px] text-slate-400 mt-0.5">upload_vps.py</span>
+                            </button>
+                            <button onclick="openDeleteDateModal()" class="btn-action flex flex-col items-center justify-center p-3 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 text-rose-700 transition">
+                                <div class="flex items-center space-x-1">
+                                    <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    <span class="text-xs font-semibold">删除日期内容</span>
+                                </div>
+                                <span class="text-[10px] text-rose-500 mt-0.5">彻底删除单日数据</span>
                             </button>
                             <button onclick="triggerTask('upgrade')" id="btn-dashboard-upgrade" class="btn-action flex flex-col items-center justify-center p-3 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200/80 text-emerald-800 transition col-span-2 sm:col-span-2">
                                 <div class="flex items-center space-x-1.5">
@@ -762,35 +865,43 @@
 
 
         function switchTab(tabId) {
-            const btnSettings = document.getElementById("tab-btn-settings");
-            const btnDashboard = document.getElementById("tab-btn-dashboard");
-            const btnHistory = document.getElementById("tab-btn-history");
-            const contentSettings = document.getElementById("tab-content-settings");
-            const contentDashboard = document.getElementById("tab-content-dashboard");
-            const contentHistory = document.getElementById("tab-content-history");
+            if (tabId === "settings") tabId = "business";
+            currentTab = tabId;
+            localStorage.setItem("active_tab", tabId);
 
-            btnSettings.classList.remove("active");
-            btnDashboard.classList.remove("active");
-            if (btnHistory) btnHistory.classList.remove("active");
-            contentSettings.classList.add("hidden");
-            contentDashboard.classList.add("hidden");
-            if (contentHistory) contentHistory.classList.add("hidden");
+            const allTabs = ["business", "env", "dashboard", "history"];
+            allTabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const content = document.getElementById(`tab-content-${t}`);
+                if (btn) {
+                    if (t === tabId) {
+                        btn.classList.add("active");
+                    } else {
+                        btn.classList.remove("active");
+                    }
+                }
+                if (content) {
+                    if (t === tabId) {
+                        content.classList.remove("hidden");
+                    } else {
+                        content.classList.add("hidden");
+                    }
+                }
+            });
 
-            if (tabId === "settings") {
-                btnSettings.classList.add("active");
-                contentSettings.classList.remove("hidden");
-            } else if (tabId === "history") {
-                if (btnHistory) btnHistory.classList.add("active");
-                if (contentHistory) contentHistory.classList.remove("hidden");
+            if (tabId === "history") {
                 fetchRunsHistory(0);
-            } else {
-                btnDashboard.classList.add("active");
-                contentDashboard.classList.remove("hidden");
             }
         }
 
-        async function refreshAll() {
-            await Promise.all([fetchStatus(), fetchConfig()]);
+        function refreshAll() {
+            const btn = document.getElementById("btn-top-refresh");
+            if (btn) {
+                const svg = btn.querySelector("svg");
+                if (svg) svg.classList.add("animate-spin");
+            }
+            localStorage.setItem("active_tab", currentTab || "business");
+            window.location.reload();
         }
 
         async function fetchStatus() {
@@ -905,7 +1016,9 @@
                             <td class="px-3 py-2 font-medium">${p.date}</td>
                             <td class="px-3 py-2 text-slate-500">${sizeDisplay}</td>
                             <td class="px-3 py-2 text-right">
-                                <a href="/preview/${targetName}" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium">查看</a> <button type="button" onclick="openBatchScanModal('${p.date}', '${p.date}')" class="ml-2 text-indigo-600 hover:text-indigo-800 font-medium">补扫</button>
+                                <a href="/preview/${targetName}" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium">查看</a>
+                                <button type="button" onclick="openBatchScanModal('${p.date}', '${p.date}')" class="ml-2 text-indigo-600 hover:text-indigo-800 font-medium">补扫</button>
+                                <button type="button" onclick="deleteDateContent('${p.date}')" class="ml-2 text-rose-600 hover:text-rose-800 font-medium">删除</button>
                             </td>
                         </tr>
                         `;
@@ -923,25 +1036,39 @@
                 const res = await fetch("/api/config");
                 const data = await res.json();
 
-                document.getElementById("cfg-focus-projects").value = data.FOCUS_PROJECTS || "";
-                document.getElementById("cfg-focus-owners").value = data.FOCUS_OWNERS || "";
-                document.getElementById("cfg-focus-project-types").value = data.FOCUS_PROJECT_TYPES || "";
-                document.getElementById("cfg-focus-keywords").value = data.FOCUS_KEYWORDS_STR || (data.FOCUS_KEYWORDS ? data.FOCUS_KEYWORDS.join(",") : "");
-                document.getElementById("cfg-site-base-url").value = data.SITE_BASE_URL || "";
-                document.getElementById("cfg-focus-min-amount").value = data.FOCUS_MIN_AMOUNT || "";
-                document.getElementById("cfg-vps-auto").value = String(data.AUTO_UPLOAD_VPS).toLowerCase() === "true" ? "true" : "false";
-                document.getElementById("cfg-vps-host").value = data.VPS_HOST || "";
-                document.getElementById("cfg-vps-port").value = data.VPS_PORT || "22";
-                document.getElementById("cfg-vps-user").value = data.VPS_USER || "root";
-                document.getElementById("cfg-vps-path").value = data.VPS_PATH || "";
-                document.getElementById("cfg-wx-appid").value = data.WECHAT_APPID || "";
-                document.getElementById("cfg-wx-appsecret").value = data.WECHAT_APPSECRET || "";
-                document.getElementById("cfg-wx-touser").value = data.WECHAT_TOUSER || "";
-                document.getElementById("cfg-wx-tpl").value = data.WECHAT_TEMPLATE_ID || "";
-                document.getElementById("cfg-wx-alert-tpl").value = data.WECHAT_ALERT_TEMPLATE_ID || "";
-                document.getElementById("cfg-monitor-start").value = data.MONITOR_START_TIME || "08:00";
-                document.getElementById("cfg-monitor-end").value = data.MONITOR_END_TIME || "20:00";
-                document.getElementById("cfg-monitor-interval").value = data.MONITOR_INTERVAL_MINUTES || 10;
+                const setVal = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = (val !== undefined && val !== null) ? val : "";
+                };
+                const setChecked = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.checked = (String(val).toLowerCase() === "true" || val === true || val === 1);
+                };
+
+                setVal("cfg-focus-projects", data.FOCUS_PROJECTS || "");
+                setVal("cfg-focus-owners", data.FOCUS_OWNERS || "");
+                setVal("cfg-focus-keywords", data.FOCUS_KEYWORDS_STR || (data.FOCUS_KEYWORDS ? data.FOCUS_KEYWORDS.join(",") : ""));
+                setVal("cfg-focus-min-amount", data.FOCUS_MIN_AMOUNT || "");
+                setVal("cfg-push-trigger-mode", data.PUSH_TRIGGER_MODE || "any_complete");
+                setChecked("cfg-push-alert-focus", data.PUSH_ALERT_FOCUS !== undefined ? data.PUSH_ALERT_FOCUS : true);
+                setVal("cfg-push-min-count", data.PUSH_MIN_COUNT || 1);
+                setChecked("cfg-push-notify-error", data.PUSH_NOTIFY_ERROR !== undefined ? data.PUSH_NOTIFY_ERROR : true);
+                setVal("cfg-push-batch-hours", data.PUSH_BATCH_HOURS || "08:00, 17:30");
+
+                setVal("cfg-site-base-url", data.SITE_BASE_URL || "");
+                setVal("cfg-vps-auto", String(data.AUTO_UPLOAD_VPS).toLowerCase() === "true" ? "true" : "false");
+                setVal("cfg-vps-host", data.VPS_HOST || "");
+                setVal("cfg-vps-port", data.VPS_PORT || "22");
+                setVal("cfg-vps-user", data.VPS_USER || "root");
+                setVal("cfg-vps-path", data.VPS_PATH || "");
+                setVal("cfg-wx-appid", data.WECHAT_APPID || "");
+                setVal("cfg-wx-appsecret", data.WECHAT_APPSECRET || "");
+                setVal("cfg-wx-touser", data.WECHAT_TOUSER || "");
+                setVal("cfg-wx-tpl", data.WECHAT_TEMPLATE_ID || "");
+                setVal("cfg-wx-alert-tpl", data.WECHAT_ALERT_TEMPLATE_ID || "");
+                setVal("cfg-monitor-start", data.MONITOR_START_TIME || "08:00");
+                setVal("cfg-monitor-end", data.MONITOR_END_TIME || "20:00");
+                setVal("cfg-monitor-interval", data.MONITOR_INTERVAL_MINUTES || 10);
                 
                 const winElem = document.getElementById("dash-monitor-window");
                 if (winElem) winElem.textContent = `${data.MONITOR_START_TIME || "08:00"} - ${data.MONITOR_END_TIME || "20:00"}`;
@@ -954,30 +1081,47 @@
 
         async function saveConfig(e) {
             if (e) e.preventDefault();
-            const tip = document.getElementById("save-status-tip");
-            tip.textContent = "正在保存并更新配置...";
-            tip.className = "text-xs text-blue-600 font-medium";
+            const tipBusiness = document.getElementById("save-business-tip");
+            const tipEnv = document.getElementById("save-env-tip");
+            const showTip = (text, cls) => {
+                if (tipBusiness) { tipBusiness.textContent = text; tipBusiness.className = cls; }
+                if (tipEnv) { tipEnv.textContent = text; tipEnv.className = cls; }
+            };
+            showTip("正在保存并更新配置...", "text-xs text-blue-600 font-medium");
+
+            const getVal = (id, def = "") => {
+                const el = document.getElementById(id);
+                return el ? el.value : def;
+            };
+            const getChecked = (id, def = true) => {
+                const el = document.getElementById(id);
+                return el ? (el.checked ? "true" : "false") : (def ? "true" : "false");
+            };
 
             const payload = {
-                FOCUS_PROJECTS: document.getElementById("cfg-focus-projects").value,
-                FOCUS_OWNERS: document.getElementById("cfg-focus-owners").value,
-                FOCUS_PROJECT_TYPES: document.getElementById("cfg-focus-project-types").value,
-                FOCUS_KEYWORDS_STR: document.getElementById("cfg-focus-keywords").value,
-                FOCUS_MIN_AMOUNT: document.getElementById("cfg-focus-min-amount").value,
-                SITE_BASE_URL: document.getElementById("cfg-site-base-url").value,
-                AUTO_UPLOAD_VPS: document.getElementById("cfg-vps-auto").value,
-                VPS_HOST: document.getElementById("cfg-vps-host").value,
-                VPS_PORT: document.getElementById("cfg-vps-port").value,
-                VPS_USER: document.getElementById("cfg-vps-user").value,
-                VPS_PATH: document.getElementById("cfg-vps-path").value,
-                WECHAT_APPID: document.getElementById("cfg-wx-appid").value,
-                WECHAT_APPSECRET: document.getElementById("cfg-wx-appsecret").value,
-                WECHAT_TOUSER: document.getElementById("cfg-wx-touser").value,
-                WECHAT_TEMPLATE_ID: document.getElementById("cfg-wx-tpl").value,
-                WECHAT_ALERT_TEMPLATE_ID: document.getElementById("cfg-wx-alert-tpl").value,
-                MONITOR_START_TIME: document.getElementById("cfg-monitor-start").value,
-                MONITOR_END_TIME: document.getElementById("cfg-monitor-end").value,
-                MONITOR_INTERVAL_MINUTES: document.getElementById("cfg-monitor-interval").value
+                FOCUS_PROJECTS: getVal("cfg-focus-projects"),
+                FOCUS_OWNERS: getVal("cfg-focus-owners"),
+                FOCUS_KEYWORDS_STR: getVal("cfg-focus-keywords"),
+                FOCUS_MIN_AMOUNT: getVal("cfg-focus-min-amount"),
+                PUSH_TRIGGER_MODE: getVal("cfg-push-trigger-mode", "any_complete"),
+                PUSH_ALERT_FOCUS: getChecked("cfg-push-alert-focus", true),
+                PUSH_MIN_COUNT: getVal("cfg-push-min-count", "1"),
+                PUSH_NOTIFY_ERROR: getChecked("cfg-push-notify-error", true),
+                PUSH_BATCH_HOURS: getVal("cfg-push-batch-hours", "08:00, 17:30"),
+                SITE_BASE_URL: getVal("cfg-site-base-url"),
+                AUTO_UPLOAD_VPS: getVal("cfg-vps-auto", "false"),
+                VPS_HOST: getVal("cfg-vps-host"),
+                VPS_PORT: getVal("cfg-vps-port", "22"),
+                VPS_USER: getVal("cfg-vps-user", "root"),
+                VPS_PATH: getVal("cfg-vps-path"),
+                WECHAT_APPID: getVal("cfg-wx-appid"),
+                WECHAT_APPSECRET: getVal("cfg-wx-appsecret"),
+                WECHAT_TOUSER: getVal("cfg-wx-touser"),
+                WECHAT_TEMPLATE_ID: getVal("cfg-wx-tpl"),
+                WECHAT_ALERT_TEMPLATE_ID: getVal("cfg-wx-alert-tpl"),
+                MONITOR_START_TIME: getVal("cfg-monitor-start", "08:00"),
+                MONITOR_END_TIME: getVal("cfg-monitor-end", "20:00"),
+                MONITOR_INTERVAL_MINUTES: getVal("cfg-monitor-interval", 10)
             };
 
             try {
@@ -988,18 +1132,15 @@
                 });
                 const ret = await res.json();
                 if (ret.ok) {
-                    tip.textContent = "✅ " + (ret.msg || "配置保存成功并已重载生效！");
-                    tip.className = "text-xs text-emerald-600 font-semibold";
-                    setTimeout(() => { tip.textContent = ""; }, 4000);
+                    showTip("✅ " + (ret.msg || "配置保存成功并已重载生效！"), "text-xs text-emerald-600 font-semibold");
+                    setTimeout(() => { showTip("", ""); }, 4000);
                     fetchConfig();
                     fetchStatus();
                 } else {
-                    tip.textContent = "❌ " + (ret.msg || "保存失败");
-                    tip.className = "text-xs text-red-600 font-semibold";
+                    showTip("❌ " + (ret.msg || "保存失败"), "text-xs text-red-600 font-semibold");
                 }
             } catch (err) {
-                tip.textContent = "❌ 网络或接口异常: " + err;
-                tip.className = "text-xs text-red-600 font-semibold";
+                showTip("❌ 网络或接口异常: " + err, "text-xs text-red-600 font-semibold");
             }
         }
 
@@ -1568,9 +1709,64 @@
             document.getElementById("run-detail-modal").classList.add("hidden");
         }
 
+        // 删除指定日期内容相关逻辑
+        function openDeleteDateModal(day) {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const input = document.getElementById("delete-date-input");
+            if (input) input.value = day || todayStr;
+            const modal = document.getElementById("delete-date-modal");
+            if (modal) modal.classList.remove("hidden");
+        }
+
+        function closeDeleteDateModal() {
+            const modal = document.getElementById("delete-date-modal");
+            if (modal) modal.classList.add("hidden");
+        }
+
+        async function submitDeleteDate(e) {
+            e.preventDefault();
+            const day = document.getElementById("delete-date-input").value;
+            if (!day) return;
+            closeDeleteDateModal();
+            await deleteDateContent(day);
+        }
+
+        async function deleteDateContent(day) {
+            if (!day) {
+                day = prompt("请输入要彻底删除的归档日期 (格式: YYYY-MM-DD):", "");
+                if (!day) return;
+            }
+            day = day.trim();
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+                alert("日期格式不合法，必须为 YYYY-MM-DD！");
+                return;
+            }
+            if (!confirm(`确定要彻底删除 ${day} 的全部数据与日报页面吗？\n\n此操作将删除该日期的采集记录、HTML 日报文件，并自动刷新归档总索引大屏。\n注意：此操作不可逆！`)) {
+                return;
+            }
+            try {
+                const res = await fetch("/api/delete_date", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ date: day })
+                });
+                const d = await res.json();
+                if (d.ok) {
+                    alert(d.msg || `已成功删除 ${day} 的全部数据与页面！`);
+                    await fetchStatus();
+                    if (typeof fetchRunsHistory === "function") fetchRunsHistory(0);
+                } else {
+                    alert("删除失败: " + (d.msg || "未知错误"));
+                }
+            } catch (err) {
+                alert("请求异常: " + err.message);
+            }
+        }
 
         // 初始化载入
         window.addEventListener("DOMContentLoaded", () => {
+            const savedTab = localStorage.getItem("active_tab") || "business";
+            switchTab(savedTab);
             fetchConfig();
             fetchStatus();
         });
@@ -1715,6 +1911,50 @@
                     知道了
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 删除日期内容弹窗 (Delete Date Modal)            -->
+    <!-- ============================================== -->
+    <div id="delete-date-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center space-x-2">
+                    <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">删除指定日期数据内容</h3>
+                        <p class="text-[11px] text-slate-400">彻底删除单日数据、HTML 页面并更新归档索引</p>
+                    </div>
+                </div>
+                <button onclick="closeDeleteDateModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <form id="delete-date-form" onsubmit="submitDeleteDate(event)" class="space-y-4 mt-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">选择要删除的日期</label>
+                    <input type="date" id="delete-date-input" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-rose-500">
+                </div>
+
+                <div class="p-3 bg-rose-50/70 border border-rose-200/80 rounded-xl text-rose-800 text-[11px] leading-relaxed">
+                    <div class="font-bold flex items-center space-x-1 mb-1">
+                        <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <span>警告：此操作不可恢复！</span>
+                    </div>
+                    确认后将删除该日期的原始采集 JSON、入库清洗数据、日报 HTML 文件，并重新生成归档总索引（index.html）。
+                </div>
+
+                <div class="pt-2 flex items-center justify-end space-x-3">
+                    <button type="button" onclick="closeDeleteDateModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition">取消</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm transition">确认彻底删除</button>
+                </div>
+            </form>
         </div>
     </div>
 

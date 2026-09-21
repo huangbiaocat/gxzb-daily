@@ -576,18 +576,9 @@ const CAT_ICON = {
 
 function shortArea(name) {
     if (!name) { return '全区'; }
-    if (name === '崇左阳光采购') { return '崇左'; }
+    if (name === '崇左阳光采购') { return '崇左阳光采购'; }
     if (name.indexOf('自治区') === 0) { return '区中心'; }
     return name.replace(/市$/, '');
-}
-
-function shortSource(d) {
-    if (d.source) { return d.source; }
-    var link = d.link || '';
-    if (link.indexOf('cz.gxygcg.com') !== -1 || link.indexOf('gxygcg.com') !== -1 || d.areaname === '崇左阳光采购') {
-        return '崇左阳光';
-    }
-    return '广西公资';
 }
 
 function esc(s) {
@@ -643,8 +634,13 @@ function build() {
                       + ' data-focus="' + (d.is_focus ? 1 : 0) + '"'
                       + ' href="' + esc(d.link) + '" rel="noopener noreferrer" target="_blank"'
                       + ' title="' + esc(d.title) + '">';
-                html += '<span class="source-tag">' + esc(shortSource(d)) + '</span>';
-                html += '<span class="city-tag">' + esc(shortArea(d.areaname)) + '</span>';
+                var link = d.link || '';
+                var isCz = (link.indexOf('cz.gxygcg.com') !== -1 || link.indexOf('gxygcg.com') !== -1 || d.areaname === '崇左阳光采购' || d.source_channel === '崇左阳光采购');
+                if (isCz) {
+                    html += '<span class="source-tag">崇左阳光采购</span>';
+                } else {
+                    html += '<span class="city-tag">' + esc(shortArea(d.areaname)) + '</span>';
+                }
                 html += '<span class="notice-title">' + esc(d.title) + EXT_ICON + '</span>';
                 if (d.is_focus) {
                     html += '<span class="focus-chip" title="' + esc(d.focus_reason || '重点预警') + '">重点</span>';

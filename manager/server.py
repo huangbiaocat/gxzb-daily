@@ -399,6 +399,11 @@ def read_config_env():
         "WECHAT_TOUSER": getattr(config, "WECHAT_TOUSER", ""),
         "WECHAT_TEMPLATE_ID": getattr(config, "WECHAT_TEMPLATE_ID", ""),
         "WECHAT_ALERT_TEMPLATE_ID": getattr(config, "WECHAT_ALERT_TEMPLATE_ID", ""),
+        "PUSH_TRIGGER_MODE": getattr(config, "PUSH_TRIGGER_MODE", "any_complete"),
+        "PUSH_ALERT_FOCUS": "true" if getattr(config, "PUSH_ALERT_FOCUS", True) else "false",
+        "PUSH_MIN_COUNT": getattr(config, "PUSH_MIN_COUNT", 1),
+        "PUSH_NOTIFY_ERROR": "true" if getattr(config, "PUSH_NOTIFY_ERROR", True) else "false",
+        "PUSH_BATCH_HOURS": getattr(config, "PUSH_BATCH_HOURS", "08:00, 17:30"),
         "MONITOR_START_TIME": getattr(config, "MONITOR_START_TIME", "08:00"),
         "MONITOR_END_TIME": getattr(config, "MONITOR_END_TIME", "20:00"),
         "MONITOR_INTERVAL_MINUTES": getattr(config, "MONITOR_INTERVAL_MINUTES", 10),
@@ -440,6 +445,11 @@ def save_config_env(data):
         "WECHAT_TOUSER": data.get("WECHAT_TOUSER", "").strip(),
         "WECHAT_TEMPLATE_ID": data.get("WECHAT_TEMPLATE_ID", "").strip(),
         "WECHAT_ALERT_TEMPLATE_ID": data.get("WECHAT_ALERT_TEMPLATE_ID", "").strip(),
+        "PUSH_TRIGGER_MODE": data.get("PUSH_TRIGGER_MODE", "any_complete").strip().lower(),
+        "PUSH_ALERT_FOCUS": data.get("PUSH_ALERT_FOCUS", "true").strip().lower(),
+        "PUSH_MIN_COUNT": str(data.get("PUSH_MIN_COUNT", "1")).strip(),
+        "PUSH_NOTIFY_ERROR": data.get("PUSH_NOTIFY_ERROR", "true").strip().lower(),
+        "PUSH_BATCH_HOURS": data.get("PUSH_BATCH_HOURS", "08:00, 17:30").strip(),
         "MONITOR_START_TIME": data.get("MONITOR_START_TIME", "08:00").strip(),
         "MONITOR_END_TIME": data.get("MONITOR_END_TIME", "20:00").strip(),
         "MONITOR_INTERVAL_MINUTES": str(data.get("MONITOR_INTERVAL_MINUTES", "10")).strip(),
@@ -715,6 +725,71 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "batch_scan.py"), "--start-date", start_date, "--end-date", end_date]
             ok, msg = PROC_MGR.start_task(f"历史区间数据补扫 ({start_date} 至 {end_date})", cmd)
             self.send_json({"ok": ok, "msg": msg})
+            return
+
+        if path == "/api/delete_date":
+            target_date = post_data.get("date", "").strip()
+            if not target_date or not re.match(r"^\d{4}-\d{2}-\d{2}$", target_date):
+                self.send_json({"ok": False, "msg": "无效的日期格式，必须为 YYYY-MM-DD"})
+                return
+
+            deleted_files = []
+            site_dir = get_site_dir()
+            # 1. 删除 HTML 文件
+            for html_cand in [site_dir / f"{target_date}.html", ROOT_DIR / "dist" / f"{target_date}.html"]:
+                if html_cand.exists():
+                    try:
+                        html_cand.unlink()
+                        deleted_files.append(html_cand.name)
+                    except Exception:
+                        pass
+
+            # 2. 删除 JSON 数据文件
+            for p in [
+                getattr(config, "COLLECT_DIR", ROOT_DIR / "data" / "collect") / f"{target_date}.json",
+                getattr(config, "DAILY_DIR", ROOT_DIR / "data" / "daily") / f"{target_date}.json",
+                ROOT_DIR / "data" / f"{target_date}.json",
+                ROOT_DIR / "dist" / "logs" / f"{target_date}.jsonl",
+                ROOT_DIR / "dist" / "reports" / f"collect-reconcile-{target_date}.json",
+            ]:
+                if p.exists():
+                    try:
+                        p.unlink()
+                        deleted_files.append(str(p.name))
+                    except Exception:
+                        pass
+
+            # 3. 清理数据库记录
+            db_file = getattr(config, "DB_PATH", ROOT_DIR / "ztb.db")
+            if db_file.exists():
+                try:
+                    import sqlite3
+                    conn = sqlite3.connect(db_file)
+                    cur = conn.cursor()
+                    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='notices'")
+                    if cur.fetchone():
+                        cur.execute("DELETE FROM notices WHERE date = ? OR pub_time LIKE ?", (target_date, f"{target_date}%"))
+                    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='runs'")
+                    if cur.fetchone():
+                        cur.execute("DELETE FROM runs WHERE day = ?", (target_date,))
+                    conn.commit()
+                    conn.close()
+                except Exception as e_db:
+                    print(f"[警告] 删除数据库记录异常: {e_db}")
+
+            # 4. 重新构建历史归档总索引 (index.html 与 archive.json)
+            try:
+                build_archive = ROOT_DIR / "scripts" / "build_archive_page.py"
+                if build_archive.exists():
+                    subprocess.run([py_exe, "-u", str(build_archive)], capture_output=True)
+            except Exception as e_arc:
+                print(f"[警告] 重建归档总索引异常: {e_arc}")
+
+            self.send_json({
+                "ok": True,
+                "msg": f"已彻底删除 {target_date} 的全部数据与日报页面，并刷新归档大屏索引！",
+                "deleted_files": deleted_files
+            })
             return
 
         if path == "/api/run_reapply":

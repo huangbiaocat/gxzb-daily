@@ -49,6 +49,13 @@ JSON_HEADERS = {
     "Referer": config.API_REFERER,
 }
 
+CENTER_NAMES = {
+    "001": "自治区本级", "002": "南宁市", "003": "柳州市", "004": "桂林市",
+    "005": "梧州市", "006": "北海市", "007": "防城港市", "008": "钦州市",
+    "009": "贵港市", "010": "玉林市", "011": "百色市", "012": "贺州市",
+    "013": "河池市", "014": "来宾市", "015": "崇左市"
+}
+
 
 # ------------------------------------------------------------------ 规范化
 def detail_url_of(rec):
@@ -215,7 +222,10 @@ def collect(day, centers=None, save_raw=True, quiet=False, page_size=None):
     merged, failed, reconcile_centers = {}, [], {}
     fetched_sum = raw_records = off_day = dup_in_center = 0
 
-    for center in centers:
+    for idx, center in enumerate(centers, 1):
+        c_name = CENTER_NAMES.get(center, center)
+        if not quiet:
+            print(f"   [{idx}/{len(centers)}] 正在采集交易中心 {center} ({c_name})...", flush=True)
         try:
             stat = fetch_center(center, day, page_size=page_size)
         except fetcher.CircuitOpen as exc:
@@ -224,11 +234,13 @@ def collect(day, centers=None, save_raw=True, quiet=False, page_size=None):
             failed.append(center)
             reconcile_centers[center] = _center_reconcile(stat, 0, 0, 0)
             if not quiet:
-                print("[warn] %s" % exc)
+                print(f"[warn] {exc}", flush=True)
             break                                  # 熔断：后续中心不再请求
 
         if stat["errors"] or stat["fetched"] != stat["totalcount"]:
             failed.append(center)
+        elif not quiet:
+            print(f"   [{idx}/{len(centers)}] 中心 {center} 采集完成: {stat['fetched']} 条", flush=True)
 
         if save_raw:
             (raw_dir / ("center-%s.json" % center)).write_text(

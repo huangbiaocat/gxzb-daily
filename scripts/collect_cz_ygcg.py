@@ -41,7 +41,7 @@ CZ_NOTICE_TYPE_MAP = {
     5: {"stage": "中标公告", "categorynum": "001001001006"},
 }
 
-def _open_url(url, timeout=15):
+def _open_url(url, timeout=5):
     """带重试与绕过系统代理的请求。"""
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     headers = {
@@ -50,14 +50,14 @@ def _open_url(url, timeout=15):
         "Accept": "application/json, text/plain, */*",
     }
     req = urllib.request.Request(url, headers=headers)
-    for attempt in range(3):
+    for attempt in range(2):
         try:
             with opener.open(req, timeout=timeout) as resp:
                 return resp.read()
         except Exception as e:
-            if attempt == 2:
+            if attempt == 1:
                 raise e
-            time.sleep(1 + attempt)
+            time.sleep(0.5)
 
 
 def normalize_cz_record(it, day=None):
@@ -158,8 +158,8 @@ def collect_cz_ygcg(day, max_pages=10):
     
     collected_rows = []
     raw_records = []
-    
-    print(f"-> 正在采集【崇左阳光采购】工程类公告 (日期: {day})...")
+
+    print(f"-> 正在采集【崇左阳光采购】工程类公告 (日期: {day})...", flush=True)
     for page in range(1, max_pages + 1):
         params["page"] = page
         query_str = urllib.parse.urlencode(params)
@@ -168,7 +168,7 @@ def collect_cz_ygcg(day, max_pages=10):
             content = _open_url(url)
             resp = json.loads(content.decode("utf-8"))
         except Exception as e:
-            print(f"   [警告] 崇左阳光采购 第 {page} 页请求异常: {e}")
+            print(f"   [提示] 崇左阳光采购 第 {page} 页请求结束/异常: {e}", flush=True)
             break
 
         data_obj = resp.get("data")
@@ -199,7 +199,7 @@ def collect_cz_ygcg(day, max_pages=10):
         if not has_current_or_newer:
             break
 
-    print(f"   崇左阳光采购采集完成：获取 {len(raw_records)} 条原始记录，匹配当日 {len(collected_rows)} 条")
+    print(f"   崇左阳光采购采集完成：获取 {len(raw_records)} 条原始记录，匹配当日 {len(collected_rows)} 条", flush=True)
     return collected_rows, raw_records
 
 

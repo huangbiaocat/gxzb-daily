@@ -321,6 +321,12 @@ WECHAT_APPSECRET = get("WECHAT_APPSECRET", "").strip()
 WECHAT_TOUSER = get("WECHAT_TOUSER", "").strip()
 WECHAT_TEMPLATE_ID = get("WECHAT_TEMPLATE_ID", "").strip()  # 日常日报模版
 WECHAT_ALERT_TEMPLATE_ID = get("WECHAT_ALERT_TEMPLATE_ID", "").strip()  # 异常告警模版
+# 微信推送触发条件配置
+PUSH_TRIGGER_MODE = get("PUSH_TRIGGER_MODE", "any_complete").strip().lower()  # any_complete | focus_only | batch_time
+PUSH_ALERT_FOCUS = get("PUSH_ALERT_FOCUS", "true").strip().lower() in ("true", "1", "yes", "on")
+PUSH_MIN_COUNT = int(get("PUSH_MIN_COUNT", "1"))
+PUSH_NOTIFY_ERROR = get("PUSH_NOTIFY_ERROR", "true").strip().lower() in ("true", "1", "yes", "on")
+PUSH_BATCH_HOURS = get("PUSH_BATCH_HOURS", "08:00, 17:30").strip()
 AUTO_UPLOAD_VPS = get("AUTO_UPLOAD_VPS", "false").strip().lower() in ("true", "1", "yes", "on")
 VPS_HOST = get("VPS_HOST", "217.142.149.2").strip()
 VPS_PORT = get("VPS_PORT", "22").strip()

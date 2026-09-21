@@ -274,25 +274,25 @@ def main(argv=None):
     if getattr(config, "WECHAT_APPID", "") and getattr(config, "WECHAT_TOUSER", ""):
         banner("8/8", "微信服务号模版消息推送")
         try:
+            total_cnt = int(res.get("page_total") or res.get("collect_unique") or 0)
+            # 统计重点条目
+            focus_num = 0
+            page_path = config.SITE_DIR / f"{day}.html"
+            if page_path.exists():
+                try:
+                    txt = page_path.read_text(encoding="utf-8")
+                    import re
+                    m = re.search(r"重点关注\s*\((\d+)\)", txt)
+                    if m:
+                        focus_num = int(m.group(1))
+                except Exception:
+                    pass
             from scripts.notify_wechat import send_daily_summary, send_alert, check_push_condition
-            should_push, reason = check_push_condition(force=False)
+            should_push, reason = check_push_condition(force=False, total_count=total_cnt, focus_count=focus_num)
             if not should_push:
                 print(f"[微信推送跳过] {reason}")
             else:
                 print(f"[微信推送执行] {reason}")
-                total_cnt = int(res.get("page_total") or res.get("collect_unique") or 0)
-                # 统计重点条目
-                focus_num = 0
-                page_path = config.SITE_DIR / f"{day}.html"
-                if page_path.exists():
-                    try:
-                        txt = page_path.read_text(encoding="utf-8")
-                        import re
-                        m = re.search(r"重点关注\s*\((\d+)\)", txt)
-                        if m:
-                            focus_num = int(m.group(1))
-                    except Exception:
-                        pass
                 send_daily_summary(day, total_count=total_cnt, focus_count=focus_num, failed_steps=failed_steps)
         except Exception as exc:
             print("微信推送异常：", exc)
