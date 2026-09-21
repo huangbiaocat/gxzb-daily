@@ -10,6 +10,7 @@ import os
 import re
 import shutil
 import socketserver
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -153,13 +154,17 @@ class ProcessManager:
             if self.process and self.process.poll() is not None and self.status == "running":
                 self.status = "success" if self.process.returncode == 0 else "error"
                 self.exit_code = self.process.returncode
+            is_running = (self.status == "running")
+            log_content = "".join(self.log_lines)
             return {
                 "status": self.status,
+                "running": is_running,
                 "task_name": self.task_name,
                 "start_time": self.start_time,
                 "end_time": self.end_time,
                 "exit_code": self.exit_code,
-                "log": "".join(self.log_lines)
+                "log": log_content,
+                "logs": log_content
             }
 
 PROC_MGR = ProcessManager()
@@ -179,7 +184,7 @@ def get_git_info():
             return {"commit": commit, "version": f"Git #{commit}"}
     except Exception:
         pass
-    return {"commit": "release", "version": "v0.0.7"}
+    return {"commit": "release", "version": "v0.0.8"}
 
 def get_scheduled_task_status():
     """检测 Windows 计划任务 ZtbCollector_Sync 的运行/就绪/启用状态"""
@@ -545,6 +550,54 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             self.send_json(read_config_env())
             return
 
+        if path == "/api/runs":
+            # 获取运行历史记录与任务日志
+            query = parse_qs(parsed.query)
+            limit = min(int(query.get("limit", ["30"])[0]), 100)
+            offset = max(int(query.get("offset", ["0"])[0]), 0)
+            kind_filter = query.get("kind", [""])[0].strip()
+            day_filter = query.get("day", [""])[0].strip()
+
+            sql = "SELECT run_id, day, kind, started_at, finished_at, total, ok, failed, skipped, aborted, payload FROM runs"
+            params = []
+            where_clauses = []
+            if kind_filter:
+                where_clauses.append("kind = ?")
+                params.append(kind_filter)
+            if day_filter:
+                where_clauses.append("day = ?")
+                params.append(day_filter)
+            if where_clauses:
+                sql += " WHERE " + " AND ".join(where_clauses)
+            sql += " ORDER BY started_at DESC LIMIT ? OFFSET ?"
+            params.extend([limit, offset])
+
+            runs = []
+            total_count = 0
+            try:
+                import json as _json
+                with sqlite3.connect(config.DB_PATH) as conn:
+                    conn.row_factory = sqlite3.Row
+                    cur = conn.cursor()
+                    count_sql = "SELECT COUNT(*) FROM runs"
+                    if where_clauses:
+                        count_sql += " WHERE " + " AND ".join(where_clauses)
+                    cur.execute(count_sql, params[:-2] if where_clauses else [])
+                    total_count = cur.fetchone()[0]
+                    cur.execute(sql, params)
+                    for r in cur.fetchall():
+                        d = dict(r)
+                        if d.get("payload"):
+                            try:
+                                d["payload"] = _json.loads(d["payload"])
+                            except Exception:
+                                pass
+                        runs.append(d)
+            except Exception as e:
+                runs = []
+            self.send_json({"ok": True, "total": total_count, "runs": runs})
+            return
+
         # 预览静态 dist / preview 中的展示大屏与日报文件
         is_preview = path == "/preview" or path.startswith("/preview/")
         is_dist = path == "/dist" or path.startswith("/dist/")
@@ -765,14 +818,21 @@ def run_server(host="0.0.0.0", port=PORT):
             pass
 
 def main():
+    port = PORT
+    if len(sys.argv) > 1:
+        for i, arg in enumerate(sys.argv):
+            if arg == "--port" and i + 1 < len(sys.argv):
+                port = int(sys.argv[i + 1])
+            elif arg.isdigit():
+                port = int(arg)
     print(f"==================================================")
     print(f"招投标数据中心控制台 (Tender Manager) 启动中...")
-    print(f"本地访问地址: http://127.0.0.1:{PORT}")
-    print(f"局域网访问:   http://0.0.0.0:{PORT}")
+    print(f"本地访问地址: http://127.0.0.1:{port}")
+    print(f"局域网访问:   http://0.0.0.0:{port}")
     print(f"按 Ctrl+C 可停止控制台服务")
     print(f"==================================================")
     http.server.ThreadingHTTPServer.allow_reuse_address = True
-    with http.server.ThreadingHTTPServer(("0.0.0.0", PORT), ManagerHandler) as httpd:
+    with http.server.ThreadingHTTPServer(("0.0.0.0", port), ManagerHandler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

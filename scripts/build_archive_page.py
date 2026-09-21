@@ -178,11 +178,14 @@ last_month = latest_date[:7] if latest_date else ""
 cities_all = max((d.get("cities", 0) for d in days), default=0)
 
 # 物化的月份卡片（数据驱动：cover 数据中出现的最多 3 个月份）
-months = sorted({d["date"][:7] for d in days}, reverse=True)[:3]
+today_str = datetime.date.today().strftime("%Y-%m-%d")
+current_ym = today_str[:7]
+month_set = {d["date"][:7] for d in days}
+month_set.add(current_ym)
+months = sorted(month_set, reverse=True)[:3]
 
 # ---------- 月历视图 ----------
 month_cards = []
-today_str = datetime.date.today().strftime("%Y-%m-%d")
 for ym in months:
     y, m = int(ym[:4]), int(ym[5:7])
     m_days = [d for d in days if d["date"][:7] == ym]
@@ -215,7 +218,7 @@ for ym in months:
             )
         else:
             cells.append(
-                '<div class="cal-cell cal-cell-disabled{today_cls}">\n'
+                '<div class="cal-cell cal-cell-disabled{today_cls}" data-date="{ds}">\n'
                 '<div class="cal-cell-header">\n'
                 '<span class="cal-date-num">{day}</span>\n'
                 '<div class="cal-pill-group">{today_pill}</div>\n'
@@ -223,7 +226,7 @@ for ym in months:
                 '<div class="cal-cell-body">\n'
                 '<span class="cal-no-data">-</span>\n'
                 '</div>\n'
-                '</div>'.format(day=day, today_cls=today_cls, today_pill=today_pill)
+                '</div>'.format(day=day, ds=ds, today_cls=today_cls, today_pill=today_pill)
             )
     trail = (7 - (lead + ndays) % 7) % 7
     cells.extend(['<div class="cal-cell cal-cell-empty"></div>'] * trail)
@@ -339,15 +342,15 @@ PAGE = """<!DOCTYPE html>
 <div class="brand-text">
 <div style="display: flex; align-items: center; gap: 8px;">
 <h1 style="margin: 0;">招投标每日简报</h1>
-                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.0.7</span>
+                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.0.8</span>
 </div>
 <p>历史归档与数据追溯中心</p>
 </div>
 </a>
 <div class="header-actions">
-<a class="btn-latest" href="./{latest_date}.html" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
+<a class="btn-latest" href="./{latest_date}.html" data-latest-date="{latest_date}" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
 <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
-<span>查看最新简报 ({latest_date})</span>
+<span class="btn-latest-text">{latest_btn_text}</span>
 <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><polyline points="9 18 15 12 9 6"></polyline></svg>
 </a>
 </div>
@@ -465,51 +468,54 @@ PAGE = """<!DOCTYPE html>
         el.remove();
     });
 
-    // 2. 日历网格：根据客户端实际今日动态定位并高亮
-    var activeCell = document.querySelector('.cal-cell-active[href*="' + todayStr + '.html"]');
-    if (activeCell) {
-        activeCell.classList.add('cal-today');
-        var pillGroup = activeCell.querySelector('.cal-pill-group');
+    // 2. 日历网格：根据客户端实际今日动态定位并高亮（支持已采集和待采集日期）
+    var targetCell = document.querySelector('.cal-cell[data-date="' + todayStr + '"]');
+    if (targetCell) {
+        targetCell.classList.add('cal-today');
+        var pillGroup = targetCell.querySelector('.cal-pill-group');
+        if (!pillGroup) {
+            var header = targetCell.querySelector('.cal-cell-header');
+            if (header) {
+                pillGroup = document.createElement('div');
+                pillGroup.className = 'cal-pill-group';
+                header.appendChild(pillGroup);
+            }
+        }
         if (pillGroup && !pillGroup.querySelector('.cal-pill-today')) {
             var pill = document.createElement('span');
             pill.className = 'cal-pill-today';
             pill.textContent = '今日';
+            pill.style.animation = 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite';
             pillGroup.appendChild(pill);
-        }
-    } else {
-        // 如果今日尚无采集数据，在置灰日期格中查找并添加今日提示
-        var parts = todayStr.split('-');
-        var ym = parts[0] + '-' + parts[1];
-        var dayNum = parseInt(parts[2], 10);
-        var monthCard = document.querySelector('.month-calendar-card[data-year-month="' + ym + '"]');
-        if (monthCard) {
-            var disabledCells = monthCard.querySelectorAll('.cal-cell-disabled');
-            disabledCells.forEach(function(cell) {
-                var numElem = cell.querySelector('.cal-date-num');
-                if (numElem && parseInt(numElem.textContent.trim(), 10) === dayNum) {
-                    cell.classList.add('cal-today');
-                    var pillGroup = cell.querySelector('.cal-pill-group');
-                    if (pillGroup && !pillGroup.querySelector('.cal-pill-today')) {
-                        var pill = document.createElement('span');
-                        pill.className = 'cal-pill-today';
-                        pill.textContent = '今日';
-                        pillGroup.appendChild(pill);
-                    }
-                }
-            });
         }
     }
 
-    // 3. 清单视图高亮
-    var listRow = document.querySelector('.history-row-item[href*="' + todayStr + '.html"]');
+    // 3. 清单视图高亮：精准定位 .dm-primary 并动态追加今日标签
+    var listRow = document.querySelector('.history-row-item[data-date="' + todayStr + '"]');
     if (listRow) {
         listRow.classList.add('history-row-today');
-        var titleElem = listRow.querySelector('.item-date-title');
-        if (titleElem && !titleElem.querySelector('.chip-today')) {
+        var primaryElem = listRow.querySelector('.dm-primary');
+        if (primaryElem && !primaryElem.querySelector('.chip-today')) {
             var chip = document.createElement('span');
             chip.className = 'status-chip chip-today';
             chip.textContent = '今日';
-            titleElem.appendChild(chip);
+            primaryElem.appendChild(chip);
+        }
+    }
+
+    // 4. 顶栏按钮动态同步：今日有简报则跳今日，今日未生成则跳最新并注明
+    var btnLatest = document.querySelector('.btn-latest');
+    if (btnLatest) {
+        var btnText = btnLatest.querySelector('.btn-latest-text') || btnLatest.querySelector('span');
+        var activeToday = document.querySelector('.cal-cell-active[data-date="' + todayStr + '"]');
+        if (activeToday) {
+            btnLatest.setAttribute('href', './' + todayStr + '.html');
+            if (btnText) btnText.textContent = '查看今日简报 (' + todayStr + ')';
+        } else {
+            var latestDate = btnLatest.getAttribute('data-latest-date') || '';
+            if (btnText) {
+                btnText.textContent = latestDate ? ('查看最新简报 (' + latestDate + ')') : '查看最新简报';
+            }
         }
     }
 })();
@@ -531,6 +537,7 @@ _FIELDS = {
     "cities_all": cities_all,
     "calendar_html": calendar_html,
     "list_html": list_html,
+    "latest_btn_text": f"查看今日简报 ({latest_date})" if (latest_date == today_str) else f"查看最新简报 ({latest_date})",
 }
 
 page = re.sub(r"\{(\w+)\}", lambda m: str(_FIELDS.get(m.group(1), m.group(0))), PAGE)

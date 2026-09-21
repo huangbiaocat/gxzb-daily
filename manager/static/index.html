@@ -43,7 +43,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.0.7</span>
+                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.0.8</span>
                     </div>
                     <p class="text-xs text-slate-500">Tender Data Control & Settings Center</p>
                 </div>
@@ -63,6 +63,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                     </svg>
                     <span>监控与调度</span>
+                </button>
+                <button id="tab-btn-history" onclick="switchTab('history')" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-blue-600 flex items-center space-x-1.5 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>运行日志历史</span>
                 </button>
             </div>
 
@@ -482,11 +488,15 @@
                                 <span class="text-xs font-semibold">历史重算标注</span>
                                 <span class="text-[10px] text-amber-600 mt-0.5">reapply_rules.py</span>
                             </button>
+                            <button onclick="openBatchScanModal()" class="btn-action flex flex-col items-center justify-center p-3 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 text-indigo-700 transition">
+                                <span class="text-xs font-semibold">区间批量补扫</span>
+                                <span class="text-[10px] text-indigo-500 mt-0.5">batch_scan.py</span>
+                            </button>
                             <button onclick="triggerTask('upload')" class="btn-action flex flex-col items-center justify-center p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
                                 <span class="text-xs font-semibold">手动同步云端</span>
                                 <span class="text-[10px] text-slate-400 mt-0.5">upload_vps.py</span>
                             </button>
-                            <button onclick="triggerTask('upgrade')" class="btn-action flex flex-col items-center justify-center p-3 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200/80 text-emerald-800 transition col-span-2 sm:col-span-2">
+                            <button onclick="triggerTask('upgrade')" id="btn-dashboard-upgrade" class="btn-action flex flex-col items-center justify-center p-3 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200/80 text-emerald-800 transition col-span-2 sm:col-span-2">
                                 <div class="flex items-center space-x-1.5">
                                     <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
@@ -540,10 +550,101 @@
             </div>
         </div>
 
+
+        <!-- ============================================== -->
+        <!-- TAB 3: 运行日志历史 (History / Runs)            -->
+        <!-- ============================================== -->
+        <div id="tab-content-history" class="hidden space-y-6">
+            <div class="bg-white rounded-xl shadow-xs border border-slate-200/80 p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>系统运行日志与任务执行记录</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">查看采集爬虫、详情解析、规则重算与批量补扫的历史执行台账</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select id="runs-filter-kind" onchange="fetchRunsHistory(0)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-blue-500">
+                            <option value="">全部任务类型</option>
+                            <option value="collect">公告采集 (collect)</option>
+                            <option value="fetch_detail">详情爬取 (fetch_detail)</option>
+                            <option value="extract">规则抽取 (extract)</option>
+                            <option value="batch_scan">批量补扫 (batch_scan)</option>
+                        </select>
+                        <input type="date" id="runs-filter-day" onchange="fetchRunsHistory(0)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-blue-500" title="按归档日期过滤">
+                        <button onclick="fetchRunsHistory(0)" class="text-xs font-medium px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg border border-blue-200 transition flex items-center space-x-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            <span>刷新</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 统计卡片条 -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
+                    <div class="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                        <div class="text-[11px] text-slate-500 font-medium">总记录批次</div>
+                        <div id="runs-stat-total-batches" class="text-lg font-bold text-slate-800 mt-0.5">--</div>
+                    </div>
+                    <div class="bg-emerald-50/60 rounded-lg p-3 border border-emerald-100">
+                        <div class="text-[11px] text-emerald-700 font-medium">累计成功条目</div>
+                        <div id="runs-stat-total-ok" class="text-lg font-bold text-emerald-700 mt-0.5">--</div>
+                    </div>
+                    <div class="bg-amber-50/60 rounded-lg p-3 border border-amber-100">
+                        <div class="text-[11px] text-amber-700 font-medium">跳过 / 去重数</div>
+                        <div id="runs-stat-total-skipped" class="text-lg font-bold text-amber-700 mt-0.5">--</div>
+                    </div>
+                    <div class="bg-red-50/60 rounded-lg p-3 border border-red-100">
+                        <div class="text-[11px] text-red-600 font-medium">失败 / 异常数</div>
+                        <div id="runs-stat-total-failed" class="text-lg font-bold text-red-600 mt-0.5">--</div>
+                    </div>
+                </div>
+
+                <!-- 日志表格 -->
+                <div class="overflow-x-auto rounded-lg border border-slate-200 mt-4">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                            <tr>
+                                <th class="px-3 py-2.5">批次 ID</th>
+                                <th class="px-3 py-2.5">任务类别</th>
+                                <th class="px-3 py-2.5">对应日期</th>
+                                <th class="px-3 py-2.5">启动时间</th>
+                                <th class="px-3 py-2.5">耗时</th>
+                                <th class="px-3 py-2.5 text-right">总数</th>
+                                <th class="px-3 py-2.5 text-right">成功</th>
+                                <th class="px-3 py-2.5 text-right">失败</th>
+                                <th class="px-3 py-2.5 text-right">跳过</th>
+                                <th class="px-3 py-2.5 text-center">状态</th>
+                                <th class="px-3 py-2.5 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="runs-table-body" class="divide-y divide-slate-100">
+                            <tr>
+                                <td colspan="11" class="px-4 py-8 text-center text-slate-400">正在载入历史运行记录...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分页栏 -->
+                <div class="flex items-center justify-between mt-4 text-xs text-slate-500">
+                    <div id="runs-pagination-info">显示 0 - 0 条，共 0 条</div>
+                    <div class="flex items-center space-x-2">
+                        <button id="btn-runs-prev" onclick="runsPagePrev()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 disabled:opacity-40 disabled:pointer-events-none transition">上一页</button>
+                        <span id="runs-page-current" class="font-medium text-slate-700">第 1 页</span>
+                        <button id="btn-runs-next" onclick="runsPageNext()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 disabled:opacity-40 disabled:pointer-events-none transition">下一页</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.0.7</span>
+        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.0.8</span>
     </footer>
 
     <script>
@@ -663,19 +764,28 @@
         function switchTab(tabId) {
             const btnSettings = document.getElementById("tab-btn-settings");
             const btnDashboard = document.getElementById("tab-btn-dashboard");
+            const btnHistory = document.getElementById("tab-btn-history");
             const contentSettings = document.getElementById("tab-content-settings");
             const contentDashboard = document.getElementById("tab-content-dashboard");
+            const contentHistory = document.getElementById("tab-content-history");
+
+            btnSettings.classList.remove("active");
+            btnDashboard.classList.remove("active");
+            if (btnHistory) btnHistory.classList.remove("active");
+            contentSettings.classList.add("hidden");
+            contentDashboard.classList.add("hidden");
+            if (contentHistory) contentHistory.classList.add("hidden");
 
             if (tabId === "settings") {
                 btnSettings.classList.add("active");
-                btnDashboard.classList.remove("active");
                 contentSettings.classList.remove("hidden");
-                contentDashboard.classList.add("hidden");
+            } else if (tabId === "history") {
+                if (btnHistory) btnHistory.classList.add("active");
+                if (contentHistory) contentHistory.classList.remove("hidden");
+                fetchRunsHistory(0);
             } else {
                 btnDashboard.classList.add("active");
-                btnSettings.classList.remove("active");
                 contentDashboard.classList.remove("hidden");
-                contentSettings.classList.add("hidden");
             }
         }
 
@@ -947,6 +1057,9 @@
         }
 
         async function triggerTask(action) {
+            if (action === "upgrade") {
+                return triggerUpgrade();
+            }
             const endpoints = {
                 "daily": "/api/run_daily",
                 "collect": "/api/run_collect",
@@ -988,37 +1101,473 @@
             document.getElementById("log-container").textContent = "";
         }
 
-        function startPollingLog() {
+        function showToast(message, type = "info", duration = 3500) {
+            const container = document.getElementById("toast-container");
+            if (!container) return;
+            const toast = document.createElement("div");
+            const bgMap = {
+                "info": "bg-slate-900/90 text-white border-slate-700",
+                "success": "bg-emerald-800/95 text-white border-emerald-600",
+                "warning": "bg-amber-800/95 text-white border-amber-600",
+                "error": "bg-red-800/95 text-white border-red-600"
+            };
+            toast.className = `pointer-events-auto px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium border backdrop-blur-md flex items-center space-x-2 animate-in fade-in slide-in-from-top-2 duration-150 ${bgMap[type] || bgMap.info}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                toast.style.transition = "opacity 0.3s";
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        async function triggerUpgrade() {
+            const btnTop = document.getElementById("btn-top-upgrade");
+            const btnDash = document.getElementById("btn-dashboard-upgrade");
+
+            const originalTopHtml = btnTop ? btnTop.innerHTML : "";
+            const originalDashHtml = btnDash ? btnDash.innerHTML : "";
+
+            function setUpgradeLoading(loading) {
+                if (btnTop) {
+                    btnTop.disabled = loading;
+                    if (loading) {
+                        btnTop.classList.add("opacity-75", "cursor-not-allowed");
+                        btnTop.innerHTML = `
+                            <svg class="w-3.5 h-3.5 text-emerald-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="hidden sm:inline">检查更新中...</span>
+                        `;
+                    } else {
+                        btnTop.classList.remove("opacity-75", "cursor-not-allowed");
+                        btnTop.innerHTML = originalTopHtml;
+                    }
+                }
+                if (btnDash) {
+                    btnDash.disabled = loading;
+                    if (loading) {
+                        btnDash.classList.add("opacity-75", "cursor-not-allowed");
+                    } else {
+                        btnDash.classList.remove("opacity-75", "cursor-not-allowed");
+                    }
+                }
+            }
+
+            setUpgradeLoading(true);
+            showToast("正在连接 GitHub 检查最新版本代码并同步...", "info", 3500);
+
+            const logEl = document.getElementById("log-container");
+            if (logEl) {
+                logEl.textContent = "[System] 正在连接 GitHub 远程仓库检查更新...\n";
+            }
+
+            try {
+                const res = await fetch("/api/run_upgrade", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (!data.ok) {
+                    setUpgradeLoading(false);
+                    showUpgradeModal({
+                        type: "warning",
+                        title: "无法发起升级检查",
+                        badgeText: "任务冲突",
+                        message: data.msg || "已有任务正在执行中，请稍候再试。"
+                    });
+                    return;
+                }
+
+                // 开始轮询日志并等待任务完成
+                startPollingLog((finalState) => {
+                    setUpgradeLoading(false);
+                    fetchStatus(); // 刷新状态与 Git 信息
+
+                    const logText = (finalState && (finalState.logs || finalState.log)) ? (finalState.logs || finalState.log) : "";
+                    const exitCode = finalState ? finalState.exit_code : null;
+
+                    // 解析 Commit 信息
+                    let commitInfo = "";
+                    const commitMatch = logText.match(/Commit:\s*([a-f0-9]+)(\s*\((.*?)\))?/i);
+                    if (commitMatch) {
+                        commitInfo = `Commit: ${commitMatch[1]}` + (commitMatch[3] ? ` (${commitMatch[3]})` : "");
+                    }
+
+                    if (exitCode === 0) {
+                        if (logText.includes("本地代码已经是最新版本") || logText.includes("当前已是最新版本")) {
+                            showUpgradeModal({
+                                type: "latest",
+                                title: "当前已是最新版本",
+                                badgeText: "无需更新",
+                                message: "检测完成！本地代码已与 GitHub 远程仓库 (main 分支) 保持完全一致，当前无需升级。",
+                                commit: commitInfo
+                            });
+                        } else if (logText.includes("升级成功") || logText.includes("恭喜！代码同步升级成功完成") || logText.includes("文件热替换完成")) {
+                            showUpgradeModal({
+                                type: "upgraded",
+                                title: "系统升级成功！",
+                                badgeText: "已更新到最新",
+                                message: "恭喜！已成功从 GitHub 拉取最新代码并完成系统升级更新。本地数据与配置文件均已妥善保留。",
+                                commit: commitInfo,
+                                showReload: true
+                            });
+                        } else {
+                            showUpgradeModal({
+                                type: "info",
+                                title: "同步升级执行完成",
+                                badgeText: "完成",
+                                message: "升级流程执行完毕，详细执行过程请参阅下方调度日志。",
+                                commit: commitInfo
+                            });
+                        }
+                    } else {
+                        showUpgradeModal({
+                            type: "error",
+                            title: "同步升级遇到问题",
+                            badgeText: "升级失败",
+                            message: "未能成功同步最新代码。可能原因包括：网络暂时无法访问 GitHub、本地存在未提交代码冲突等。\n详情请查看调度监控日志输出。",
+                            commit: commitInfo
+                        });
+                    }
+                });
+
+            } catch (err) {
+                setUpgradeLoading(false);
+                showUpgradeModal({
+                    type: "error",
+                    title: "网络请求异常",
+                    badgeText: "请求失败",
+                    message: "与管理后台服务的网络通信失败: " + err.message
+                });
+            }
+        }
+
+        function startPollingLog(onComplete) {
             if (pollTimer) clearInterval(pollTimer);
             pollTimer = setInterval(async () => {
                 try {
                     const res = await fetch("/api/task_state");
                     const data = await res.json();
 
+                    const isRunning = data.running ?? (data.status === "running");
+                    const logs = data.logs ?? data.log ?? "";
+                    const exitCode = data.exit_code;
+
                     const pill = document.getElementById("task-status-pill");
-                    if (data.running) {
+                    if (isRunning) {
                         pill.textContent = "RUNNING";
                         pill.className = "text-[11px] px-2 py-0.5 rounded font-mono bg-amber-500/20 text-amber-400 font-semibold animate-pulse";
                     } else {
-                        pill.textContent = data.exit_code === 0 ? "SUCCESS" : (data.exit_code !== null ? "FAILED (" + data.exit_code + ")" : "IDLE");
-                        pill.className = data.exit_code === 0 ? "text-[11px] px-2 py-0.5 rounded font-mono bg-emerald-500/20 text-emerald-400 font-semibold" : (data.exit_code !== null ? "text-[11px] px-2 py-0.5 rounded font-mono bg-red-500/20 text-red-400 font-semibold" : "text-[11px] px-2 py-0.5 rounded font-mono bg-slate-700 text-slate-300");
-                        if (!data.running && pollTimer) {
+                        pill.textContent = exitCode === 0 ? "SUCCESS" : (exitCode !== null ? "FAILED (" + exitCode + ")" : "IDLE");
+                        pill.className = exitCode === 0 ? "text-[11px] px-2 py-0.5 rounded font-mono bg-emerald-500/20 text-emerald-400 font-semibold" : (exitCode !== null ? "text-[11px] px-2 py-0.5 rounded font-mono bg-red-500/20 text-red-400 font-semibold" : "text-[11px] px-2 py-0.5 rounded font-mono bg-slate-700 text-slate-300");
+                        if (!isRunning && pollTimer) {
                             clearInterval(pollTimer);
                             pollTimer = null;
                             fetchStatus();
+                            if (typeof onComplete === "function") {
+                                onComplete(data);
+                            }
                         }
                     }
 
-                    if (data.logs) {
+                    if (logs) {
                         const logEl = document.getElementById("log-container");
-                        logEl.textContent = data.logs;
+                        logEl.textContent = logs;
                         logEl.scrollTop = logEl.scrollHeight;
                     }
                 } catch (err) {
                     console.error("轮询日志出错", err);
                 }
-            }, 1000);
+            }, 800);
         }
+
+        function showUpgradeModal(opts) {
+            const modal = document.getElementById("upgrade-modal");
+            if (!modal) return;
+
+            const iconSuccess = document.getElementById("upgrade-modal-icon-success");
+            const iconInfo = document.getElementById("upgrade-modal-icon-info");
+            const iconError = document.getElementById("upgrade-modal-icon-error");
+            const iconContainer = document.getElementById("upgrade-modal-icon-container");
+            const titleEl = document.getElementById("upgrade-modal-title");
+            const badgeEl = document.getElementById("upgrade-modal-badge");
+            const msgEl = document.getElementById("upgrade-modal-message");
+            const commitBox = document.getElementById("upgrade-modal-commit-box");
+            const commitEl = document.getElementById("upgrade-modal-commit");
+            const timeEl = document.getElementById("upgrade-modal-time");
+            const reloadBtn = document.getElementById("upgrade-modal-reload-btn");
+
+            // 隐藏所有图标
+            iconSuccess.classList.add("hidden");
+            iconInfo.classList.add("hidden");
+            iconError.classList.add("hidden");
+
+            if (opts.type === "upgraded") {
+                iconSuccess.classList.remove("hidden");
+                iconContainer.className = "p-2.5 rounded-xl bg-emerald-50 text-emerald-600";
+                badgeEl.className = "inline-block mt-0.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800";
+            } else if (opts.type === "latest") {
+                iconSuccess.classList.remove("hidden");
+                iconContainer.className = "p-2.5 rounded-xl bg-blue-50 text-blue-600";
+                badgeEl.className = "inline-block mt-0.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-100 text-blue-800";
+            } else if (opts.type === "warning") {
+                iconInfo.classList.remove("hidden");
+                iconContainer.className = "p-2.5 rounded-xl bg-amber-50 text-amber-600";
+                badgeEl.className = "inline-block mt-0.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800";
+            } else if (opts.type === "error") {
+                iconError.classList.remove("hidden");
+                iconContainer.className = "p-2.5 rounded-xl bg-red-50 text-red-600";
+                badgeEl.className = "inline-block mt-0.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800";
+            } else {
+                iconInfo.classList.remove("hidden");
+                iconContainer.className = "p-2.5 rounded-xl bg-slate-100 text-slate-600";
+                badgeEl.className = "inline-block mt-0.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-800";
+            }
+
+            titleEl.textContent = opts.title || "同步升级提示";
+            badgeEl.textContent = opts.badgeText || "提示";
+            msgEl.textContent = opts.message || "";
+
+            if (opts.commit) {
+                commitBox.classList.remove("hidden");
+                commitEl.textContent = opts.commit;
+                timeEl.textContent = new Date().toLocaleTimeString();
+            } else {
+                commitBox.classList.add("hidden");
+            }
+
+            if (opts.showReload) {
+                reloadBtn.classList.remove("hidden");
+            } else {
+                reloadBtn.classList.add("hidden");
+            }
+
+            modal.classList.remove("hidden");
+        }
+
+        function closeUpgradeModal() {
+            const modal = document.getElementById("upgrade-modal");
+            if (modal) modal.classList.add("hidden");
+        }
+
+        // ==============================================
+        // 历史日志分页与补扫弹窗控制
+        // ==============================================
+        let currentRunsOffset = 0;
+        const RUNS_PAGE_SIZE = 20;
+        let totalRunsCount = 0;
+
+        function openBatchScanModal(startDay, endDay) {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            document.getElementById("batch-start-date").value = startDay || todayStr;
+            document.getElementById("batch-end-date").value = endDay || todayStr;
+            document.getElementById("batch-skip-upload").checked = false;
+            document.getElementById("batch-scan-modal").classList.remove("hidden");
+        }
+
+        function closeBatchScanModal() {
+            document.getElementById("batch-scan-modal").classList.add("hidden");
+        }
+
+        async function submitBatchScan(event) {
+            event.preventDefault();
+            const start = document.getElementById("batch-start-date").value;
+            const end = document.getElementById("batch-end-date").value;
+            const skipUpload = document.getElementById("batch-skip-upload").checked;
+
+            if (!start || !end) {
+                alert("请完整选择起始与截止日期！");
+                return;
+            }
+
+            closeBatchScanModal();
+            switchTab("dashboard");
+
+            const logEl = document.getElementById("log-container");
+            logEl.textContent = `[Web Controller] 正在启动 ${start} 至 ${end} 的批量补扫任务...
+`;
+            startPollingLog();
+
+            try {
+                const res = await fetch("/api/run_batch_scan", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        start_date: start,
+                        end_date: end,
+                        skip_upload: skipUpload
+                    })
+                });
+                const d = await res.json();
+                if (!d.ok) {
+                    alert("启动批量补扫失败: " + d.msg);
+                }
+            } catch (err) {
+                logEl.textContent += `[System Error] 请求异常: ${err}
+`;
+            }
+        }
+
+        async function fetchRunsHistory(offset = 0) {
+            currentRunsOffset = Math.max(0, offset);
+            const kind = document.getElementById("runs-filter-kind").value;
+            const day = document.getElementById("runs-filter-day").value;
+
+            const tbody = document.getElementById("runs-table-body");
+            tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-8 text-center text-slate-400">正在查询历史记录...</td></tr>`;
+
+            try {
+                let url = `/api/runs?limit=${RUNS_PAGE_SIZE}&offset=${currentRunsOffset}`;
+                if (kind) url += `&kind=${encodeURIComponent(kind)}`;
+                if (day) url += `&day=${encodeURIComponent(day)}`;
+
+                const res = await fetch(url);
+                const data = await res.json();
+                if (!data.ok) {
+                    tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-8 text-center text-red-500">加载失败: ${data.msg || "未知错误"}</td></tr>`;
+                    return;
+                }
+
+                totalRunsCount = data.total || 0;
+                const runs = data.runs || [];
+
+                // 统计数据
+                let sumOk = 0, sumSkipped = 0, sumFailed = 0;
+                runs.forEach(r => {
+                    sumOk += r.ok || 0;
+                    sumSkipped += r.skipped || 0;
+                    sumFailed += r.failed || 0;
+                });
+                document.getElementById("runs-stat-total-batches").textContent = totalRunsCount;
+                document.getElementById("runs-stat-total-ok").textContent = sumOk;
+                document.getElementById("runs-stat-total-skipped").textContent = sumSkipped;
+                document.getElementById("runs-stat-total-failed").textContent = sumFailed;
+
+                if (runs.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-8 text-center text-slate-400">没有查找到符合条件的运行记录</td></tr>`;
+                } else {
+                    const kindBadgeMap = {
+                        "collect": "bg-blue-50 text-blue-700 border-blue-200",
+                        "fetch_detail": "bg-indigo-50 text-indigo-700 border-indigo-200",
+                        "extract": "bg-purple-50 text-purple-700 border-purple-200",
+                        "batch_scan": "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    };
+
+                    tbody.innerHTML = runs.map(r => {
+                        let duration = "--";
+                        if (r.started_at && r.finished_at) {
+                            try {
+                                const st = new Date(r.started_at.replace(" ", "T")).getTime();
+                                const ft = new Date(r.finished_at.replace(" ", "T")).getTime();
+                                const diffSec = Math.max(0, Math.round((ft - st) / 1000));
+                                duration = diffSec + "秒";
+                            } catch (e) {
+                                duration = "--";
+                            }
+                        }
+
+                        const badgeCls = kindBadgeMap[r.kind] || "bg-slate-100 text-slate-700 border-slate-200";
+                        const isSuccess = (r.failed === 0 && r.aborted === 0);
+                        const statusBadge = isSuccess ?
+                            `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">成功</span>` :
+                            `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-red-50 text-red-700 border border-red-200">异常 (${r.failed})</span>`;
+
+                        const payloadStr = encodeURIComponent(JSON.stringify(r));
+
+                        return `
+                        <tr class="hover:bg-slate-50/70 transition">
+                            <td class="px-3 py-2.5 font-mono text-[11px] text-slate-500">${(r.run_id || "").slice(0, 10)}</td>
+                            <td class="px-3 py-2.5">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded border text-[10px] font-medium ${badgeCls}">${r.kind}</span>
+                            </td>
+                            <td class="px-3 py-2.5 font-medium text-slate-800">${r.day || "--"}</td>
+                            <td class="px-3 py-2.5 text-slate-500">${r.started_at || "--"}</td>
+                            <td class="px-3 py-2.5 text-slate-500">${duration}</td>
+                            <td class="px-3 py-2.5 text-right font-semibold text-slate-700">${r.total || 0}</td>
+                            <td class="px-3 py-2.5 text-right text-emerald-600 font-semibold">${r.ok || 0}</td>
+                            <td class="px-3 py-2.5 text-right ${r.failed > 0 ? 'text-red-600 font-bold' : 'text-slate-400'}">${r.failed || 0}</td>
+                            <td class="px-3 py-2.5 text-right text-slate-400">${r.skipped || 0}</td>
+                            <td class="px-3 py-2.5 text-center">${statusBadge}</td>
+                            <td class="px-3 py-2.5 text-right space-x-1.5">
+                                <button type="button" onclick="showRunDetail('${payloadStr}')" class="text-blue-600 hover:text-blue-800 font-medium">详情</button>
+                                ${r.day ? `<button type="button" onclick="openBatchScanModal('${r.day}', '${r.day}')" class="text-indigo-600 hover:text-indigo-800 font-medium">重扫</button>` : ''}
+                            </td>
+                        </tr>
+                        `;
+                    }).join("");
+                }
+
+                // 更新分页组件状态
+                const startIdx = totalRunsCount === 0 ? 0 : currentRunsOffset + 1;
+                const endIdx = Math.min(currentRunsOffset + runs.length, totalRunsCount);
+                document.getElementById("runs-pagination-info").textContent = `显示 ${startIdx} - ${endIdx} 条，共 ${totalRunsCount} 条`;
+                
+                const curPage = Math.floor(currentRunsOffset / RUNS_PAGE_SIZE) + 1;
+                const maxPage = Math.ceil(totalRunsCount / RUNS_PAGE_SIZE) || 1;
+                document.getElementById("runs-page-current").textContent = `第 ${curPage} / ${maxPage} 页`;
+
+                document.getElementById("btn-runs-prev").disabled = (currentRunsOffset <= 0);
+                document.getElementById("btn-runs-next").disabled = (currentRunsOffset + RUNS_PAGE_SIZE >= totalRunsCount);
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-8 text-center text-red-500">接口网络故障: ${err}</td></tr>`;
+            }
+        }
+
+        function runsPagePrev() {
+            if (currentRunsOffset >= RUNS_PAGE_SIZE) {
+                fetchRunsHistory(currentRunsOffset - RUNS_PAGE_SIZE);
+            }
+        }
+
+        function runsPageNext() {
+            if (currentRunsOffset + RUNS_PAGE_SIZE < totalRunsCount) {
+                fetchRunsHistory(currentRunsOffset + RUNS_PAGE_SIZE);
+            }
+        }
+
+        function showRunDetail(encodedJson) {
+            try {
+                const item = JSON.parse(decodeURIComponent(encodedJson));
+                document.getElementById("run-detail-id").textContent = "ID: " + (item.run_id || "--");
+                
+                let payloadObj = item.payload;
+                if (typeof payloadObj === "string") {
+                    try { payloadObj = JSON.parse(payloadObj); } catch(e) {}
+                }
+
+                const modalBody = document.getElementById("run-detail-body");
+                modalBody.innerHTML = `
+                    <div class="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div><span class="text-slate-400">任务类型:</span> <span class="font-semibold text-slate-700">${item.kind}</span></div>
+                        <div><span class="text-slate-400">归档日期:</span> <span class="font-semibold text-slate-700">${item.day}</span></div>
+                        <div><span class="text-slate-400">启动时间:</span> <span class="text-slate-600">${item.started_at || "--"}</span></div>
+                        <div><span class="text-slate-400">完成时间:</span> <span class="text-slate-600">${item.finished_at || "--"}</span></div>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-center py-2">
+                        <div class="bg-blue-50/60 p-2 rounded-lg"><div class="text-[10px] text-blue-500">总处理数</div><div class="font-bold text-slate-700">${item.total || 0}</div></div>
+                        <div class="bg-emerald-50/60 p-2 rounded-lg"><div class="text-[10px] text-emerald-600">成功</div><div class="font-bold text-emerald-700">${item.ok || 0}</div></div>
+                        <div class="bg-red-50/60 p-2 rounded-lg"><div class="text-[10px] text-red-500">失败</div><div class="font-bold text-red-600">${item.failed || 0}</div></div>
+                        <div class="bg-amber-50/60 p-2 rounded-lg"><div class="text-[10px] text-amber-500">跳过</div><div class="font-bold text-amber-600">${item.skipped || 0}</div></div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">执行上下文元数据 (Payload)</label>
+                        <pre class="bg-slate-900 text-slate-100 p-3 rounded-xl text-[11px] font-mono overflow-x-auto max-h-48 whitespace-pre-wrap">${JSON.stringify(payloadObj, null, 2)}</pre>
+                    </div>
+                `;
+                document.getElementById("run-detail-modal").classList.remove("hidden");
+            } catch(e) {
+                alert("解析详情失败: " + e);
+            }
+        }
+
+        function closeRunDetailModal() {
+            document.getElementById("run-detail-modal").classList.add("hidden");
+        }
+
 
         // 初始化载入
         window.addEventListener("DOMContentLoaded", () => {
@@ -1026,5 +1575,148 @@
             fetchStatus();
         });
     </script>
+
+    <!-- ============================================== -->
+    <!-- 区间批量补扫弹窗 (Batch Scan Modal)             -->
+    <!-- ============================================== -->
+    <div id="batch-scan-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center space-x-2">
+                    <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">区间数据批量补扫</h3>
+                        <p class="text-[11px] text-slate-400">调用 scripts/batch_scan.py 按日期顺序抓取并归档</p>
+                    </div>
+                </div>
+                <button onclick="closeBatchScanModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <form id="batch-scan-form" onsubmit="submitBatchScan(event)" class="space-y-4 mt-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">起始日期</label>
+                        <input type="date" id="batch-start-date" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">截止日期</label>
+                        <input type="date" id="batch-end-date" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50/60 rounded-xl p-3 border border-indigo-100/80 text-xs text-indigo-900 space-y-1.5">
+                    <div class="font-semibold flex items-center space-x-1">
+                        <span>💡 执行动作包含：</span>
+                    </div>
+                    <ul class="list-disc list-inside space-y-0.5 text-[11px] text-indigo-800/90 pl-1">
+                        <li>按日抓取公共资源交易中心与阳光采购平台公告</li>
+                        <li>自动拉取对应正文详情并进行重点工程判定</li>
+                        <li>重新生成每日看板并按配置同步至远端服务器</li>
+                    </ul>
+                </div>
+
+                <div class="flex items-center space-x-2 pt-2">
+                    <input type="checkbox" id="batch-skip-upload" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+                    <label for="batch-skip-upload" class="text-xs text-slate-600 cursor-pointer">补扫完成后跳过自动上传 VPS（仅保留本地）</label>
+                </div>
+
+                <div class="flex items-center justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeBatchScanModal()" class="px-3.5 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg transition font-medium">取消</button>
+                    <button type="submit" id="btn-submit-batch-scan" class="px-4 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition flex items-center space-x-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg>
+                        <span>开始补扫</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 运行详情弹窗 -->
+    <div id="run-detail-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center space-x-2">
+                    <div class="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">执行批次详情</h3>
+                        <p id="run-detail-id" class="text-[11px] font-mono text-slate-400">ID: --</p>
+                    </div>
+                </div>
+                <button onclick="closeRunDetailModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div id="run-detail-body" class="flex-1 overflow-y-auto mt-4 space-y-3 text-xs text-slate-700 pr-1">
+                <!-- 动态内容 -->
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex justify-end">
+                <button type="button" onclick="closeRunDetailModal()" class="px-4 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全局轻量 Toast 提示容器 -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- 在线升级状态提示弹窗 (Upgrade Result Modal) -->
+    <div id="upgrade-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div class="flex items-center space-x-3 pb-3 border-b border-slate-100">
+                <div id="upgrade-modal-icon-container" class="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
+                    <!-- 动态图标 -->
+                    <svg id="upgrade-modal-icon-success" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <svg id="upgrade-modal-icon-info" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <svg id="upgrade-modal-icon-error" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 id="upgrade-modal-title" class="text-base font-bold text-slate-900">同步升级检查结果</h3>
+                    <div id="upgrade-modal-badge" class="inline-block mt-0.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">已是最新版本</div>
+                </div>
+                <button onclick="closeUpgradeModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="mt-4 space-y-3">
+                <p id="upgrade-modal-message" class="text-xs text-slate-600 leading-relaxed">
+                    <!-- 动态消息 -->
+                </p>
+
+                <div id="upgrade-modal-commit-box" class="bg-slate-50 rounded-xl p-3 border border-slate-100 font-mono text-[11px] text-slate-600 break-all space-y-1">
+                    <div class="flex items-center justify-between text-slate-400 text-[10px]">
+                        <span>GIT 版本信息</span>
+                        <span id="upgrade-modal-time">--</span>
+                    </div>
+                    <div id="upgrade-modal-commit" class="text-slate-800 font-semibold">Commit: --</div>
+                </div>
+            </div>
+
+            <div class="pt-4 mt-4 border-t border-slate-100 flex justify-end space-x-2">
+                <button id="upgrade-modal-reload-btn" type="button" onclick="location.reload()" class="hidden px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-xs transition">
+                    刷新页面
+                </button>
+                <button type="button" onclick="closeUpgradeModal()" class="px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition">
+                    知道了
+                </button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
