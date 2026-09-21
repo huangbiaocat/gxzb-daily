@@ -102,7 +102,7 @@ def send_template_message(access_token: str, payload: dict) -> bool:
         return False
 
 
-def send_daily_summary(day: str, total_count: int, focus_count: int, failed_steps: list = None) -> bool:
+def send_daily_summary(day: str, total_count: int, focus_count: int, failed_steps: list = None, is_final: bool = False) -> bool:
     """发送每日采集概览模版消息"""
     appid = config.WECHAT_APPID
     appsecret = config.WECHAT_APPSECRET
@@ -137,10 +137,16 @@ def send_daily_summary(day: str, total_count: int, focus_count: int, failed_step
     else:
         page_url = f"http://127.0.0.1:8089/{day}.html"
 
-    title_val = f"广西全区招投标公告日报（{day}）"
-    content_val = f"全区共采集 {total_count} 条，重点预警标讯 {focus_count} 条。"
-    if failed_steps:
-        content_val += f" 注意：环节 {', '.join(failed_steps)} 执行有警报。"
+    if is_final:
+        title_val = f"【终版封存】广西招投标公告日报（{day}）"
+        content_val = f"昨日最终扫描完成，全天最终共 {total_count} 条，重点标讯 {focus_count} 条。已封存入库并同步云端。"
+        remark_val = "点击本通知查看昨日最终版完整标讯明细。"
+    else:
+        title_val = f"广西全区招投标公告日报（{day}）"
+        content_val = f"全区共采集 {total_count} 条，重点预警标讯 {focus_count} 条。"
+        if failed_steps:
+            content_val += f" 注意：环节 {', '.join(failed_steps)} 执行有警报。"
+        remark_val = "点击本通知即可直接在手机端查看今日完整标讯明细与筛选。"
 
     success_cnt = 0
     for uid in target_users:
@@ -153,7 +159,7 @@ def send_daily_summary(day: str, total_count: int, focus_count: int, failed_step
                 "keyword1": {"value": "广西公共资源交易 · 崇左阳光采购", "color": "#475569"},
                 "keyword2": {"value": day, "color": "#2563eb"},
                 "keyword3": {"value": content_val, "color": "#d97706" if focus_count > 0 else "#059669"},
-                "remark": {"value": "点击本通知即可直接在手机端查看今日完整标讯明细与筛选。", "color": "#64748b"}
+                "remark": {"value": remark_val, "color": "#64748b"}
             }
         }
         if send_template_message(token, payload):

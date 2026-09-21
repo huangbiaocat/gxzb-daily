@@ -15,7 +15,7 @@ import subprocess
 import sys
 import threading
 import time
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
@@ -184,11 +184,11 @@ def get_git_info():
         )
         if res.returncode == 0:
             commit = res.stdout.strip()
-            app_ver = getattr(config, "APP_VERSION", "v0.1.4")
+            app_ver = getattr(config, "APP_VERSION", "v0.1.5")
             return {"commit": commit, "version": f"{app_ver} (#{commit})"}
     except Exception:
         pass
-    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.1.4")}
+    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.1.5")}
 
 def get_scheduled_task_status():
     """检测 Windows 计划任务 ZtbCollector_Sync 的运行/就绪/启用状态"""
@@ -197,7 +197,9 @@ def get_scheduled_task_status():
         "enabled": False,
         "state": "未知",
         "next_run": "--",
-        "next_run_standard": ""
+        "next_run_standard": "",
+        "yesterday_task_exists": False,
+        "yesterday_task_enabled": False
     }
     if sys.platform != "win32":
         return {
@@ -205,7 +207,9 @@ def get_scheduled_task_status():
             "enabled": True,
             "state": "就绪 (监控中)",
             "next_run": "--",
-            "next_run_standard": ""
+            "next_run_standard": "",
+            "yesterday_task_exists": True,
+            "yesterday_task_enabled": True
         }
     try:
         cp = subprocess.run(
@@ -247,6 +251,17 @@ def get_scheduled_task_status():
                 else:
                     res_info["enabled"] = True
                     res_info["state"] = state_raw
+    except Exception:
+        pass
+    try:
+        cp_y = subprocess.run(
+            ["schtasks", "/query", "/tn", "ZtbCollector_YesterdayFinal", "/fo", "CSV", "/nh"],
+            capture_output=True,
+            timeout=3
+        )
+        if cp_y.returncode == 0:
+            res_info["yesterday_task_exists"] = True
+            res_info["yesterday_task_enabled"] = True
     except Exception:
         pass
     return res_info
@@ -324,6 +339,26 @@ def get_system_status():
         except Exception:
             pass
 
+    # 检查昨日最终版状态
+    yesterday_str = (date.today() - timedelta(days=1)).isoformat()
+    state_dir = getattr(config, "STATE_DIR", ROOT_DIR / "data" / "state")
+    final_file = state_dir / f"final-{yesterday_str}.json"
+    yesterday_final_info = {
+        "date": yesterday_str,
+        "is_final": final_file.exists(),
+        "finalized_at": "",
+        "total": 0,
+        "enable": getattr(config, "ENABLE_YESTERDAY_FINAL", True),
+        "scheduled_time": getattr(config, "YESTERDAY_FINAL_TIME", "00:10"),
+    }
+    if final_file.exists():
+        try:
+            fin_d = json.loads(final_file.read_text(encoding="utf-8"))
+            yesterday_final_info["finalized_at"] = fin_d.get("finalized_at", "")
+            yesterday_final_info["total"] = fin_d.get("page_total", fin_d.get("total", 0))
+        except Exception:
+            pass
+
     git_info = get_git_info()
     return {
         "today": today_str,
@@ -346,6 +381,7 @@ def get_system_status():
         "monitor_start_time": getattr(config, "MONITOR_START_TIME", "08:00"),
         "monitor_end_time": getattr(config, "MONITOR_END_TIME", "20:00"),
         "monitor_interval": getattr(config, "MONITOR_INTERVAL_MINUTES", 10),
+        "yesterday_final": yesterday_final_info,
         "vps": {
             "host": getattr(config, "VPS_HOST", "217.142.149.2"),
             "auto_upload": getattr(config, "AUTO_UPLOAD_VPS", False),
@@ -414,6 +450,8 @@ def read_config_env():
         "MONITOR_START_TIME": getattr(config, "MONITOR_START_TIME", "08:00"),
         "MONITOR_END_TIME": getattr(config, "MONITOR_END_TIME", "20:00"),
         "MONITOR_INTERVAL_MINUTES": getattr(config, "MONITOR_INTERVAL_MINUTES", 10),
+        "ENABLE_YESTERDAY_FINAL": "true" if getattr(config, "ENABLE_YESTERDAY_FINAL", True) else "false",
+        "YESTERDAY_FINAL_TIME": getattr(config, "YESTERDAY_FINAL_TIME", "00:10"),
     }
     return res
 
@@ -463,6 +501,8 @@ def save_config_env(data):
         "MONITOR_START_TIME": data.get("MONITOR_START_TIME", "08:00").strip(),
         "MONITOR_END_TIME": data.get("MONITOR_END_TIME", "20:00").strip(),
         "MONITOR_INTERVAL_MINUTES": str(data.get("MONITOR_INTERVAL_MINUTES", "10")).strip(),
+        "ENABLE_YESTERDAY_FINAL": data.get("ENABLE_YESTERDAY_FINAL", "true").strip().lower(),
+        "YESTERDAY_FINAL_TIME": data.get("YESTERDAY_FINAL_TIME", "00:10").strip(),
     }
 
     for line in lines:
@@ -703,6 +743,18 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             else:
                 cmd = [py_exe, "-u", str(ROOT_DIR / "run_daily.py"), "--date", target_date]
             ok, msg = PROC_MGR.start_task(f"全流程日报流水线 ({target_date})", cmd)
+            self.send_json({"ok": ok, "msg": msg})
+            return
+
+        if path == "/api/run_yesterday_final":
+            target_date = post_data.get("date", "").strip()
+            if not target_date:
+                target_date = (date.today() - timedelta(days=1)).isoformat()
+            if collector_exe:
+                cmd = [str(collector_exe), "--date", target_date, "--final", "--force"]
+            else:
+                cmd = [py_exe, "-u", str(ROOT_DIR / "run_daily.py"), "--date", target_date, "--final", "--force"]
+            ok, msg = PROC_MGR.start_task(f"昨日标讯最终版扫描与封存流水线 ({target_date})", cmd)
             self.send_json({"ok": ok, "msg": msg})
             return
 

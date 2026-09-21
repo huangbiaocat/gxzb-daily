@@ -49,6 +49,15 @@ def rebuild_archive_json():
                 for r in rows:
                     ind = r.get("industry", "") or "其他"
                     groups[ind] = groups.get(ind, 0) + 1
+                final_file = config.STATE_DIR / f"final-{day}.json"
+                is_final = final_file.exists()
+                finalized_at = ""
+                if is_final:
+                    try:
+                        fin_data = json.loads(final_file.read_text(encoding="utf-8"))
+                        finalized_at = fin_data.get("finalized_at", "")
+                    except Exception:
+                        pass
                 entry = {
                     "date": day,
                     "file": f"{day}.html",
@@ -56,7 +65,9 @@ def rebuild_archive_json():
                     "cities": len({r.get("areaname", "") for r in rows if r.get("areaname")}),
                     "cat_count": len(groups),
                     "groups": groups,
-                    "updated": config.now_stamp()
+                    "updated": config.now_stamp(),
+                    "is_final": is_final,
+                    "finalized_at": finalized_at
                 }
                 days_list.append(entry)
             except Exception as e:
@@ -182,6 +193,23 @@ extra_style = """
             font-weight: 700;
         }
 
+        .cal-pill-final {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+            border-radius: 9999px;
+            font-size: 9px;
+            padding: 1px 5px;
+            font-weight: 700;
+        }
+
+        .chip-final {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+            font-weight: 700;
+        }
+
         .history-row-today {
             border-left: 4px solid var(--primary) !important;
             background: linear-gradient(to right, rgba(240, 249, 255, 0.85), var(--card-bg)) !important;
@@ -245,7 +273,12 @@ for ym in months:
         ds = "%04d-%02d-%02d" % (y, m, day)
         is_today = (ds == today_str)
         today_cls = " cal-today" if is_today else ""
-        today_pill = '<span class="cal-pill-today">今日</span>' if is_today else ''
+        if is_today:
+            today_pill = '<span class="cal-pill-today">今日</span>'
+        elif ds in day_map and day_map[ds].get("is_final"):
+            today_pill = '<span class="cal-pill-final">终版</span>'
+        else:
+            today_pill = ''
         if ds in day_map:
             d = day_map[ds]
             dens = density_of(d["total"])
@@ -318,7 +351,12 @@ for d in days:
         tags.append('<span class="cat-tag" style="color:{c}; background:{c}14; border-color:{c}33;">{n} {cnt}</span>'.format(
             c=c, n=html.escape(gname), cnt=gcount))
     is_today = (ds == today_str)
-    today_chip = '<span class="status-chip chip-today">今日</span>' if is_today else ''
+    if is_today:
+        today_chip = '<span class="status-chip chip-today">今日</span>'
+    elif d.get("is_final"):
+        today_chip = '<span class="status-chip chip-final">终版</span>'
+    else:
+        today_chip = ''
     row_today_cls = " history-row-today" if is_today else ""
     rows.append(
         '<a class="history-row-item{row_today_cls}" data-cities="{cities}" data-count="{cnt}" data-date="{ds}" data-month="{m}" data-year="{y}" href="./{ds}.html">\n'
@@ -575,7 +613,7 @@ _FIELDS = {
     "base_script": base_script,
     "site": html.escape(arc.get("site", "广西全区招投标数据监控中心")),
     "subtitle": html.escape(arc.get("subtitle", "广西公共资源交易 · 工程建设类公告每日归档")),
-    "app_version": getattr(config, "APP_VERSION", "v0.1.4"),
+    "app_version": getattr(config, "APP_VERSION", "v0.1.5"),
     "day_count": comma(day_count),
     "total_all": comma(total_all),
     "latest_date": latest_date,

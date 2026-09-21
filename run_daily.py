@@ -16,7 +16,7 @@
 crontab 示例（每天 08:30 采集、17:30 再跑一遍）:
     30 8,17 * * * cd /opt/gxzb-daily && /usr/bin/python3 run_daily.py >> logs/cron.log 2>&1
 """
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 def is_within_schedule(start_str: str, end_str: str) -> bool:
     """判断当前时刻是否处于设定的监控时间段内（支持跨午夜）"""
@@ -34,6 +34,22 @@ def is_within_schedule(start_str: str, end_str: str) -> bool:
             return now_t >= s_t or now_t <= e_t
     except Exception:
         return True
+
+def is_time_in_range(now_str: str, start_str: str, end_str: str) -> bool:
+    """判断指定时间字符串 HH:MM 是否处于 start_str ~ end_str 区间（支持跨午夜）"""
+    try:
+        n_h, n_m = map(int, now_str.split(":"))
+        s_h, s_m = map(int, start_str.split(":"))
+        e_h, e_m = map(int, end_str.split(":"))
+        now_t = time(n_h, n_m)
+        s_t = time(s_h, s_m)
+        e_t = time(e_h, e_m)
+        if s_t <= e_t:
+            return s_t <= now_t <= e_t
+        else:
+            return now_t >= s_t or now_t <= e_t
+    except Exception:
+        return False
 
 import argparse
 import json
@@ -178,10 +194,20 @@ def refresh_archive(day):
     groups = {}
     for r in rows:
         groups[r.get("industry", "")] = groups.get(r.get("industry", ""), 0) + 1
+    final_file = config.STATE_DIR / ("final-%s.json" % day)
+    is_final_entry = final_file.exists()
+    finalized_at = ""
+    if is_final_entry:
+        try:
+            fin_d = json.loads(final_file.read_text(encoding="utf-8"))
+            finalized_at = fin_d.get("finalized_at", "")
+        except Exception:
+            pass
     entry = {"date": day, "file": "%s.html" % day, "total": len(rows),
              "cities": len({r.get("areaname", "") for r in rows}),
              "cat_count": len({r.get("industry", "") for r in rows}),
-             "groups": groups, "updated": config.now_stamp()}
+             "groups": groups, "updated": config.now_stamp(),
+             "is_final": is_final_entry, "finalized_at": finalized_at}
     days = [d for d in archive.get("days", []) if d.get("date") != day] + [entry]
     days.sort(key=lambda d: d.get("date", ""), reverse=True)
     archive["days"] = days
@@ -195,7 +221,9 @@ def refresh_archive(day):
 # ------------------------------------------------------------------ 主流程
 def main(argv=None):
     ap = argparse.ArgumentParser(description="每日任务编排（采集 → 生成 → 核验）")
-    ap.add_argument("--date", default=None)
+    ap.add_argument("--date", default=None, help="指定目标日期 YYYY-MM-DD，支持 'yesterday' 或留空默认今天")
+    ap.add_argument("--yesterday", "--yesterday-final", dest="yesterday_final", action="store_true", help="指定目标为昨天，并执行最终扫描封存为最终版")
+    ap.add_argument("--final", action="store_true", help="将当前目标日期标记并保存为全天最终版")
     ap.add_argument("--skip-collect", action="store_true")
     ap.add_argument("--skip-archive", action="store_true")
     ap.add_argument("--no-push", action="store_true")
@@ -205,9 +233,36 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     config.ensure_dirs()
-    day = args.date or config.today()
+    now = datetime.now()
+    now_str = now.strftime("%H:%M")
+    today_str = config.today()
+    yesterday_str = (now - timedelta(days=1)).strftime("%Y-%m-%d")
+    final_marker = config.STATE_DIR / ("final-%s.json" % yesterday_str)
+
+    is_final = False
+
+    if args.yesterday_final or (args.date and args.date.lower() == "yesterday"):
+        day = yesterday_str
+        is_final = True
+    elif args.date:
+        day = args.date
+        is_final = bool(args.final)
+    else:
+        # 未显式指定日期（由 Windows 计划任务等自动化调度触发）
+        enable_yesterday_final = getattr(config, "ENABLE_YESTERDAY_FINAL", True)
+        # 凌晨 00:10 最终扫描窗口：00:05 ~ 00:25
+        in_midnight_window = is_time_in_range(now_str, "00:05", "00:25")
+
+        if enable_yesterday_final and in_midnight_window and not final_marker.exists():
+            print(f"[*] 检测到当前处于凌晨 00:10 最终扫描窗口 ({now_str})，自动启动昨日 ({yesterday_str}) 标讯最终版扫描与封存！")
+            day = yesterday_str
+            is_final = True
+        else:
+            day = today_str
+            is_final = bool(args.final)
+
     print("=" * 68)
-    print("广西招投标公告日报 · 每日任务 %s" % day)
+    print("广西招投标公告日报 · 任务 %s%s" % (day, " (全天最终版)" if is_final else ""))
     print("站点目录 :", config.SITE_DIR)
     print("数据目录 :", config.DATA_DIR)
     print("入库口径 :", args.reconcile)
@@ -218,11 +273,24 @@ def main(argv=None):
     # 0) 监控时间窗口检查（支持定时任务自动跳过非工作时段）
     monitor_start = getattr(config, "MONITOR_START_TIME", "08:00")
     monitor_end = getattr(config, "MONITOR_END_TIME", "20:00")
-    if not args.force and not args.skip_collect and not is_within_schedule(monitor_start, monitor_end):
+    # 终版封存任务（如 00:10 自动触发）不受日间监控时间窗限制
+    if not is_final and not args.force and not args.skip_collect and not is_within_schedule(monitor_start, monitor_end):
         now_str = datetime.now().strftime("%H:%M")
         print(f"[*] 当前时间 {now_str} 不在监控时间段 [{monitor_start} - {monitor_end}] 内，跳过本次采集与同步。")
         print("    （如需手动强制执行，可加 --force 参数）")
         return 0
+
+    # 日间正常监控时段（如早晨 08:00 开机）：若昨日终版尚未封存（夜间电脑关机），自动先补跑昨日终版封存
+    if not args.date and not is_final and getattr(config, "ENABLE_YESTERDAY_FINAL", True) and not final_marker.exists():
+        print(f"[*] 检测到昨日 ({yesterday_str}) 终版尚未封存（夜间可能休眠/关机），先补跑昨日最终版归档...")
+        try:
+            rc_y, ok_y = run([PY, str(SCRIPT / "run_yesterday_final.py"), "--force"], allow_codes=(0, 1))
+            if ok_y:
+                print(f"[+] 昨日 ({yesterday_str}) 终版补跑封存完成！")
+            else:
+                print(f"[!] 昨日终版补跑退出码为 {rc_y}")
+        except Exception as e_catchup:
+            print(f"[!] 昨日终版补跑异常: {e_catchup}")
 
     # 1) 采集
     if args.skip_collect:
@@ -256,7 +324,10 @@ def main(argv=None):
 
     # 3) 生成每日页
     banner("3/8", "生成每日明细页")
-    rc, ok = run([PY, SCRIPT / "build_daily_page.py", "--date", day])
+    build_cmd = [PY, SCRIPT / "build_daily_page.py", "--date", day]
+    if is_final:
+        build_cmd.append("--final")
+    rc, ok = run(build_cmd)
     if not ok:
         failed_steps.append("build_daily_page")
         if getattr(config, "WECHAT_APPID", "") and getattr(config, "WECHAT_TOUSER", ""):
@@ -346,33 +417,69 @@ def main(argv=None):
                 except Exception:
                     pass
             from scripts.notify_wechat import send_daily_summary, send_alert, check_push_condition
-            should_push, reason = check_push_condition(force=False, total_count=total_cnt, focus_count=focus_num, max_amount=max_amount)
+            should_push, reason = check_push_condition(force=is_final or args.force, total_count=total_cnt, focus_count=focus_num, max_amount=max_amount)
             if not should_push:
                 print(f"[微信推送跳过] {reason}")
             else:
                 print(f"[微信推送执行] {reason}")
-                send_daily_summary(day, total_count=total_cnt, focus_count=focus_num, failed_steps=failed_steps)
+                send_daily_summary(day, total_count=total_cnt, focus_count=focus_num, failed_steps=failed_steps, is_final=is_final)
         except Exception as exc:
             print("微信推送异常：", exc)
 
-    return finish(day, failed_steps, args, res)
+    return finish(day, failed_steps, args, res, is_final=is_final)
 
 
-def finish(day, failed_steps, args, res=None):
+def finish(day, failed_steps, args, res=None, is_final=False):
     res = res or {}
     missing = int(res.get("missing_count") or 0)
-    summary = {"date": day, "finished_at": config.now_stamp(),
+    now_stamp = config.now_stamp()
+    summary = {"date": day, "finished_at": now_stamp,
                "failed_steps": failed_steps, "missing_count": missing,
                "stale_missed_count": int(res.get("stale_missed_count") or 0),
                "pending_count": int(res.get("pending_count") or 0),
                "collect_total": res.get("collect_unique"), "page_total": res.get("page_total"),
-               "report_md": res.get("report_md")}
+               "report_md": res.get("report_md"),
+               "is_final": is_final}
+    if is_final:
+        summary["finalized_at"] = now_stamp
     try:
         config.STATE_DIR.mkdir(parents=True, exist_ok=True)
         (config.STATE_DIR / ("run-%s.json" % day)).write_text(
             json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
+        if is_final and not failed_steps:
+            final_summary = {
+                "date": day,
+                "finalized_at": now_stamp,
+                "is_final": True,
+                "collect_total": summary["collect_total"] or summary["page_total"] or 0,
+                "page_total": summary["page_total"] or summary["collect_total"] or 0,
+                "missing_count": summary["missing_count"],
+                "status": "sealed"
+            }
+            (config.STATE_DIR / ("final-%s.json" % day)).write_text(
+                json.dumps(final_summary, ensure_ascii=False, indent=1), encoding="utf-8")
     except OSError:
         pass
+
+    try:
+        from store import get_conn, record_run
+        with get_conn() as conn:
+            record_run(
+                conn,
+                run_id=None,
+                day=day,
+                kind="yesterday_final" if is_final else "daily",
+                stats={
+                    "total": summary["collect_total"] or summary["page_total"] or 0,
+                    "finished_at": summary["finished_at"],
+                    "failed": len(failed_steps),
+                    "missing": summary["missing_count"]
+                },
+                ok=1 if not failed_steps else 0
+            )
+    except Exception:
+        pass
+
     print("\n" + "=" * 68)
     print("任务结束 | 失败步骤：%s" % ("、".join(failed_steps) if failed_steps else "无"))
     if failed_steps:

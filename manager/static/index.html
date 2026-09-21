@@ -43,7 +43,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.1.4</span>
+                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.1.5</span>
                     </div>
                     <p class="text-xs text-slate-500">Tender Data Control & Settings Center</p>
                 </div>
@@ -355,6 +355,19 @@
                                 </div>
                                 <span class="text-[11px] text-slate-400 mt-1 block">默认 10 分钟自动轮询刷新一次</span>
                             </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">昨日终版封存 (ENABLE_YESTERDAY_FINAL)</label>
+                                <select id="cfg-yesterday-final" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="true">开启 (True) - 每日凌晨自动封存</option>
+                                    <option value="false">关闭 (False) - 不自动封存</option>
+                                </select>
+                                <span class="text-[11px] text-slate-400 mt-1 block">每日凌晨最后全量扫描并保存为最终版</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">终版封存时间 (YESTERDAY_FINAL_TIME)</label>
+                                <input id="cfg-yesterday-final-time" type="time" value="00:10" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                <span class="text-[11px] text-slate-400 mt-1 block">每日自动扫描封存时刻（默认 00:10）</span>
+                            </div>
                         </div>
                     </div>
 
@@ -516,6 +529,8 @@
                             <span>自动化监控窗口：<span id="dash-monitor-window" class="text-blue-700 font-mono">08:00 - 20:00</span></span>
                             <span class="text-slate-300">|</span>
                             <span>刷新周期：<span id="dash-monitor-interval" class="text-indigo-700 font-mono font-bold">每 10 分钟</span></span>
+                            <span class="text-slate-300">|</span>
+                            <span>昨日终版归档：<span id="dash-yesterday-final" class="text-emerald-700 font-bold">每日 00:10 自动封存</span></span>
                         </div>
                         <div class="text-slate-500 text-[11px] mt-0.5">到达时间窗口内自动运行采集并核验入库；非监控时段自动休眠防干扰。</div>
                     </div>
@@ -606,6 +621,13 @@
                             <button onclick="triggerTask('collect_cz')" class="btn-action flex flex-col items-center justify-center p-3 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 text-amber-800 transition">
                                 <span class="text-xs font-semibold">单采崇左阳光采购</span>
                                 <span class="text-[10px] text-amber-600 mt-0.5">collect_cz_ygcg.py</span>
+                            </button>
+                            <button onclick="triggerTask('yesterday_final')" class="btn-action flex flex-col items-center justify-center p-3 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-300 text-emerald-800 transition shadow-xs">
+                                <div class="flex items-center space-x-1">
+                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                    <span class="text-xs font-semibold">封存昨日最终版</span>
+                                </div>
+                                <span class="text-[10px] text-emerald-600 mt-0.5">run_yesterday_final.py</span>
                             </button>
                             <button onclick="triggerTask('build')" class="btn-action flex flex-col items-center justify-center p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
                                 <span class="text-xs font-semibold">重新生成页面</span>
@@ -798,7 +820,7 @@
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.1.4</span>
+        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.1.5</span>
         · <span class="text-slate-400">已接入: 广西公共资源交易平台 · 崇左阳光采购服务平台</span>
     </footer>
 
@@ -1058,6 +1080,18 @@
                 // 更新监控计划任务状态
                 updateMonitorUI(data.monitor);
 
+                if (data.yesterday_final) {
+                    const yf = data.yesterday_final;
+                    const dashYf = document.getElementById("dash-yesterday-final");
+                    if (dashYf) {
+                        if (yf.is_final) {
+                            dashYf.innerHTML = `<span class="text-emerald-700 font-semibold">昨日(${yf.date})已封存(${yf.total}条)</span>`;
+                        } else {
+                            dashYf.innerHTML = `<span class="text-amber-600 font-semibold">昨日(${yf.date})待封存 (00:10自动执行)</span>`;
+                        }
+                    }
+                }
+
                 const tbody = document.getElementById("pages-table-body");
                 if (data.recent_pages && data.recent_pages.length > 0) {
                     tbody.innerHTML = data.recent_pages.map(p => {
@@ -1129,6 +1163,8 @@
                 setVal("cfg-monitor-start", data.MONITOR_START_TIME || "08:00");
                 setVal("cfg-monitor-end", data.MONITOR_END_TIME || "20:00");
                 setVal("cfg-monitor-interval", data.MONITOR_INTERVAL_MINUTES || 10);
+                setVal("cfg-yesterday-final", (data.ENABLE_YESTERDAY_FINAL !== "false") ? "true" : "false");
+                setVal("cfg-yesterday-final-time", data.YESTERDAY_FINAL_TIME || "00:10");
                 
                 const winElem = document.getElementById("dash-monitor-window");
                 if (winElem) winElem.textContent = `${data.MONITOR_START_TIME || "08:00"} - ${data.MONITOR_END_TIME || "20:00"}`;
@@ -1190,7 +1226,9 @@
                 WECHAT_ALERT_TEMPLATE_ID: getVal("cfg-wx-alert-tpl"),
                 MONITOR_START_TIME: getVal("cfg-monitor-start", "08:00"),
                 MONITOR_END_TIME: getVal("cfg-monitor-end", "20:00"),
-                MONITOR_INTERVAL_MINUTES: getVal("cfg-monitor-interval", 10)
+                MONITOR_INTERVAL_MINUTES: getVal("cfg-monitor-interval", 10),
+                ENABLE_YESTERDAY_FINAL: getVal("cfg-yesterday-final", "true"),
+                YESTERDAY_FINAL_TIME: getVal("cfg-yesterday-final-time", "00:10")
             };
 
             try {
@@ -1272,6 +1310,7 @@
             }
             const endpoints = {
                 "daily": "/api/run_daily",
+                "yesterday_final": "/api/run_yesterday_final",
                 "collect": "/api/run_collect",
                 "collect_cz": "/api/run_collect_cz",
                 "build": "/api/run_build",

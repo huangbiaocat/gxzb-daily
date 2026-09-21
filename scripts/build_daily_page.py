@@ -42,6 +42,7 @@ def parse_args(argv=None):
     ap.add_argument("--date", default=None, help="目标日期 YYYY-MM-DD，默认今天")
     ap.add_argument("--refetch", action="store_true", help="只列出日志中待重取的条目")
     ap.add_argument("--no-vps", action="store_true", help="跳过自动同步上传 VPS")
+    ap.add_argument("--final", action="store_true", help="标记为全天最终版封存页面")
     return ap.parse_args(argv)
 
 
@@ -397,6 +398,29 @@ DAILY_CSS = """
         .stat-box.stage-award { background: #fdf4ff !important; border-color: #f0abfc !important; }
         .stat-box.stage-award .sb-label { color: #c026d3 !important; }
         .stat-box.stage-award .sb-value { color: #a21caf !important; }
+
+        .hero-badge-final {
+            background: #ecfdf5 !important;
+            color: #065f46 !important;
+            border-color: #a7f3d0 !important;
+        }
+        .hero-badge-final svg {
+            color: #059669 !important;
+        }
+        .final-tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
 
         .cat-block .type-head {
             display: inline-flex;
@@ -903,7 +927,7 @@ html = PAGE
 html = html.replace("__PREVIEW_CSS__", PREVIEW_CSS)
 html = html.replace("__DAILY_CSS__", DAILY_CSS.strip())
 html = html.replace("__LATEST__", latest)
-html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.1.4"))
+html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.1.5"))
 html = html.replace("__DATE__", DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))
 html = html.replace("__NEXT_URL__", neighbor_url(1))
@@ -918,6 +942,21 @@ for sid, val in stat_map.items():
 html, n = re.subn(r'(id="focusCount">)0(<)', lambda m: m.group(1) + str(focus_n) + m.group(2), html)
 assert n == 1, "focusCount"
 html = html.replace("当前筛选匹配 <strong>0</strong>", "当前筛选匹配 <strong>%d</strong>" % total_n, 1)
+
+is_final_page = bool(getattr(ARGS, "final", False) or (config.STATE_DIR / ("final-%s.json" % DAY)).exists())
+if is_final_page:
+    html = html.replace(
+        '<div class="hero-badge">',
+        '<div class="hero-badge hero-badge-final">'
+    )
+    html = html.replace(
+        '<span>DAILY BRIEFING · %s</span>' % DAY,
+        '<span>DAILY BRIEFING · %s · 终版封存</span>' % DAY
+    )
+    html = html.replace(
+        '<h2 class="hero-title">广西全区招投标公告日报（%s）</h2>' % DAY,
+        '<h2 class="hero-title">广西全区招投标公告日报（%s）<span class="final-tag-chip"><svg fill="none" stroke="currentColor" stroke-width="2.5" height="12" viewBox="0 0 24 24" width="12" style="display:inline-block"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> 终版</span></h2>' % DAY
+    )
 
 # ------------------------------------------------------------------ 5. 备份旧产物并写盘
 if OUT.exists():

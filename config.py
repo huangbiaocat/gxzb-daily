@@ -20,7 +20,7 @@ else:
     REPO_ROOT = Path(__file__).resolve().parent
 
 # ------------------------------------------------------------------ 统一版本
-APP_VERSION = "v0.1.4"
+APP_VERSION = "v0.1.5"
 
 # ------------------------------------------------------------------ .env 解析
 def load_env_file(path=None):
@@ -137,6 +137,8 @@ BREAKER_PATH = STATE_DIR / "breaker.json"
 MONITOR_START_TIME = get("MONITOR_START_TIME", "08:00").strip()
 MONITOR_END_TIME = get("MONITOR_END_TIME", "20:00").strip()
 MONITOR_INTERVAL_MINUTES = int(get("MONITOR_INTERVAL_MINUTES", "10"))
+ENABLE_YESTERDAY_FINAL = get("ENABLE_YESTERDAY_FINAL", "1").strip() not in ("0", "false", "False", "")
+YESTERDAY_FINAL_TIME = get("YESTERDAY_FINAL_TIME", "00:10").strip()
 
 
 # ------------------------------------------------------------------ 正文抓取与规则抽取（P1）
