@@ -28,7 +28,7 @@ def rebuild_archive_json():
     """全量扫描 daily 目录，彻底重新生成 archive.json，确保已删除日期被彻底清除，天数与总数绝对准确"""
     daily_dir = getattr(config, "DAILY_DIR", config.DATA_DIR / "daily")
     archive = {
-        "site": "广西招投标公告日报",
+        "site": "广西全区招投标公告日报",
         "subtitle": "广西公共资源交易 · 崇左阳光采购平台公告每日归档",
         "generated": config.now_stamp(),
         "day_count": 0,
@@ -387,11 +387,8 @@ PAGE = """<!DOCTYPE html>
 </svg>
 </div>
 <div class="brand-text">
-<div style="display: flex; align-items: center; gap: 8px;">
-<h1 style="margin: 0;">招投标每日简报</h1>
-                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.1.3</span>
-</div>
-<p>历史归档与数据追溯中心</p>
+<h1 style="margin: 0;">广西全区招投标公告日报（{latest_date}）</h1>
+<p>全区公共资源交易 · 历史归档与数据追溯中心</p>
 </div>
 </a>
 <div class="header-actions">
@@ -444,11 +441,11 @@ PAGE = """<!DOCTYPE html>
 <div class="filter-right">
 <div class="density-legend">
 <span>发布热度:</span>
-<span class="legend-dot" style="background:#f8fafc; border:1px solid #e2e8f0;" title="0条"></span>
-<span class="legend-dot" style="background:#f0f7ff; border:1px solid #dbeafe;" title="1-60条"></span>
-<span class="legend-dot" style="background:#e0eefe; border:1px solid #bfdbfe;" title="61-160条"></span>
-<span class="legend-dot" style="background:#bae0fd; border:1px solid #93c5fd;" title="161-240条"></span>
-<span class="legend-dot" style="background:#3b82f6; border:1px solid #2563eb;" title="&gt;240条"></span>
+<span class="legend-dot density-0" title="0条"></span>
+<span class="legend-dot density-1" title="1-60条"></span>
+<span class="legend-dot density-2" title="61-160条"></span>
+<span class="legend-dot density-3" title="161-240条"></span>
+<span class="legend-dot density-4" title="&gt;240条"></span>
 </div>
 <div class="view-switcher">
 <button class="view-btn active" id="btnViewCalendar" onclick="switchView('calendar')">
@@ -488,7 +485,8 @@ PAGE = """<!DOCTYPE html>
 </div>
 </main>
 <footer class="site-footer">
-<p>广西招投标自动化监控分析看板系统 · 每日定时自动采集与归档</p>
+<p>广西公共资源交易平台体系自动化监控系统 · 历史归档与数据追溯中心</p>
+<p style="margin-top: 6px;">更新时间：{latest_date} · 由自动化采集监控系统 {app_version} 生成</p>
 </footer>
 {base_script}
 <script>
@@ -577,6 +575,7 @@ _FIELDS = {
     "base_script": base_script,
     "site": html.escape(arc.get("site", "广西全区招投标数据监控中心")),
     "subtitle": html.escape(arc.get("subtitle", "广西公共资源交易 · 工程建设类公告每日归档")),
+    "app_version": getattr(config, "APP_VERSION", "v0.1.4"),
     "day_count": comma(day_count),
     "total_all": comma(total_all),
     "latest_date": latest_date,

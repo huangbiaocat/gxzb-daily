@@ -73,7 +73,7 @@ def main():
         remote_path += "/"
     
     print(f"[Upload] 上传 {zip_path.name} 及 dist 页面到 VPS ({host}:{remote_path}) ...")
-    cmd = ["scp", "-P", port, "-o", "BatchMode=yes", str(zip_path), f"{user}@{host}:{remote_path}"]
+    cmd = ["scp", "-P", port, "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", "-o", "ControlMaster=auto", "-o", "ControlPath=/tmp/ssh-%r@%h:%p", "-o", "ControlPersist=10m", str(zip_path), f"{user}@{host}:{remote_path}"]
     res = subprocess.run(cmd)
     if res.returncode == 0:
         print("  -> update_i5.zip 上传 VPS 成功！")
@@ -84,7 +84,7 @@ def main():
     # 同时也把最新的 html 页面传上去
     htmls = list(dist_dir.glob("*.html"))
     if htmls:
-        cmd_html = ["scp", "-P", port, "-o", "BatchMode=yes"] + [str(h) for h in htmls] + [f"{user}@{host}:{remote_path}"]
+        cmd_html = ["scp", "-P", port, "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", "-o", "ControlMaster=auto", "-o", "ControlPath=/tmp/ssh-%r@%h:%p", "-o", "ControlPersist=10m"] + [str(h) for h in htmls] + [f"{user}@{host}:{remote_path}"]
         res_html = subprocess.run(cmd_html)
         if res_html.returncode == 0:
             print(f"  -> {len(htmls)} 个 HTML 页面上传 VPS 成功！")

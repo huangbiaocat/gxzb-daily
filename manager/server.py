@@ -184,11 +184,11 @@ def get_git_info():
         )
         if res.returncode == 0:
             commit = res.stdout.strip()
-            app_ver = getattr(config, "APP_VERSION", "v0.1.2")
+            app_ver = getattr(config, "APP_VERSION", "v0.1.4")
             return {"commit": commit, "version": f"{app_ver} (#{commit})"}
     except Exception:
         pass
-    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.1.2")}
+    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.1.4")}
 
 def get_scheduled_task_status():
     """检测 Windows 计划任务 ZtbCollector_Sync 的运行/就绪/启用状态"""
@@ -401,6 +401,7 @@ def read_config_env():
         "WECHAT_APPID": getattr(config, "WECHAT_APPID", ""),
         "WECHAT_APPSECRET": getattr(config, "WECHAT_APPSECRET", ""),
         "WECHAT_TOUSER": getattr(config, "WECHAT_TOUSER", ""),
+        "WECHAT_ADMIN_TOUSER": getattr(config, "WECHAT_ADMIN_TOUSER", ""),
         "WECHAT_TEMPLATE_ID": getattr(config, "WECHAT_TEMPLATE_ID", ""),
         "WECHAT_ALERT_TEMPLATE_ID": getattr(config, "WECHAT_ALERT_TEMPLATE_ID", ""),
         "PUSH_TRIGGER_MODE": getattr(config, "PUSH_TRIGGER_MODE", "any_complete"),
@@ -449,6 +450,7 @@ def save_config_env(data):
         "WECHAT_APPID": data.get("WECHAT_APPID", "").strip(),
         "WECHAT_APPSECRET": data.get("WECHAT_APPSECRET", "").strip(),
         "WECHAT_TOUSER": data.get("WECHAT_TOUSER", "").strip(),
+        "WECHAT_ADMIN_TOUSER": data.get("WECHAT_ADMIN_TOUSER", "").strip(),
         "WECHAT_TEMPLATE_ID": data.get("WECHAT_TEMPLATE_ID", "").strip(),
         "WECHAT_ALERT_TEMPLATE_ID": data.get("WECHAT_ALERT_TEMPLATE_ID", "").strip(),
         "PUSH_TRIGGER_MODE": data.get("PUSH_TRIGGER_MODE", "any_complete").strip().lower(),

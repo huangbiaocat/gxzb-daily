@@ -20,7 +20,7 @@ else:
     REPO_ROOT = Path(__file__).resolve().parent
 
 # ------------------------------------------------------------------ 统一版本
-APP_VERSION = "v0.1.3"
+APP_VERSION = "v0.1.4"
 
 # ------------------------------------------------------------------ .env 解析
 def load_env_file(path=None):
@@ -323,7 +323,8 @@ PUSH_CMD = get("PUSH_CMD", "").strip()
 # 微信服务号模版消息推送配置（留空则不推送）
 WECHAT_APPID = get("WECHAT_APPID", "").strip()
 WECHAT_APPSECRET = get("WECHAT_APPSECRET", "").strip()
-WECHAT_TOUSER = get("WECHAT_TOUSER", "").strip()
+WECHAT_TOUSER = get("WECHAT_TOUSER", "").strip()  # 日常日报接收人：支持单个、逗号分隔多个，或填 @all 全体关注者
+WECHAT_ADMIN_TOUSER = get("WECHAT_ADMIN_TOUSER", "").strip()  # 异常告警接收人：仅接收任务执行失败等报错告警，不干扰普通关注用户
 WECHAT_TEMPLATE_ID = get("WECHAT_TEMPLATE_ID", "").strip()  # 日常日报模版
 WECHAT_ALERT_TEMPLATE_ID = get("WECHAT_ALERT_TEMPLATE_ID", "").strip()  # 异常告警模版
 # 微信推送触发条件配置

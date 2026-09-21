@@ -168,7 +168,7 @@ def refresh_archive(day):
         return
     rows = json.loads(daily_file.read_text(encoding="utf-8"))
     archive_file = config.DATA_DIR / "archive.json"
-    archive = {"site": "广西招投标公告日报", "subtitle": "广西公共资源交易 · 工程建设类公告每日归档",
+    archive = {"site": "广西全区招投标公告日报", "subtitle": "广西公共资源交易 · 崇左阳光采购公告每日归档",
                "generated": config.now_stamp(), "day_count": 0, "total_all": 0, "days": []}
     if archive_file.exists():
         try:

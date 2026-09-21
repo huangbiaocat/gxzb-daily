@@ -471,7 +471,7 @@ __DAILY_CSS__
 <!-- Header -->
 <header class="site-header">
 <div class="header-inner">
-<a class="brand-logo" href="https://ztb.139771.xyz/index.html">
+<a class="brand-logo" href="./index.html">
 <div class="brand-icon">
 <svg fill="none" height="22" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="22">
 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -482,11 +482,8 @@ __DAILY_CSS__
 </svg>
 </div>
 <div class="brand-text">
-<div style="display: flex; align-items: center; gap: 8px;">
-<h1 style="margin: 0;">招投标每日简报</h1>
-                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 7px; border-radius: 9999px; border: 1px solid #bae6fd;">v0.1.2</span>
-</div>
-<p>__DATE__ · 全区公告分类明细</p>
+<h1 style="margin: 0;">广西全区招投标公告日报（__DATE__）</h1>
+<p>全区公共资源交易 · 崇左阳光采购公告每日归档</p>
 </div>
 </a>
 <div class="header-actions nav-caps">
@@ -494,7 +491,7 @@ __DAILY_CSS__
 <svg fill="none" height="15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="15"><polyline points="15 18 9 12 15 6"></polyline></svg>
 <span>前一日</span>
 </a>
-<a class="btn-back" href="https://ztb.139771.xyz/index.html">
+<a class="btn-back" href="./index.html">
 <svg fill="none" height="15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="15"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V20h14V9.5"></path></svg>
 <span>首页</span>
 </a>
@@ -621,7 +618,7 @@ __DAILY_CSS__
 
 <footer class="site-footer">
 <p>广西公共资源交易平台体系自动化监控系统 · 工程大类及业务环节多层级结构视图</p>
-<p style="margin-top: 6px;">更新时间：__LATEST__</p>
+<p style="margin-top: 6px;">更新时间：__LATEST__ · 由自动化采集监控系统 __APP_VERSION__ 生成</p>
 </footer>
 
 <script>
@@ -906,6 +903,7 @@ html = PAGE
 html = html.replace("__PREVIEW_CSS__", PREVIEW_CSS)
 html = html.replace("__DAILY_CSS__", DAILY_CSS.strip())
 html = html.replace("__LATEST__", latest)
+html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.1.4"))
 html = html.replace("__DATE__", DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))
 html = html.replace("__NEXT_URL__", neighbor_url(1))

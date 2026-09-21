@@ -23,7 +23,7 @@ def main():
     # 1. 优先尝试 rsync 增量同步（支持 --delete，自动清理远端已删除的历史页面）
     rsync_bin = shutil.which("rsync")
     if rsync_bin:
-        ssh_opt = f"ssh -p {port} -o BatchMode=yes -o ConnectTimeout=15 -o StrictHostKeyChecking=no"
+        ssh_opt = f"ssh -p {port} -o BatchMode=yes -o ConnectTimeout=15 -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=/tmp/ssh-%r@%h:%p -o ControlPersist=10m"
         cmd = [
             rsync_bin,
             "-avz",
@@ -62,7 +62,7 @@ def main():
         return 0
 
     print(f"[VPS] 准备同步 {len(items)} 个文件/目录 -> {remote_target} (端口: {port})")
-    cmd = ["scp", "-P", port, "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", "-r"] + items + [remote_target]
+    cmd = ["scp", "-P", port, "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", "-o", "StrictHostKeyChecking=no", "-o", "ControlMaster=auto", "-o", "ControlPath=/tmp/ssh-%r@%h:%p", "-o", "ControlPersist=10m", "-r"] + items + [remote_target]
     
     rc = subprocess.run(cmd).returncode
     if rc == 0:

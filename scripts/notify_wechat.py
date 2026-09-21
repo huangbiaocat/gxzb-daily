@@ -50,6 +50,36 @@ def get_access_token(appid: str, appsecret: str) -> str:
         return ""
 
 
+def get_all_followers(access_token: str) -> list:
+    """获取关注该服务号/公众号的全部用户 OpenID 列表"""
+    if not access_token:
+        return []
+    openids = []
+    next_openid = ""
+    base_url = "https://api.weixin.qq.com/cgi-bin/user/get?access_token=" + access_token
+    try:
+        while True:
+            fetch_url = f"{base_url}&next_openid={next_openid}" if next_openid else base_url
+            req = urllib.request.Request(fetch_url, headers={"User-Agent": "curl/7.68.0"})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                if data.get("errcode"):
+                    print(f"[微信推送] 拉取关注用户列表失败: {data}")
+                    break
+                data_inner = data.get("data", {})
+                sub_ids = data_inner.get("openid", []) if isinstance(data_inner, dict) else []
+                openids.extend(sub_ids)
+                next_openid = data.get("next_openid", "")
+                # 无下一批次或已拉完全部
+                if not next_openid or len(openids) >= data.get("total", 0) or not sub_ids:
+                    break
+        print(f"[微信推送] 成功获取公众号关注用户清单，共 {len(openids)} 人")
+        return openids
+    except Exception as exc:
+        print(f"[微信推送] 拉取全员关注列表异常: {exc}")
+        return openids
+
+
 def send_template_message(access_token: str, payload: dict) -> bool:
     """向微信用户推送模板消息"""
     if not access_token:
@@ -76,15 +106,29 @@ def send_daily_summary(day: str, total_count: int, focus_count: int, failed_step
     """发送每日采集概览模版消息"""
     appid = config.WECHAT_APPID
     appsecret = config.WECHAT_APPSECRET
-    touser = config.WECHAT_TOUSER
+    touser_raw = getattr(config, "WECHAT_TOUSER", "").strip()
     tpl_id = config.WECHAT_TEMPLATE_ID
 
-    if not (appid and appsecret and touser and tpl_id):
-        print("[微信推送] 微信配置不完整，跳过推送（需配置 WECHAT_APPID, WECHAT_APPSECRET, WECHAT_TOUSER, WECHAT_TEMPLATE_ID）")
+    if not (appid and appsecret and touser_raw and tpl_id):
+        print("[微信推送] 微信配置不完整，跳过日常推送（需配置 WECHAT_APPID, WECHAT_APPSECRET, WECHAT_TOUSER, WECHAT_TEMPLATE_ID）")
         return False
 
     token = get_access_token(appid, appsecret)
     if not token:
+        return False
+
+    # 解析目标接收人群
+    target_users = []
+    if touser_raw.lower() in ("@all", "all", "所有人"):
+        target_users = get_all_followers(token)
+        if not target_users:
+            print("[微信推送] 提示：当前公众号暂无已关注粉丝或未获取到 OpenID 列表")
+            return False
+    else:
+        target_users = [u.strip() for u in touser_raw.replace("，", ",").split(",") if u.strip()]
+
+    if not target_users:
+        print("[微信推送] 目标接收人列表为空")
         return False
 
     base_url = getattr(config, "SITE_BASE_URL", getattr(config, "BASE_URL", "https://ztb.139771.xyz")).rstrip("/")
@@ -98,22 +142,28 @@ def send_daily_summary(day: str, total_count: int, focus_count: int, failed_step
     if failed_steps:
         content_val += f" 注意：环节 {', '.join(failed_steps)} 执行有警报。"
 
-    payload = {
-        "touser": touser,
-        "template_id": tpl_id,
-        "url": page_url,
-        "data": {
-            "first": {"value": title_val, "color": "#1e293b"},
-            "keyword1": {"value": "广西壮族自治区公共资源交易平台", "color": "#475569"},
-            "keyword2": {"value": day, "color": "#2563eb"},
-            "keyword3": {"value": content_val, "color": "#d97706" if focus_count > 0 else "#059669"},
-            "remark": {"value": "点击本通知即可直接在手机端查看今日完整标讯明细与筛选。", "color": "#64748b"}
+    success_cnt = 0
+    for uid in target_users:
+        payload = {
+            "touser": uid,
+            "template_id": tpl_id,
+            "url": page_url,
+            "data": {
+                "first": {"value": title_val, "color": "#1e293b"},
+                "keyword1": {"value": "广西公共资源交易 · 崇左阳光采购", "color": "#475569"},
+                "keyword2": {"value": day, "color": "#2563eb"},
+                "keyword3": {"value": content_val, "color": "#d97706" if focus_count > 0 else "#059669"},
+                "remark": {"value": "点击本通知即可直接在手机端查看今日完整标讯明细与筛选。", "color": "#64748b"}
+            }
         }
-    }
-    ret = send_template_message(token, payload)
-    if ret:
+        if send_template_message(token, payload):
+            success_cnt += 1
+
+    print(f"[微信推送] 日报模板消息发送完成: 成功 {success_cnt}/{len(target_users)}")
+    if success_cnt > 0:
         record_push_success()
-    return ret
+        return True
+    return False
 
 
 def send_alert(day: str, error_msg: str, step_name: str = "每日定时任务") -> bool:
@@ -122,47 +172,64 @@ def send_alert(day: str, error_msg: str, step_name: str = "每日定时任务") 
         return False
     appid = config.WECHAT_APPID
     appsecret = config.WECHAT_APPSECRET
-    touser = config.WECHAT_TOUSER
+    # 异常告警接收人：仅推送给管理员，绝不推送给普通关注者
+    admin_touser = getattr(config, "WECHAT_ADMIN_TOUSER", "").strip()
+    if not admin_touser:
+        # 若未单独配置管理员，回退使用常规接收人中指定的具体 OpenID（若为 @all 则安全跳过，防止报错发给全员）
+        regular_touser = getattr(config, "WECHAT_TOUSER", "").strip()
+        if regular_touser and regular_touser.lower() not in ("@all", "all", "所有人"):
+            admin_touser = regular_touser.replace("，", ",").split(",")[0].strip()
+
     tpl_id = config.WECHAT_ALERT_TEMPLATE_ID or config.WECHAT_TEMPLATE_ID
 
-    if not (appid and appsecret and touser and tpl_id):
-        print("[微信推送] 微信配置不完整，跳过异常告警")
+    if not (appid and appsecret and admin_touser and tpl_id):
+        print("[微信推送] 未配置管理员接收人或微信凭证不完整，跳过异常告警（需配置 WECHAT_ADMIN_TOUSER）")
         return False
 
     token = get_access_token(appid, appsecret)
     if not token:
         return False
 
+    admin_users = [u.strip() for u in admin_touser.replace("，", ",").split(",") if u.strip()]
+    if not admin_users:
+        return False
+
     base_url = getattr(config, "SITE_BASE_URL", getattr(config, "BASE_URL", "https://ztb.139771.xyz")).rstrip("/")
     page_url = f"{base_url}/" if base_url else "http://127.0.0.1:8089/"
 
-    if tpl_id == config.WECHAT_ALERT_TEMPLATE_ID and config.WECHAT_ALERT_TEMPLATE_ID:
-        payload = {
-            "touser": touser,
-            "template_id": tpl_id,
-            "url": page_url,
-            "data": {
-                "first": {"value": f"⚠️ 招标采集任务执行异常告警（{day}）", "color": "#dc2626"},
-                "keyword1": {"value": step_name, "color": "#1e293b"},
-                "keyword2": {"value": error_msg[:100], "color": "#dc2626"},
-                "remark": {"value": "请登录服务器或检查运行日志，排查采集流程。", "color": "#64748b"}
+    alert_cnt = 0
+    for auid in admin_users:
+        if tpl_id == config.WECHAT_ALERT_TEMPLATE_ID and config.WECHAT_ALERT_TEMPLATE_ID:
+            payload = {
+                "touser": auid,
+                "template_id": tpl_id,
+                "url": page_url,
+                "data": {
+                    "first": {"value": f"⚠️ 招标采集任务执行异常告警（{day}）", "color": "#dc2626"},
+                    "keyword1": {"value": step_name, "color": "#1e293b"},
+                    "keyword2": {"value": error_msg[:100], "color": "#dc2626"},
+                    "remark": {"value": "【管理员专报】请检查服务器运行日志以排查恢复。", "color": "#64748b"}
+                }
             }
-        }
-    else:
-        # 回退使用普通模板
-        payload = {
-            "touser": touser,
-            "template_id": tpl_id,
-            "url": page_url,
-            "data": {
-                "first": {"value": f"⚠️ 采集异常告警（{day}）", "color": "#dc2626"},
-                "keyword1": {"value": "系统执行告警", "color": "#dc2626"},
-                "keyword2": {"value": day, "color": "#1e293b"},
-                "keyword3": {"value": f"{step_name} 失败: {error_msg}", "color": "#dc2626"},
-                "remark": {"value": "请检查服务器日志以恢复自动化流程。", "color": "#64748b"}
+        else:
+            # 回退使用普通模板
+            payload = {
+                "touser": auid,
+                "template_id": tpl_id,
+                "url": page_url,
+                "data": {
+                    "first": {"value": f"⚠️ 采集任务异常告警（{day}）", "color": "#dc2626"},
+                    "keyword1": {"value": "系统故障告警", "color": "#dc2626"},
+                    "keyword2": {"value": day, "color": "#1e293b"},
+                    "keyword3": {"value": f"{step_name} 失败: {error_msg[:60]}", "color": "#dc2626"},
+                    "remark": {"value": "【管理员专报】请检查服务器日志以恢复自动化流程。", "color": "#64748b"}
+                }
             }
-        }
-    return send_template_message(token, payload)
+        if send_template_message(token, payload):
+            alert_cnt += 1
+
+    print(f"[微信推送] 管理员异常告警发送完成: 成功 {alert_cnt}/{len(admin_users)}")
+    return alert_cnt > 0
 
 
 
