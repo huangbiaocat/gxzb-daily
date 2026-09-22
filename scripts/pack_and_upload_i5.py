@@ -12,6 +12,7 @@ import config
 FILES_TO_PACK = [
     "config.py",
     "desktop_app.py",
+    "run_task.bat",
     "run_desktop.bat",
     "run_daily.py",
     "scripts/__init__.py",

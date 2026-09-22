@@ -97,7 +97,7 @@ def run(args, allow_codes=(0,)):
                 sys.argv = old_argv
             return ret_code, ret_code in allow_codes
 
-    proc = subprocess.run([str(a) for a in args], capture_output=True, text=True)
+    proc = subprocess.run([str(a) for a in args], capture_output=True, text=True, encoding="utf-8", errors="replace")
     if proc.stdout:
         print(proc.stdout.rstrip(), flush=True)
     if proc.stderr:
