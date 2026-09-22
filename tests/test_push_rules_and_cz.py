@@ -2,7 +2,7 @@
 import unittest
 import config
 from scripts.collect_cz_ygcg import normalize_cz_record, get_cz_stage_and_category
-from scripts.notify_wechat import check_push_condition
+from scripts.notify_wechat import check_push_condition, build_rich_summary
 
 
 class TestPushRulesAndCZ(unittest.TestCase):
@@ -157,6 +157,27 @@ class TestPushRulesAndCZ(unittest.TestCase):
         self.assertIsNotNone(norm_high)
         self.assertEqual(norm_high["is_focus"], 1)
         self.assertIn("重点关键词", norm_high["focus_tags"])
+
+    def test_build_rich_summary(self):
+        # 测试存在数据的日期
+        summary = build_rich_summary("2026-09-20", total_count=127, focus_count=5)
+        self.assertIn("content_text", summary)
+        self.assertIn("【广西招投标公告日报 · 2026-09-20】", summary["content_text"])
+        self.assertIn("共采集 127 条", summary["content_text"])
+        self.assertIn("🎯 精选重点标讯推荐：", summary["content_text"])
+        self.assertTrue(len(summary["kw1"]) > 0)
+        self.assertTrue(len(summary["kw2"]) > 0)
+        self.assertIn("重点预警标讯 5 条", summary["kw3"])
+
+        # 测试终版封存
+        final_sum = build_rich_summary("2026-09-20", total_count=127, focus_count=5, is_final=True)
+        self.assertIn("【广西招投标终版日报 · 2026-09-20】", final_sum["content_text"])
+
+        # 测试无文件日期的兜底处理
+        empty_sum = build_rich_summary("1999-01-01", total_count=10, focus_count=0)
+        self.assertIn("【广西招投标公告日报 · 1999-01-01】", empty_sum["content_text"])
+        self.assertIn("共采集 10 条", empty_sum["content_text"])
+        self.assertIn("常规流转", empty_sum["kw3"])
 
 
 if __name__ == "__main__":

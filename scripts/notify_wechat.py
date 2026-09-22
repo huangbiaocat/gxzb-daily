@@ -102,6 +102,116 @@ def send_template_message(access_token: str, payload: dict) -> bool:
         return False
 
 
+def build_rich_summary(day: str, total_count: int, focus_count: int, failed_steps: list = None, is_final: bool = False) -> dict:
+    """构建用于微信模板消息推送的丰富内容（同时兼容 {{content.DATA}} 与 传统结构化模版）"""
+    items = []
+    json_path = config.DAILY_DIR / f"{day}.json"
+    if json_path.exists():
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    items = data
+        except Exception as e:
+            logger.warning(f"读取当日标讯文件异常: {e}")
+
+    from collections import Counter
+    # 行业统计
+    ind_counter = Counter(it.get("industry", "其他") for it in items if it.get("industry"))
+    ind_top = [f"{k[:4]} {v}条" for k, v in ind_counter.most_common(3)]
+    ind_str = " | ".join(ind_top)
+
+    # 地市统计
+    city_counter = Counter(it.get("areaname", "广西") for it in items if it.get("areaname"))
+    top_cities = [c.replace("市", "") for c, _ in city_counter.most_common(4)]
+    city_str = "、".join(top_cities) + ("等" if len(city_counter) > 4 else "")
+
+    # 重点项目提取
+    focus_items = [it for it in items if it.get("is_focus")]
+    if not focus_items and focus_count > 0:
+        for it in items:
+            title = it.get("title", "")
+            for kw in getattr(config, "FOCUS_PROJECT_KEYWORDS", []):
+                if kw in title:
+                    focus_items.append(it)
+                    break
+
+    # 组织富文本（用于测试号万能模板 {{content.DATA}}）
+    lines = []
+    if is_final:
+        lines.append(f"【广西招投标终版日报 · {day}】")
+        lines.append(f"📊 昨日汇总：全天共采集 {total_count} 条，重点标讯 {focus_count} 条")
+    else:
+        lines.append(f"【广西招投标公告日报 · {day}】")
+        lines.append(f"📊 今日动态：共采集 {total_count} 条，重点标讯 {focus_count} 条")
+
+    if ind_str:
+        lines.append(f"🏢 行业分布：{ind_str}")
+
+    # 组合推荐项目（优先重点项目，不足3条时用最新精选补齐）
+    display_tuples = [(it, True) for it in focus_items]
+    existing_keys = {it.get("id") or it.get("title") for it in focus_items}
+    for it in items:
+        if len(display_tuples) >= 3:
+            break
+        k = it.get("id") or it.get("title")
+        if k not in existing_keys:
+            display_tuples.append((it, False))
+            existing_keys.add(k)
+
+    if display_tuples:
+        header_label = "🎯 精选重点标讯推荐：" if focus_items else "📌 最新标讯精选："
+        lines.append(f"\n{header_label}")
+        for it, is_f in display_tuples[:3]:
+            city = (it.get("areaname") or it.get("city") or "广西").replace("市", "")
+            stage = it.get("stage") or "公告"
+            tag = "🔥" if is_f else "•"
+            title = it.get("title", "").strip().replace("\r", "").replace("\n", " ")
+            if len(title) > 30:
+                title = title[:29].rstrip("(-_/:· ") + "…"
+            lines.append(f"{tag} 【{city}·{stage}】{title}")
+    else:
+        lines.append("\n📌 今日标讯持续收集中，暂无预警标讯。")
+
+    if failed_steps:
+        lines.append(f"\n⚠️ 运行提示：环节 {', '.join(failed_steps)} 执行有警报")
+
+    lines.append("\n👉 点击下方卡片直接在手机端查看全部明细及筛选")
+    content_text = "\n".join(lines)
+
+    # 组织单项结构化字段（用于传统模版）
+    if is_final:
+        title_val = f"【终版封存】广西招投标公告日报（{day}）"
+        remark_val = "昨日全天数据已封存对账完成，点击查看完整标讯。"
+    else:
+        title_val = f"广西全区招投标公告日报（{day}）"
+        remark_val = "点击本通知即可直接在手机端查看今日完整标讯明细与筛选。"
+
+    if display_tuples:
+        first_p = display_tuples[0][0]
+        c0 = (first_p.get("areaname") or "").replace("市", "")
+        t0 = first_p.get("title", "").strip().replace("\r", "").replace("\n", " ")
+        if len(t0) > 22:
+            t0 = t0[:21].rstrip("(-_/:· ") + "…"
+        kw1 = f"【{c0}】{t0}" + (f" 等{len(display_tuples)}个项目" if len(display_tuples) > 1 else "")
+    else:
+        kw1 = f"广西全区标讯汇总（共 {total_count} 条）"
+
+    kw2 = city_str or "广西公共资源交易 · 崇左阳光采购"
+    kw3 = f"重点预警标讯 {focus_count} 条" if focus_count > 0 else "常规流转（无重点预警）"
+    kw4 = day
+
+    return {
+        "content_text": content_text,
+        "title_val": title_val,
+        "kw1": kw1,
+        "kw2": kw2,
+        "kw3": kw3,
+        "kw4": kw4,
+        "remark_val": remark_val
+    }
+
+
 def send_daily_summary(day: str, total_count: int, focus_count: int, failed_steps: list = None, is_final: bool = False) -> bool:
     """发送每日采集概览模版消息"""
     appid = config.WECHAT_APPID
@@ -137,16 +247,7 @@ def send_daily_summary(day: str, total_count: int, focus_count: int, failed_step
     else:
         page_url = f"http://127.0.0.1:8089/{day}.html"
 
-    if is_final:
-        title_val = f"【终版封存】广西招投标公告日报（{day}）"
-        content_val = f"昨日最终扫描完成，全天最终共 {total_count} 条，重点标讯 {focus_count} 条。已封存入库并同步云端。"
-        remark_val = "点击本通知查看昨日最终版完整标讯明细。"
-    else:
-        title_val = f"广西全区招投标公告日报（{day}）"
-        content_val = f"全区共采集 {total_count} 条，重点预警标讯 {focus_count} 条。"
-        if failed_steps:
-            content_val += f" 注意：环节 {', '.join(failed_steps)} 执行有警报。"
-        remark_val = "点击本通知即可直接在手机端查看今日完整标讯明细与筛选。"
+    summary_data = build_rich_summary(day, total_count, focus_count, failed_steps, is_final)
 
     success_cnt = 0
     for uid in target_users:
@@ -155,11 +256,15 @@ def send_daily_summary(day: str, total_count: int, focus_count: int, failed_step
             "template_id": tpl_id,
             "url": page_url,
             "data": {
-                "first": {"value": title_val, "color": "#1e293b"},
-                "keyword1": {"value": "广西公共资源交易 · 崇左阳光采购", "color": "#475569"},
-                "keyword2": {"value": day, "color": "#2563eb"},
-                "keyword3": {"value": content_val, "color": "#d97706" if focus_count > 0 else "#059669"},
-                "remark": {"value": remark_val, "color": "#64748b"}
+                # 适配自定义万能内容模板（如测试号的 {{content.DATA}}）
+                "content": {"value": summary_data["content_text"], "color": "#1e293b"},
+                # 适配标准结构化卡片模版（如 first / keyword1..4 / remark）
+                "first": {"value": summary_data["title_val"], "color": "#1e293b"},
+                "keyword1": {"value": summary_data["kw1"], "color": "#2563eb"},
+                "keyword2": {"value": summary_data["kw2"], "color": "#475569"},
+                "keyword3": {"value": summary_data["kw3"], "color": "#d97706" if focus_count > 0 else "#059669"},
+                "keyword4": {"value": summary_data["kw4"], "color": "#64748b"},
+                "remark": {"value": summary_data["remark_val"], "color": "#64748b"}
             }
         }
         if send_template_message(token, payload):
@@ -211,6 +316,10 @@ def send_alert(day: str, error_msg: str, step_name: str = "每日定时任务") 
                 "template_id": tpl_id,
                 "url": page_url,
                 "data": {
+                    "content": {
+                        "value": f"⚠️ 招标采集异常告警（{day}）\n━━━━━━━━━━━━━━━━━━━━\n环节：{step_name}\n详情：{error_msg[:100]}\n\n【管理员专报】请检查服务器运行日志以排查恢复。",
+                        "color": "#dc2626"
+                    },
                     "first": {"value": f"⚠️ 招标采集任务执行异常告警（{day}）", "color": "#dc2626"},
                     "keyword1": {"value": step_name, "color": "#1e293b"},
                     "keyword2": {"value": error_msg[:100], "color": "#dc2626"},
@@ -224,6 +333,10 @@ def send_alert(day: str, error_msg: str, step_name: str = "每日定时任务") 
                 "template_id": tpl_id,
                 "url": page_url,
                 "data": {
+                    "content": {
+                        "value": f"⚠️ 招标采集异常告警（{day}）\n━━━━━━━━━━━━━━━━━━━━\n环节：{step_name}\n详情：{error_msg[:100]}\n\n【管理员专报】请检查服务器运行日志以排查恢复。",
+                        "color": "#dc2626"
+                    },
                     "first": {"value": f"⚠️ 采集任务异常告警（{day}）", "color": "#dc2626"},
                     "keyword1": {"value": "系统故障告警", "color": "#dc2626"},
                     "keyword2": {"value": day, "color": "#1e293b"},
@@ -352,7 +465,24 @@ def test_push() -> bool:
     """测试推送微信卡片消息"""
     print("开始执行微信服务号推送自检测试...")
     day = config.today()
-    ok = send_daily_summary(day, total_count=100, focus_count=10)
+    # 优先使用最新一天的实际数据
+    json_path = config.DAILY_DIR / f"{day}.json"
+    if not json_path.exists():
+        all_jsons = sorted(config.DAILY_DIR.glob("*.json"), reverse=True)
+        if all_jsons:
+            day = all_jsons[0].stem
+    total = 0
+    focus = 0
+    jp = config.DAILY_DIR / f"{day}.json"
+    if jp.exists():
+        try:
+            with open(jp, "r", encoding="utf-8") as f:
+                items = json.load(f)
+                total = len(items)
+                focus = sum(1 for it in items if it.get("is_focus"))
+        except Exception:
+            pass
+    ok = send_daily_summary(day, total_count=total or 128, focus_count=focus or 3)
     if ok:
         print("微信推送测试成功！")
     else:
