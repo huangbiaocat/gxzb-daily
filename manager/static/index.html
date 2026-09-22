@@ -43,7 +43,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.1.5</span>
+                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.1.6</span>
                     </div>
                     <p class="text-xs text-slate-500">Tender Data Control & Settings Center</p>
                 </div>
@@ -270,8 +270,27 @@
                                         <span>规则 2：每日定时批次时段归集推送</span>
                                         <span class="text-[10px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">定时汇总</span>
                                     </label>
-                                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">到达指定时段集中归集最新标讯并推送简报（支持配置多个批次，半角逗号分隔）：</p>
-                                    <input id="cfg-push-batch-hours" type="text" value="08:00, 17:30" placeholder="例如: 08:00, 17:30" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono mt-1.5">
+                                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">到达指定时段集中归集标讯并推送（支持配置多个批次，半角逗号分隔）：</p>
+                                    <div class="mt-1.5 flex flex-col sm:flex-row gap-2">
+                                        <input id="cfg-push-batch-hours" type="text" value="08:00, 17:30" placeholder="例如: 08:00, 17:30" class="flex-1 text-xs rounded-lg border border-slate-300 px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                        <div class="flex items-center gap-1.5 shrink-0 flex-wrap">
+                                            <button type="button" onclick="setPushHoursPreset('08:00, 17:30')" class="px-2 py-1 text-[11px] font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded transition shadow-2xs">早8:00 + 晚17:30</button>
+                                            <button type="button" onclick="setPushHoursPreset('08:30, 18:00')" class="px-2 py-1 text-[11px] font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded transition shadow-2xs">早8:30 + 晚18:00</button>
+                                            <button type="button" onclick="setPushHoursPreset('08:00, 12:00, 18:00')" class="px-2 py-1 text-[11px] font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded transition shadow-2xs">早中晚三次</button>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 pt-2.5 border-t border-slate-200/80">
+                                        <label class="flex items-start space-x-2 cursor-pointer">
+                                            <input type="checkbox" id="cfg-business-push-conditional" class="w-3.5 h-3.5 mt-0.5 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
+                                            <div>
+                                                <span class="text-xs font-semibold text-blue-700 flex items-center gap-1.5">
+                                                    开启“条件发送”（仅自上次发送后有新增内容时发送，无新增则静默）
+                                                    <span class="text-[10px] bg-blue-100 text-blue-700 px-1 rounded">推荐</span>
+                                                </span>
+                                                <p class="text-[11px] text-slate-500 mt-0.5">例如昨日 17:30 发送后昨晚更新了标讯，今早 08:00 将发送包含该新增内容的提醒；若无新增则跳过，不发空消息。</p>
+                                            </div>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
 
@@ -411,6 +430,89 @@
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-semibold text-slate-700 mb-1">采集异常告警模版 ID (WECHAT_ALERT_TEMPLATE_ID)</label>
                                 <input id="cfg-wx-alert-tpl" type="text" placeholder="留空则回退使用日报模版" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 微信定时发送与条件推送策略设置 -->
+                    <div class="space-y-4 pt-4 border-t border-slate-100">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span>
+                            <h3 class="text-sm font-bold text-slate-800">微信定时发送与条件推送策略</h3>
+                            <span class="text-[11px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium border border-blue-200">支持增量检测提醒</span>
+                        </div>
+
+                        <!-- 发送时间填写区域 -->
+                        <div class="bg-slate-50/80 border border-slate-200 rounded-xl p-4 space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                                    <span class="flex items-center gap-1.5">
+                                        <span>⏰ 每日定时发送时间点 (PUSH_BATCH_HOURS)</span>
+                                        <span class="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">定时推送时刻</span>
+                                    </span>
+                                    <span class="text-[11px] text-slate-400">多个时间用英文逗号分隔</span>
+                                </label>
+                                <div class="flex flex-col sm:flex-row gap-2 mt-1.5">
+                                    <input id="cfg-env-push-batch-hours" type="text" value="08:00, 17:30" placeholder="例如: 08:00, 17:30" class="flex-1 text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono shadow-2xs">
+                                    <div class="flex items-center gap-1.5 flex-wrap shrink-0">
+                                        <button type="button" onclick="setPushHoursPreset('08:00, 17:30')" class="px-2.5 py-1.5 text-[11px] font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition shadow-2xs">早8:00 + 晚17:30 (推荐)</button>
+                                        <button type="button" onclick="setPushHoursPreset('08:30, 18:00')" class="px-2.5 py-1.5 text-[11px] font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition shadow-2xs">早8:30 + 晚18:00</button>
+                                        <button type="button" onclick="setPushHoursPreset('08:00, 12:00, 18:00')" class="px-2.5 py-1.5 text-[11px] font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition shadow-2xs">早中晚三次</button>
+                                    </div>
+                                </div>
+                                <span class="text-[11px] text-slate-500 mt-1.5 block">系统会在设定的定时时段窗口到达时执行检查并触发微信推送（支持如 08:00, 17:30）。</span>
+                            </div>
+                        </div>
+
+                        <!-- 条件发送开关与直观场景说明卡片 -->
+                        <div class="border border-blue-200 bg-blue-50/50 rounded-xl p-4 space-y-3">
+                            <label class="flex items-start space-x-3 cursor-pointer">
+                                <input id="cfg-push-conditional" type="checkbox" checked class="w-4 h-4 mt-0.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                                <div class="flex-1">
+                                    <span class="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                        开启“条件发送”（仅在有新增标讯时发送，无新增则静默）
+                                        <span class="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded font-semibold">推荐开启</span>
+                                    </span>
+                                    <p class="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                                        <strong>【触发条件说明】</strong>：到达上方设定的定时发送时间时，系统自动核查<strong>从昨天/上次发送最后一条信息的时间，到当前时间点</strong>之间是否有新入库标讯。
+                                    </p>
+                                    <div class="mt-2 text-[11px] text-slate-600 bg-white/90 rounded-lg p-3 border border-blue-100 space-y-1.5">
+                                        <div class="flex items-center text-blue-800 font-semibold">
+                                            <span>📌 典型应用场景示例：</span>
+                                        </div>
+                                        <div class="pl-2.5 border-l-2 border-blue-400 space-y-1 text-slate-600">
+                                            <p>• 比如今日下午 17:30 发送了一条信息，今晚 20:00 服务器采集更新了 1 条标讯；</p>
+                                            <p>• 明天早上 08:00 到达定时发送时间时，系统检测到昨晚 17:30 至今日 08:00 期间新增了标讯，将<strong>主动发送一条提醒通知，明确告知新增条数及具体标讯明细</strong>；</p>
+                                            <p>• 若昨晚到今晨<strong>没有新增内容（0 条）</strong>，系统将<strong>自动静默跳过</strong>，绝不发送空消息骚扰您。</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- 辅助推送规则选项 -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                            <label class="flex items-center space-x-2.5 p-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer">
+                                <input id="cfg-env-push-rule-focus" type="checkbox" checked class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800 block">重点标讯即时强推</span>
+                                    <span class="text-[10px] text-slate-400 block">命中重点项目/业主即刻发送</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center space-x-2.5 p-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer">
+                                <input id="cfg-env-push-rule-error" type="checkbox" checked class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800 block">采集异常告警</span>
+                                    <span class="text-[10px] text-slate-400 block">系统抓取故障时告警管理员</span>
+                                </div>
+                            </label>
+                            <div class="p-3 rounded-lg border border-slate-200 bg-white">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">最低标讯门槛 (PUSH_MIN_COUNT)</label>
+                                <div class="flex items-center space-x-2">
+                                    <input id="cfg-env-push-min-count" type="number" min="0" max="999" value="1" class="w-full text-xs rounded-md border border-slate-300 px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                    <span class="text-xs text-slate-400 shrink-0">条</span>
+                                </div>
+                                <span class="text-[10px] text-slate-400 mt-0.5 block">0 表示不设数量门槛</span>
                             </div>
                         </div>
                     </div>
@@ -820,7 +922,7 @@
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.1.5</span>
+        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.1.6</span>
         · <span class="text-slate-400">已接入: 广西公共资源交易平台 · 崇左阳光采购服务平台</span>
     </footer>
 
@@ -1142,11 +1244,26 @@
 
                 // 多规则微信推送设置加载
                 const activeRules = data.PUSH_TRIGGER_RULES || [];
-                setChecked("cfg-push-rule-focus", activeRules.includes("focus"));
-                setChecked("cfg-push-rule-batch", activeRules.includes("batch_time"));
-                setChecked("cfg-push-rule-error", activeRules.includes("error"));
-                setVal("cfg-push-min-count", data.PUSH_MIN_COUNT || 1);
-                setVal("cfg-push-batch-hours", data.PUSH_BATCH_HOURS || "08:00, 17:30");
+                const focusOn = activeRules.includes("focus");
+                const batchOn = activeRules.includes("batch_time");
+                const errorOn = activeRules.includes("error");
+                setChecked("cfg-push-rule-focus", focusOn);
+                setChecked("cfg-env-push-rule-focus", focusOn);
+                setChecked("cfg-push-rule-batch", batchOn);
+                setChecked("cfg-push-rule-error", errorOn);
+                setChecked("cfg-env-push-rule-error", errorOn);
+
+                const batchHours = data.PUSH_BATCH_HOURS || "08:00, 17:30";
+                setVal("cfg-push-batch-hours", batchHours);
+                setVal("cfg-env-push-batch-hours", batchHours);
+
+                const condEnabled = String(data.PUSH_CONDITIONAL_INCREMENTAL).toLowerCase() !== "false";
+                setChecked("cfg-push-conditional", condEnabled);
+                setChecked("cfg-business-push-conditional", condEnabled);
+
+                const minCount = (data.PUSH_MIN_COUNT !== undefined) ? data.PUSH_MIN_COUNT : 1;
+                setVal("cfg-push-min-count", minCount);
+                setVal("cfg-env-push-min-count", minCount);
 
                 setVal("cfg-site-base-url", data.SITE_BASE_URL || "");
                 setVal("cfg-vps-auto", String(data.AUTO_UPLOAD_VPS).toLowerCase() === "true" ? "true" : "false");
@@ -1196,10 +1313,18 @@
 
             // 收集多条推送规则
             const pushRules = [];
-            if (document.getElementById("cfg-push-rule-focus")?.checked) pushRules.push("focus");
-            if (document.getElementById("cfg-push-rule-batch")?.checked) pushRules.push("batch_time");
-            if (document.getElementById("cfg-push-rule-error")?.checked) pushRules.push("error");
+            const isFocusChecked = document.getElementById("cfg-env-push-rule-focus")?.checked ?? document.getElementById("cfg-push-rule-focus")?.checked;
+            const isBatchChecked = document.getElementById("cfg-push-rule-batch")?.checked ?? true;
+            const isErrorChecked = document.getElementById("cfg-env-push-rule-error")?.checked ?? document.getElementById("cfg-push-rule-error")?.checked;
+            const isConditionalChecked = document.getElementById("cfg-push-conditional")?.checked ?? document.getElementById("cfg-business-push-conditional")?.checked ?? true;
+
+            if (isFocusChecked) pushRules.push("focus");
+            if (isBatchChecked) pushRules.push("batch_time");
+            if (isErrorChecked) pushRules.push("error");
             const pushRulesStr = pushRules.join(",");
+
+            const batchHoursVal = getVal("cfg-env-push-batch-hours") || getVal("cfg-push-batch-hours", "08:00, 17:30");
+            const minCountVal = getVal("cfg-env-push-min-count") || getVal("cfg-push-min-count", "1");
 
             const payload = {
                 FOCUS_PROJECTS: getVal("cfg-focus-projects"),
@@ -1207,11 +1332,12 @@
                 FOCUS_KEYWORDS_STR: getVal("cfg-focus-keywords"),
                 FOCUS_MIN_AMOUNT: getVal("cfg-focus-min-amount"),
                 PUSH_TRIGGER_RULES: pushRulesStr,
-                PUSH_ALERT_FOCUS: pushRules.includes("focus") ? "true" : "false",
-                PUSH_NOTIFY_ERROR: pushRules.includes("error") ? "true" : "false",
+                PUSH_ALERT_FOCUS: isFocusChecked ? "true" : "false",
+                PUSH_NOTIFY_ERROR: isErrorChecked ? "true" : "false",
                 PUSH_TRIGGER_MODE: pushRules.includes("batch_time") ? "batch_time" : (pushRules.includes("focus") ? "focus_only" : "batch_time"),
-                PUSH_MIN_COUNT: getVal("cfg-push-min-count", "1"),
-                PUSH_BATCH_HOURS: getVal("cfg-push-batch-hours", "08:00, 17:30"),
+                PUSH_MIN_COUNT: minCountVal,
+                PUSH_BATCH_HOURS: batchHoursVal,
+                PUSH_CONDITIONAL_INCREMENTAL: isConditionalChecked ? "true" : "false",
                 SITE_BASE_URL: getVal("cfg-site-base-url"),
                 AUTO_UPLOAD_VPS: getVal("cfg-vps-auto", "false"),
                 VPS_HOST: getVal("cfg-vps-host"),
@@ -2029,10 +2155,41 @@
             }
         }
 
+        // 定时推送时间快捷设定
+        function setPushHoursPreset(val) {
+            const el1 = document.getElementById("cfg-push-batch-hours");
+            const el2 = document.getElementById("cfg-env-push-batch-hours");
+            if (el1) { el1.value = val; el1.dispatchEvent(new Event("input")); }
+            if (el2) { el2.value = val; el2.dispatchEvent(new Event("input")); }
+        }
+
+        // 双向同步业务规则页与系统环境页的推送配置
+        function initPushConfigSync() {
+            const syncPair = (id1, id2, isCheckbox = false) => {
+                const el1 = document.getElementById(id1);
+                const el2 = document.getElementById(id2);
+                if (!el1 || !el2) return;
+                el1.addEventListener(isCheckbox ? "change" : "input", () => {
+                    if (isCheckbox) el2.checked = el1.checked;
+                    else el2.value = el1.value;
+                });
+                el2.addEventListener(isCheckbox ? "change" : "input", () => {
+                    if (isCheckbox) el1.checked = el2.checked;
+                    else el1.value = el2.value;
+                });
+            };
+            syncPair("cfg-push-batch-hours", "cfg-env-push-batch-hours", false);
+            syncPair("cfg-business-push-conditional", "cfg-push-conditional", true);
+            syncPair("cfg-push-rule-focus", "cfg-env-push-rule-focus", true);
+            syncPair("cfg-push-rule-error", "cfg-env-push-rule-error", true);
+            syncPair("cfg-push-min-count", "cfg-env-push-min-count", false);
+        }
+
         // 初始化载入
         window.addEventListener("DOMContentLoaded", () => {
             const savedTab = localStorage.getItem("active_tab") || "business";
             switchTab(savedTab);
+            initPushConfigSync();
             fetchConfig();
             fetchStatus();
         });

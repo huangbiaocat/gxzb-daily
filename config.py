@@ -20,7 +20,7 @@ else:
     REPO_ROOT = Path(__file__).resolve().parent
 
 # ------------------------------------------------------------------ 统一版本
-APP_VERSION = "v0.1.5"
+APP_VERSION = "v0.1.6"
 
 # ------------------------------------------------------------------ .env 解析
 def load_env_file(path=None):
@@ -335,6 +335,8 @@ PUSH_ALERT_FOCUS = get("PUSH_ALERT_FOCUS", "true").strip().lower() in ("true", "
 PUSH_MIN_COUNT = int(get("PUSH_MIN_COUNT", "1"))
 PUSH_NOTIFY_ERROR = get("PUSH_NOTIFY_ERROR", "true").strip().lower() in ("true", "1", "yes", "on")
 PUSH_BATCH_HOURS = get("PUSH_BATCH_HOURS", "08:00, 17:30").strip()
+# 微信条件发送（增量检测推送模式）：仅当自上次发送以来存在新增标讯时才触发发送；若无新增则跳过
+PUSH_CONDITIONAL_INCREMENTAL = get("PUSH_CONDITIONAL_INCREMENTAL", "true").strip().lower() in ("true", "1", "yes", "on")
 
 # 触发推送多规则配置 (允许多条规则同时生效)
 # 可选规则: 'focus'(重点标讯即时推送), 'batch_time'(定时批次归集), 'error'(系统异常告警)

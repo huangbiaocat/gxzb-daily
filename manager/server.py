@@ -184,11 +184,11 @@ def get_git_info():
         )
         if res.returncode == 0:
             commit = res.stdout.strip()
-            app_ver = getattr(config, "APP_VERSION", "v0.1.5")
+            app_ver = getattr(config, "APP_VERSION", "v0.1.6")
             return {"commit": commit, "version": f"{app_ver} (#{commit})"}
-    except Exception:
-        pass
-    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.1.5")}
+        except Exception:
+            pass
+    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.1.6")}
 
 def get_scheduled_task_status():
     """检测 Windows 计划任务 ZtbCollector_Sync 的运行/就绪/启用状态"""
@@ -445,6 +445,7 @@ def read_config_env():
         "PUSH_MIN_COUNT": getattr(config, "PUSH_MIN_COUNT", 1),
         "PUSH_NOTIFY_ERROR": "true" if getattr(config, "PUSH_NOTIFY_ERROR", True) else "false",
         "PUSH_BATCH_HOURS": getattr(config, "PUSH_BATCH_HOURS", "08:00, 17:30"),
+        "PUSH_CONDITIONAL_INCREMENTAL": "true" if getattr(config, "PUSH_CONDITIONAL_INCREMENTAL", True) else "false",
         "PUSH_TRIGGER_RULES": getattr(config, "PUSH_TRIGGER_RULES", ["focus", "batch_time", "error"]),
         "PUSH_TRIGGER_RULES_STR": ",".join(getattr(config, "PUSH_TRIGGER_RULES", ["focus", "batch_time", "error"])),
         "MONITOR_START_TIME": getattr(config, "MONITOR_START_TIME", "08:00"),
@@ -496,6 +497,7 @@ def save_config_env(data):
         "PUSH_MIN_COUNT": str(data.get("PUSH_MIN_COUNT", "1")).strip(),
         "PUSH_NOTIFY_ERROR": data.get("PUSH_NOTIFY_ERROR", "true").strip().lower(),
         "PUSH_BATCH_HOURS": data.get("PUSH_BATCH_HOURS", "08:00, 17:30").strip(),
+        "PUSH_CONDITIONAL_INCREMENTAL": data.get("PUSH_CONDITIONAL_INCREMENTAL", "true").strip().lower(),
         "PUSH_TRIGGER_RULES": data.get("PUSH_TRIGGER_RULES", "focus,complete,error").strip(),
         "PUSH_LARGE_AMOUNT": str(data.get("PUSH_LARGE_AMOUNT", "5000")).strip(),
         "MONITOR_START_TIME": data.get("MONITOR_START_TIME", "08:00").strip(),

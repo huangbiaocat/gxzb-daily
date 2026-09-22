@@ -19,6 +19,7 @@ import json
 import logging
 import urllib.parse
 import urllib.request
+from datetime import datetime, time
 from pathlib import Path
 
 # 支持相对导入与顶层导入
@@ -29,6 +30,137 @@ except ImportError:
     import config
 
 logger = logging.getLogger(__name__)
+
+# 全局增量推送缓存（供 check_push_condition 与紧接着的 send_daily_summary 共享，避免重复读库）
+_CACHED_INCREMENTAL = None
+
+
+def format_time_range(since_str: str, until_dt=None) -> str:
+    """将推送时间跨度格式化为友好的中文显示（如：昨晚 17:30 ~ 今晨 08:00）"""
+    from datetime import datetime
+    if until_dt is None:
+        until_dt = datetime.now()
+    if not since_str:
+        return f"截至今日 {until_dt.strftime('%H:%M')}"
+    try:
+        since_dt = datetime.strptime(since_str.split(".")[0], "%Y-%m-%d %H:%M:%S")
+    except Exception:
+        return f"{since_str} ~ {until_dt.strftime('%H:%M')}"
+
+    delta_days = (until_dt.date() - since_dt.date()).days
+    since_hour = since_dt.hour
+    until_hour = until_dt.hour
+
+    if delta_days == 1:
+        since_txt = f"昨晚 {since_dt.strftime('%H:%M')}" if since_hour >= 17 else f"昨日 {since_dt.strftime('%H:%M')}"
+        until_txt = f"今晨 {until_dt.strftime('%H:%M')}" if until_hour < 12 else f"今日 {until_dt.strftime('%H:%M')}"
+        return f"{since_txt} ~ {until_txt}"
+    elif delta_days == 0:
+        return f"今日 {since_dt.strftime('%H:%M')} ~ {until_dt.strftime('%H:%M')}"
+    else:
+        return f"{since_dt.strftime('%m-%d %H:%M')} ~ {until_dt.strftime('%m-%d %H:%M')}"
+
+
+def get_incremental_notices(since_time_str: str = None, until_time_str: str = None) -> list:
+    """
+    获取从 since_time_str 到 until_time_str 之间入库或发布的新增标讯。
+    优先从 SQLite notices 表查询并结合 daily json 与推送历史状态去重与补全字段。
+    """
+    if not since_time_str:
+        return []
+
+    from datetime import datetime
+    if not until_time_str:
+        until_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    state_file = getattr(config, "STATE_DIR", Path("data/state")) / "wechat_push_state.json"
+    pushed_infoids = set()
+    if state_file.exists():
+        try:
+            with open(state_file, "r", encoding="utf-8") as f:
+                sdata = json.load(f)
+                pushed_infoids = set(sdata.get("pushed_infoids", []))
+        except Exception:
+            pass
+
+    incremental = []
+    seen_infoids = set()
+
+    # 1. 优先从 SQLite notices 表查询
+    db_path = getattr(config, "DB_PATH", None)
+    if db_path and Path(db_path).exists():
+        try:
+            import sqlite3
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            sql = """
+            SELECT infoid, categorynum, industry, stage, stage_key, title, project_name, region, pub_time, link, detail_url, created_at, pushed_at
+            FROM notices
+            WHERE (
+                (created_at > ? AND created_at <= ?)
+                OR (pub_time > ? AND pub_time <= ? AND (pushed_at IS NULL OR pushed_at <= ?))
+            )
+            ORDER BY created_at ASC, pub_time ASC
+            """
+            rows = cur.execute(sql, (since_time_str, until_time_str, since_time_str, until_time_str, since_time_str)).fetchall()
+            for r in rows:
+                r_dict = dict(r)
+                iid = r_dict.get("infoid")
+                if iid and iid not in pushed_infoids and iid not in seen_infoids:
+                    seen_infoids.add(iid)
+                    incremental.append(r_dict)
+            conn.close()
+        except Exception as exc:
+            logger.warning(f"查询 SQLite 增量标讯异常: {exc}")
+
+    # 2. 结合今日与昨日的 daily json 进行字段补全或兜底
+    now_dt = datetime.now()
+    check_dates = [now_dt.strftime("%Y-%m-%d")]
+    try:
+        since_dt = datetime.strptime(since_time_str.split(".")[0], "%Y-%m-%d %H:%M:%S")
+        if since_dt.strftime("%Y-%m-%d") not in check_dates:
+            check_dates.append(since_dt.strftime("%Y-%m-%d"))
+    except Exception:
+        pass
+
+    for d in check_dates:
+        jp = getattr(config, "DAILY_DIR", Path("data/daily")) / f"{d}.json"
+        if jp.exists():
+            try:
+                with open(jp, "r", encoding="utf-8") as f:
+                    d_items = json.load(f)
+                if isinstance(d_items, list):
+                    for item in d_items:
+                        iid = item.get("infoid")
+                        if iid in seen_infoids:
+                            for ex in incremental:
+                                if ex.get("infoid") == iid:
+                                    for k, v in item.items():
+                                        if k not in ex or not ex[k]:
+                                            ex[k] = v
+                                    break
+                        else:
+                            pub = item.get("pub_time", "")
+                            if iid and iid not in pushed_infoids and pub > since_time_str and pub <= until_time_str:
+                                seen_infoids.add(iid)
+                                incremental.append(item)
+            except Exception:
+                pass
+
+    # 3. 补充重点标记
+    try:
+        from scripts.rule_checker import check_notice_focus
+        for it in incremental:
+            if "is_focus" not in it:
+                f_stat, f_reason, f_tags = check_notice_focus(it)
+                it["is_focus"] = 1 if f_stat else 0
+                it["focus_reason"] = f_reason
+                it["focus_tags"] = f_tags
+    except Exception:
+        pass
+
+    return incremental
 
 
 def get_access_token(appid: str, appsecret: str) -> str:
@@ -102,8 +234,97 @@ def send_template_message(access_token: str, payload: dict) -> bool:
         return False
 
 
-def build_rich_summary(day: str, total_count: int, focus_count: int, failed_steps: list = None, is_final: bool = False) -> dict:
-    """构建用于微信模板消息推送的丰富内容（同时兼容 {{content.DATA}} 与 传统结构化模版）"""
+def build_rich_summary(day: str, total_count: int, focus_count: int, failed_steps: list = None, is_final: bool = False, incremental_items: list = None, since_time_str: str = None, until_time_str: str = None) -> dict:
+    """构建用于微信模板消息推送的丰富内容（同时兼容 {{content.DATA}} 与 传统结构化模版，支持增量提醒）"""
+    from collections import Counter
+    from datetime import datetime
+
+    # 若为增量提醒模式（通过 incremental_items 传入或由条件发送触发）
+    if incremental_items is not None:
+        inc_count = len(incremental_items)
+        until_dt = None
+        if until_time_str:
+            try:
+                until_dt = datetime.strptime(until_time_str.split(".")[0], "%Y-%m-%d %H:%M:%S")
+            except Exception:
+                pass
+        time_desc = format_time_range(since_time_str, until_dt or datetime.now())
+        focus_items = [it for it in incremental_items if it.get("is_focus")]
+        focus_count = len(focus_items)
+
+        city_counter = Counter((it.get("areaname") or it.get("region") or "广西").replace("市", "") for it in incremental_items if it.get("areaname") or it.get("region"))
+        top_cities = [c for c, _ in city_counter.most_common(4)]
+        city_str = "、".join(top_cities) if top_cities else "全区"
+
+        display_tuples = [(it, True) for it in focus_items]
+        existing_keys = {it.get("infoid") or it.get("title") for it in focus_items}
+        for it in incremental_items:
+            if len(display_tuples) >= 3:
+                break
+            k = it.get("infoid") or it.get("title")
+            if k not in existing_keys:
+                display_tuples.append((it, False))
+                existing_keys.add(k)
+
+        lines = [
+            "🔔 【广西招投标标讯增量提醒】",
+            f"⏰ 统计区间：{time_desc}",
+            f"🆕 区间新增：共 {inc_count} 条标讯",
+            f"🎯 重点关注：{focus_count} 条",
+            f"📍 涉及地区：{city_str}",
+            "--------------------------------",
+            "⭐ 本次新增标讯精选：" if display_tuples else "📌 本时段暂无更多新增标讯。"
+        ]
+        for it, is_f in display_tuples[:3]:
+            city = (it.get("areaname") or it.get("region") or "广西").replace("市", "")
+            stage = it.get("stage") or "公告"
+            tag = "🔥" if is_f else "•"
+            title = it.get("title", "").strip().replace("\r", "").replace("\n", " ")
+            if len(title) > 30:
+                title = title[:29].rstrip("(-_/:· ") + "…"
+            lines.append(f"{tag} 【{city}·{stage}】{title}")
+            pub = it.get("pub_time", "")
+            amt = it.get("amount")
+            meta_parts = []
+            if pub:
+                meta_parts.append(f"时间: {pub[5:16] if len(pub) >= 16 else pub}")
+            if amt:
+                meta_parts.append(f"金额: {amt}")
+            if meta_parts:
+                lines.append(f"   {' | '.join(meta_parts)}")
+
+        lines.append("--------------------------------")
+        if failed_steps:
+            lines.append(f"⚠️ 运行提示：环节 {', '.join(failed_steps)} 执行有警报")
+        lines.append("👉 点击下方卡片直接在手机端查看全部明细及筛选")
+        content_text = "\n".join(lines)
+
+        title_val = f"🔔 广西标讯增量提醒（新增 {inc_count} 条）"
+        if display_tuples:
+            first_p = display_tuples[0][0]
+            c0 = (first_p.get("areaname") or first_p.get("region") or "").replace("市", "")
+            t0 = first_p.get("title", "").strip().replace("\r", "").replace("\n", " ")
+            if len(t0) > 22:
+                t0 = t0[:21].rstrip("(-_/:· ") + "…"
+            kw1 = f"新增 {inc_count} 条：【{c0}】{t0}"
+        else:
+            kw1 = f"新增 {inc_count} 条标讯（{time_desc}）"
+
+        kw2 = city_str
+        kw3 = f"重点预警标讯 {focus_count} 条" if focus_count > 0 else "常规增量标讯"
+        kw4 = time_desc
+        remark_val = f"自上次推送（{since_time_str or '上次'}）以来新增 {inc_count} 条标讯，点击卡片即刻查看明细。"
+
+        return {
+            "content_text": content_text,
+            "title_val": title_val,
+            "kw1": kw1,
+            "kw2": kw2,
+            "kw3": kw3,
+            "kw4": kw4,
+            "remark_val": remark_val
+        }
+
     items = []
     json_path = config.DAILY_DIR / f"{day}.json"
     if json_path.exists():
@@ -212,8 +433,9 @@ def build_rich_summary(day: str, total_count: int, focus_count: int, failed_step
     }
 
 
-def send_daily_summary(day: str, total_count: int, focus_count: int, failed_steps: list = None, is_final: bool = False) -> bool:
-    """发送每日采集概览模版消息"""
+def send_daily_summary(day: str, total_count: int = 0, focus_count: int = 0, failed_steps: list = None, is_final: bool = False, incremental_items: list = None, since_time_str: str = None) -> bool:
+    """发送每日采集概览或增量提醒模版消息"""
+    global _CACHED_INCREMENTAL
     appid = config.WECHAT_APPID
     appsecret = config.WECHAT_APPSECRET
     touser_raw = getattr(config, "WECHAT_TOUSER", "").strip()
@@ -247,7 +469,32 @@ def send_daily_summary(day: str, total_count: int, focus_count: int, failed_step
     else:
         page_url = f"http://127.0.0.1:8089/{day}.html"
 
-    summary_data = build_rich_summary(day, total_count, focus_count, failed_steps, is_final)
+    # 如果未显式传入增量信息，但缓存中存在（由 check_push_condition 发现），则复用
+    if incremental_items is None and _CACHED_INCREMENTAL:
+        incremental_items = _CACHED_INCREMENTAL.get("items")
+        since_time_str = _CACHED_INCREMENTAL.get("since_time")
+
+    # 若配置开启了条件发送，且当前不是 final 汇总，尝试拉取增量
+    if incremental_items is None and getattr(config, "PUSH_CONDITIONAL_INCREMENTAL", True) and not is_final:
+        state_file = getattr(config, "STATE_DIR", Path("data/state")) / "wechat_push_state.json"
+        if state_file.exists():
+            try:
+                with open(state_file, "r", encoding="utf-8") as f:
+                    sdata = json.load(f)
+                    lpt = sdata.get("last_regular_push_time") or sdata.get("last_push_time")
+                    if lpt:
+                        inc = get_incremental_notices(lpt)
+                        if inc:
+                            incremental_items = inc
+                            since_time_str = lpt
+            except Exception:
+                pass
+
+    summary_data = build_rich_summary(
+        day, total_count, focus_count, failed_steps, is_final,
+        incremental_items=incremental_items,
+        since_time_str=since_time_str
+    )
 
     success_cnt = 0
     for uid in target_users:
@@ -272,7 +519,22 @@ def send_daily_summary(day: str, total_count: int, focus_count: int, failed_step
 
     print(f"[微信推送] 日报模板消息发送完成: 成功 {success_cnt}/{len(target_users)}")
     if success_cnt > 0:
-        record_push_success()
+        pushed_ids = []
+        if incremental_items:
+            pushed_ids = [it.get("infoid") for it in incremental_items if it.get("infoid")]
+        else:
+            jp = getattr(config, "DAILY_DIR", Path("data/daily")) / f"{day}.json"
+            if jp.exists():
+                try:
+                    with open(jp, "r", encoding="utf-8") as f:
+                        d_items = json.load(f)
+                        pushed_ids = [it.get("infoid") for it in d_items if it.get("infoid")]
+                except Exception:
+                    pass
+
+        b_key = _CACHED_INCREMENTAL.get("batch_key") if _CACHED_INCREMENTAL else None
+        record_push_success(pushed_infoids=pushed_ids, batch_key=b_key)
+        _CACHED_INCREMENTAL = None
         return True
     return False
 
@@ -359,8 +621,12 @@ def check_push_condition(force: bool = False, total_count: int = 0, focus_count:
     2. 多规则评估（支持多规则并行生效，满足任意已启用的规则即触发）：
        - 'focus': 命中重点项目、重点业主（无门槛立即推）或通用预警词（达金额门槛立即推），不受最低标讯数门槛限制
        - 'batch_time': 到达每日指定批次时段集中归集推送
+       - 'conditional' 或 PUSH_CONDITIONAL_INCREMENTAL: 条件发送（仅自上次发送后有新增内容时发送）
     返回 (should_push: bool, reason: str)
     """
+    global _CACHED_INCREMENTAL
+    _CACHED_INCREMENTAL = None
+
     if force:
         return True, "手动/强制触发"
 
@@ -385,10 +651,9 @@ def check_push_condition(force: bool = False, total_count: int = 0, focus_count:
 
     # 2. 最低数量门槛限制（针对定时归集推送）
     min_cnt = int(getattr(config, "PUSH_MIN_COUNT", 1))
-    if total_count > 0 and total_count < min_cnt:
+    if total_count > 0 and min_cnt > 0 and total_count < min_cnt and focus_count == 0:
         return False, f"当日标讯总数 ({total_count}) 低于设定的最低推送门槛 ({min_cnt} 条)，跳过常规推送"
 
-    from datetime import datetime, time
     import sqlite3
     now = datetime.now()
     cur_time = now.time()
@@ -404,8 +669,8 @@ def check_push_condition(force: bool = False, total_count: int = 0, focus_count:
             
     today_str = now.strftime("%Y-%m-%d")
 
-    # 3. 定时批次时段归集推送
-    if "batch_time" in active_rules:
+    # 3. 定时批次时段归集推送（含条件发送判断）
+    if "batch_time" in active_rules or getattr(config, "PUSH_CONDITIONAL_INCREMENTAL", False):
         batch_hours_str = getattr(config, "PUSH_BATCH_HOURS", "08:00, 17:30")
         for hour_item in batch_hours_str.replace("，", ",").split(","):
             hour_item = hour_item.strip()
@@ -423,7 +688,33 @@ def check_push_condition(force: bool = False, total_count: int = 0, focus_count:
                     batch_key = f"batch_{bh:02d}{bm:02d}_{today_str}"
                     if state.get(batch_key):
                         return False, f"今日 [{hour_item}] 批次已推送过，避免重复推送"
-                    return True, f"命中定时批次规则：当前处于批次时段 [{hour_item}] 窗口内"
+
+                    # 检查是否开启“条件发送（仅有增量时发送）”
+                    if getattr(config, "PUSH_CONDITIONAL_INCREMENTAL", True):
+                        last_push_time = state.get("last_regular_push_time") or state.get("last_push_time")
+                        if last_push_time:
+                            inc_items = get_incremental_notices(
+                                since_time_str=last_push_time,
+                                until_time_str=now.strftime("%Y-%m-%d %H:%M:%S")
+                            )
+                            if len(inc_items) > 0:
+                                _CACHED_INCREMENTAL = {
+                                    "items": inc_items,
+                                    "since_time": last_push_time,
+                                    "batch_key": batch_key
+                                }
+                                return True, f"命中定时条件推送规则：处于批次 [{hour_item}] 窗口，自上次推送（{last_push_time}）以来新增 {len(inc_items)} 条标讯"
+                            else:
+                                return False, f"未触发条件推送：处于批次 [{hour_item}] 窗口，但自上次推送（{last_push_time}）以来无新增标讯（新增 0 条），跳过本次推送"
+                        else:
+                            # 尚无历史推送记录（首次运行）
+                            if total_count > 0:
+                                return True, f"首次执行定时推送：处于批次 [{hour_item}] 窗口，今日共有 {total_count} 条标讯"
+                            else:
+                                return False, f"首次执行定时推送：处于批次 [{hour_item}] 窗口，当前暂无标讯数据，跳过推送"
+                    else:
+                        # 未开启条件发送，只要在批次窗口即推送
+                        return True, f"命中定时批次规则：当前处于批次时段 [{hour_item}] 窗口内"
             except Exception:
                 continue
         return False, f"当前未处于任何设定的定时批次时段窗口 ({batch_hours_str})，当前时间 {cur_time.strftime('%H:%M')}"
@@ -431,11 +722,11 @@ def check_push_condition(force: bool = False, total_count: int = 0, focus_count:
     return False, f"当前未满足任何已启用的推送规则 (当前启用规则: {', '.join(active_rules) if active_rules else '无'})"
 
 
-def record_push_success():
-    """记录成功推送的时间与批次"""
-    from datetime import datetime, time
+def record_push_success(pushed_infoids: list = None, batch_key: str = None):
+    """记录成功推送的时间、批次与已推送标讯"""
     now = datetime.now()
     today_str = now.strftime("%Y-%m-%d")
+    now_str = now.strftime("%Y-%m-%d %H:%M:%S")
     cur_time = now.time()
     
     state_file = getattr(config, "STATE_DIR", Path("data/state")) / "wechat_push_state.json"
@@ -448,11 +739,55 @@ def record_push_success():
         except Exception:
             state = {}
             
-    state["last_regular_push_time"] = now.strftime("%Y-%m-%d %H:%M:%S")
+    state["last_regular_push_time"] = now_str
+    state["last_push_time"] = now_str
     if time(17, 0) <= cur_time <= time(19, 0):
         state["last_afternoon_push_date"] = today_str
     elif time(7, 30) <= cur_time <= time(9, 30):
         state["last_morning_push_date"] = today_str
+
+    if batch_key:
+        state[batch_key] = True
+
+    # 自动标记当前时间所处批次
+    batch_hours_str = getattr(config, "PUSH_BATCH_HOURS", "08:00, 17:30")
+    for hour_item in batch_hours_str.replace("，", ",").split(","):
+        hour_item = hour_item.strip()
+        if not hour_item:
+            continue
+        try:
+            parts = hour_item.split(":")
+            bh = int(parts[0])
+            bm = int(parts[1]) if len(parts) > 1 else 0
+            start_sec = bh * 3600 + bm * 60
+            end_sec = start_sec + 30 * 60
+            now_sec = now.hour * 3600 + now.minute * 60 + now.second
+            if start_sec <= now_sec <= end_sec:
+                k = f"batch_{bh:02d}{bm:02d}_{today_str}"
+                state[k] = True
+        except Exception:
+            pass
+
+    # 维护推送标讯 ID 台账
+    if pushed_infoids:
+        pushed_set = set(state.get("pushed_infoids", []))
+        pushed_set.update(pushed_infoids)
+        # 保持最新 3000 个
+        state["pushed_infoids"] = list(pushed_set)[-3000:]
+
+        # 更新 SQLite 数据库中的 pushed_at
+        db_path = getattr(config, "DB_PATH", None)
+        if db_path and Path(db_path).exists():
+            try:
+                import sqlite3
+                conn = sqlite3.connect(db_path)
+                cur = conn.cursor()
+                placeholders = ",".join("?" for _ in pushed_infoids)
+                cur.execute(f"UPDATE notices SET pushed_at = ? WHERE infoid IN ({placeholders})", [now_str] + list(pushed_infoids))
+                conn.commit()
+                conn.close()
+            except Exception as exc:
+                logger.warning(f"更新 SQLite notices.pushed_at 失败: {exc}")
         
     try:
         with open(state_file, "w", encoding="utf-8") as f:
