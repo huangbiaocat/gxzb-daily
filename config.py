@@ -20,7 +20,7 @@ else:
     REPO_ROOT = Path(__file__).resolve().parent
 
 # ------------------------------------------------------------------ 统一版本
-APP_VERSION = "v0.1.8"
+APP_VERSION = "v0.1.9"
 
 # ------------------------------------------------------------------ .env 解析
 def load_env_file(path=None):
@@ -142,6 +142,21 @@ YESTERDAY_FINAL_TIME = get("YESTERDAY_FINAL_TIME", "00:10").strip()
 
 
 # ------------------------------------------------------------------ 正文抓取与规则抽取（P1）
+# ------------------------------------------------------------------ 历史回扫与滞后/隐匿公告检测
+# 回扫时间窗口（天）：默认回扫过去 30 天
+BACKSCAN_DAYS = int(get("BACKSCAN_DAYS", "30"))
+# 滞后判定阈值（天）：首次发现日期与官方标称发布日期差 >= 2 天即判定为滞后/隐藏补录
+BACKSCAN_MIN_DELAY = int(get("BACKSCAN_MIN_DELAY", "2"))
+# 是否在每日流水线中启用历史回扫
+BACKSCAN_ENABLED = get("BACKSCAN_ENABLED", "1").strip() not in ("0", "false", "False", "")
+# 全局首次发现注册表（持久化存储 infoid 与首次发现时间、滞后判定元数据）
+DELAYED_REGISTRY_PATH = STATE_DIR / "delayed_registry.json"
+
+
+def get_delayed_today_path(day):
+    return STATE_DIR / f"delayed_today_{day}.json"
+
+
 DETAIL_DIR = DATA_DIR / "details"          # 公告正文缓存（按日/按 infoid）
 EXTRACT_DIR = DATA_DIR / "extract"         # 规则抽取结果（按日）
 DB_PATH = get_path("DB_PATH", DATA_DIR / "gxzb.sqlite3")   # SQLite 入库

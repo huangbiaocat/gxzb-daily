@@ -22,6 +22,7 @@ import argparse
 import collections
 import datetime
 import hashlib
+import html as html_mod
 import json
 import re
 import shutil
@@ -36,6 +37,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import config      # noqa: E402
 import logstore    # noqa: E402
 from overtime_helper import annotate_item_overtime  # noqa: E402
+try:
+    from scripts.delayed_helper import annotate_delayed_item
+except ImportError:
+    from delayed_helper import annotate_delayed_item
 
 
 def parse_args(argv=None):
@@ -204,6 +209,16 @@ for it in items:
         it["focus_tags"] = []
 
     annotate_item_overtime(it)
+    annotate_delayed_item(it, DAY)
+    if it.get("is_delayed"):
+        it["is_focus"] = 1
+        tags = it.setdefault("focus_tags", [])
+        if "滞后补录" not in tags:
+            tags.append("滞后补录")
+        reasons = it.setdefault("focus_reason", [])
+        d_reason = it.get("delayed_reason") or f"滞后 {it.get('delay_days', 0)} 天补录现身"
+        if d_reason not in reasons:
+            reasons.append(d_reason)
 
 # 回写清洗更新后的 items 到当日 JSON 文件，彻底消除历史脏数据残留
 if DATA.exists():
@@ -228,6 +243,18 @@ log_index = logstore.load_index()
 stage_counter = collections.Counter(it["stage"] for it in items)
 total_n = len(items)
 focus_n = sum(1 for it in items if it.get("is_focus"))
+# 加载今日回扫捕获的滞后清单（若有）
+today_delayed_file = config.get_delayed_today_path(DAY)
+today_delayed_items = []
+if today_delayed_file.is_file():
+    try:
+        today_delayed_items = json.loads(today_delayed_file.read_text(encoding="utf-8"))
+    except Exception:
+        today_delayed_items = []
+for dit in today_delayed_items:
+    annotate_delayed_item(dit, DAY)
+
+delayed_n = len(today_delayed_items) + sum(1 for it in items if it.get("is_delayed"))
 stat_map = {
     "stat-plan": stage_counter.get("招标计划", 0),
     "stat-notice": stage_counter.get("招标公告", 0),
@@ -351,6 +378,166 @@ DAILY_CSS = """
             color: #ffffff;
             border-color: transparent;
             box-shadow: 0 2px 6px rgba(71, 85, 105, 0.2);
+        }
+        .btn-delayed {
+            color: #c2410c;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+        }
+        .btn-delayed:hover {
+            background: #ffedd5;
+            color: #9a3412;
+        }
+        .btn-delayed.active {
+            background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
+        }
+        .btn-delayed .delayed-count { font-weight: 800; }
+
+        .delayed-chip {
+            flex-shrink: 0;
+            font-size: 0.7rem;
+            font-weight: 700;
+            line-height: 1.6;
+            padding: 1px 8px;
+            border-radius: 9999px;
+            margin-top: 1px;
+            letter-spacing: 0.02em;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            background: #fff7ed;
+            color: #ea580c;
+            border: 1px solid #fed7aa;
+            cursor: default;
+            transition: all 0.15s ease;
+        }
+        .delayed-chip:hover {
+            background: #fed7aa;
+            color: #9a3412;
+        }
+        .focus-chip-delayed {
+            background: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #fed7aa;
+        }
+
+        .delayed-alert-box {
+            background: linear-gradient(180deg, #fffaf5 0%, #fff7ed 100%);
+            border: 1px solid #fed7aa;
+            border-left: 4px solid #ea580c;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 4px rgba(234, 88, 12, 0.08);
+        }
+        .delayed-alert-header {
+            margin-bottom: 10px;
+        }
+        .delayed-alert-title-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #9a3412;
+        }
+        .delayed-alert-badge {
+            display: inline-flex;
+            align-items: center;
+            background: #ea580c;
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.04em;
+        }
+        .delayed-alert-desc {
+            font-size: 0.8rem;
+            color: #c2410c;
+            margin-top: 3px;
+        }
+        .delayed-alert-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .delayed-item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #ffffff;
+            border: 1px solid #fed7aa;
+            border-radius: 6px;
+            padding: 9px 12px;
+            gap: 12px;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+        .delayed-item-row:hover {
+            border-color: #ea580c;
+            box-shadow: 0 2px 6px rgba(234, 88, 12, 0.12);
+        }
+        .delayed-item-main {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex: 1;
+        }
+        .delayed-days-tag {
+            background: #fff1f2;
+            color: #e11d48;
+            border: 1px solid #fecdd3;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .delayed-item-title {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #1e293b;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .delayed-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.75rem;
+            color: #64748b;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .btn-toggle-delayed-more {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            padding: 8px 12px;
+            margin-top: 6px;
+            background: #ffffff;
+            border: 1px dashed #fed7aa;
+            border-radius: 6px;
+            color: #ea580c;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-toggle-delayed-more:hover {
+            background: #fff7ed;
+            border-color: #ea580c;
+            color: #c2410c;
         }
         .btn-overtime .overtime-count { font-weight: 800; }
         .btn-reset { color: var(--text-secondary); background: #f1f5f9; border: 1px solid transparent; }
@@ -696,6 +883,10 @@ __DAILY_CSS__
                     <svg fill="none" height="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="13"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                     仅看加班发布 (<span class="overtime-count" id="overtimeCount">0</span>)
                 </button>
+                <button class="btn-delayed" id="btnDelayedOnly" type="button" title="点击筛选官方标称发布于数天前、但在近期回扫中才首次捕获的隐匿/滞后补录项目">
+                    <svg fill="none" height="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="13"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>
+                    仅看滞后补录 (<span class="delayed-count" id="delayedCount">0</span>)
+                </button>
                 <button class="btn-reset" id="btnReset" type="button">
                     <svg fill="none" height="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="13"><path d="M3 12a9 9 0 1 0 3-6.7"></path><polyline points="3 4 3 9 8 9"></polyline></svg>
                     重置所有筛选
@@ -704,6 +895,8 @@ __DAILY_CSS__
             <span class="filter-hint" id="filterResultCount">当前筛选匹配 <strong>0</strong> 条标讯</span>
         </div>
     </section>
+
+    __DELAYED_ALERT_BOX__
 
     <!-- Empty search state -->
     <div class="empty-search-state" id="emptySearch">
@@ -722,6 +915,7 @@ __DAILY_CSS__
 </footer>
 
 <script>
+const DELAYED_DATA = __DELAYED_DATA__;
 const RAW_DATA = [
 __RAW_DATA__
 ];
@@ -730,6 +924,7 @@ const IND_ORDER = ['水利工程', '交通工程', '铁路工程', '房建市政
 const STAGE_ORDER = ['招标计划', '招标公告', '澄清/答疑', '控制价公示', '中标公示', '中标公告'];
 const EXT_ICON = '<svg class="ext-icon" fill="none" height="12" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="12"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path></svg>';
 const OT_ICON = '<svg fill="none" height="11" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="11" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
+const DEL_ICON = '<svg fill="none" height="11" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="11" style="flex-shrink:0;"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>';
 const CAT_ICON = {
     '水利工程': '<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" viewBox="0 0 24 24" width="20"><path d="M3 7.5c2-1.7 4-1.7 6 0s4 1.7 6 0 4-1.7 6 0"></path><path d="M3 12c2-1.7 4-1.7 6 0s4 1.7 6 0 4-1.7 6 0"></path><path d="M3 16.5c2-1.7 4-1.7 6 0s4 1.7 6 0 4-1.7 6 0"></path></svg>',
     '交通工程': '<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="20"><path d="M4.5 20 8 4h8l3.5 16"></path><path d="M12 4v4"></path><path d="M12 12v3"></path><path d="M6.6 10h10.8"></path></svg>',
@@ -805,6 +1000,7 @@ function build() {
                       + ' data-stage="' + esc(d.stage) + '"'
                       + ' data-focus="' + (d.is_focus ? 1 : 0) + '"'
                       + ' data-overtime="' + (d.is_overtime ? 1 : 0) + '"'
+                      + ' data-delayed="' + (d.is_delayed ? 1 : 0) + '"'
                       + ' href="' + esc(d.link) + '" rel="noopener noreferrer" target="_blank"'
                       + ' title="' + esc(d.title) + '">';
                 html += '<span class="city-tag">' + esc(shortArea(d.areaname || '崇左市')) + '</span>';
@@ -820,7 +1016,8 @@ function build() {
                     for (var ti = 0; ti < tags.length; ti++) {
                         var tname = tags[ti];
                         var cls = "focus-chip";
-                        if (tname === "重点项目") cls += " focus-chip-project";
+                        if (tname === "滞后补录") cls += " focus-chip-delayed";
+                        else if (tname === "重点项目") cls += " focus-chip-project";
                         else if (tname === "重点业主") cls += " focus-chip-owner";
                         else if (tname === "重点关键词") cls += " focus-chip-keyword";
                         else if (tname === "重点类型") cls += " focus-chip-type";
@@ -832,6 +1029,10 @@ function build() {
                 if (d.is_overtime) {
                     var otTip = d.overtime_reason || '加班/非工作时间发布';
                     html += '<span class="overtime-chip" title="' + esc(otTip) + '">' + OT_ICON + '加班发布</span>';
+                }
+                if (d.is_delayed) {
+                    var delTip = d.delayed_reason || ('滞后 ' + d.delay_days + ' 天补录现身');
+                    html += '<span class="delayed-chip" title="' + esc(delTip) + '">' + DEL_ICON + '滞后补录 · ' + d.delay_days + '天</span>';
                 }
                 html += '<span class="notice-time">' + esc(String(d.pub_time || '').substring(5, 16)) + '</span>';
                 html += '</a>';
@@ -856,6 +1057,7 @@ function build() {
                       + ' data-stage="' + esc(d.stage || '其他') + '"'
                       + ' data-focus="' + (d.is_focus ? 1 : 0) + '"'
                       + ' data-overtime="' + (d.is_overtime ? 1 : 0) + '"'
+                      + ' data-delayed="' + (d.is_delayed ? 1 : 0) + '"'
                       + ' href="' + esc(d.link) + '" rel="noopener noreferrer" target="_blank"'
                       + ' title="' + esc(d.title) + '">';
                 html += '<span class="city-tag">' + esc(shortArea(d.areaname || '崇左市')) + '</span>';
@@ -869,7 +1071,8 @@ function build() {
                     for (var ti = 0; ti < tags.length; ti++) {
                         var tname = tags[ti];
                         var cls = "focus-chip";
-                        if (tname === "重点项目") cls += " focus-chip-project";
+                        if (tname === "滞后补录") cls += " focus-chip-delayed";
+                        else if (tname === "重点项目") cls += " focus-chip-project";
                         else if (tname === "重点业主") cls += " focus-chip-owner";
                         else if (tname === "重点关键词") cls += " focus-chip-keyword";
                         else if (tname === "重点类型") cls += " focus-chip-type";
@@ -881,6 +1084,10 @@ function build() {
                 if (d.is_overtime) {
                     var otTip = d.overtime_reason || '加班/非工作时间发布';
                     html += '<span class="overtime-chip" title="' + esc(otTip) + '">' + OT_ICON + '加班发布</span>';
+                }
+                if (d.is_delayed) {
+                    var delTip = d.delayed_reason || ('滞后 ' + d.delay_days + ' 天补录现身');
+                    html += '<span class="delayed-chip" title="' + esc(delTip) + '">' + DEL_ICON + '滞后补录 · ' + d.delay_days + '天</span>';
                 }
                 html += '<span class="notice-time">' + esc(String(d.pub_time || '').substring(5, 16)) + '</span>';
                 html += '</a>';
@@ -923,6 +1130,7 @@ function apply() {
         if (ok && stage && it.getAttribute('data-stage') !== stage) { ok = false; }
         if (ok && focusOnly && it.getAttribute('data-focus') !== '1') { ok = false; }
         if (ok && overtimeOnly && it.getAttribute('data-overtime') !== '1') { ok = false; }
+        if (ok && delayedOnly && it.getAttribute('data-delayed') !== '1') { ok = false; }
         it.hidden = !ok;
         if (ok) { shown++; }
     });
@@ -990,6 +1198,20 @@ if (btnOvertime) {
     });
 }
 
+let delayedOnly = false;
+const btnDelayed = document.getElementById('btnDelayedOnly');
+if (btnDelayed) {
+    btnDelayed.addEventListener('click', function () {
+        delayedOnly = !delayedOnly;
+        this.classList.toggle('active', delayedOnly);
+        apply();
+        var alertBox = document.getElementById('delayedAlertBox');
+        if (delayedOnly && alertBox) {
+            alertBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+}
+
 document.getElementById('btnReset').addEventListener('click', function () {
     searchInput.value = '';
     industryFilter.value = '';
@@ -1000,6 +1222,8 @@ document.getElementById('btnReset').addEventListener('click', function () {
     btnFocus.classList.remove('active');
     overtimeOnly = false;
     if (btnOvertime) btnOvertime.classList.remove('active');
+    delayedOnly = false;
+    if (btnDelayed) btnDelayed.classList.remove('active');
     apply();
 });
 
@@ -1026,6 +1250,12 @@ document.querySelectorAll('.stat-box.clickable').forEach(function(box) {
 document.getElementById('focusCount').textContent = RAW_DATA.filter(function (d) { return d.is_focus; }).length;
 const otCountEl = document.getElementById('overtimeCount');
 if (otCountEl) otCountEl.textContent = RAW_DATA.filter(function (d) { return d.is_overtime; }).length;
+const delCountEl = document.getElementById('delayedCount');
+if (delCountEl) {
+    var rawDelCnt = RAW_DATA.filter(function (d) { return d.is_delayed; }).length;
+    var extraDelCnt = (typeof DELAYED_DATA !== 'undefined' && Array.isArray(DELAYED_DATA)) ? DELAYED_DATA.length : 0;
+    delCountEl.textContent = rawDelCnt + extraDelCnt;
+}
 const statFocusEl = document.getElementById('stat-focus');
 if (statFocusEl && statFocusEl.firstChild) {
     statFocusEl.firstChild.textContent = RAW_DATA.filter(function (d) { return d.is_focus; }).length;
@@ -1045,10 +1275,70 @@ html = html.replace("__DAILY_CSS__", DAILY_CSS.strip())
 html = html.replace("__LATEST_PUB__", latest_pub)
 html = html.replace("__SCAN_TIME__", scan_time)
 html = html.replace("__LATEST__", latest_pub)
-html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.1.8"))
+html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.1.9"))
 html = html.replace("__DATE__", DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))
 html = html.replace("__NEXT_URL__", neighbor_url(1))
+
+# 构建今日回扫发现滞后公告的横幅 HTML
+if today_delayed_items:
+    rows_h = []
+    for dit in today_delayed_items:
+        d_delay = dit.get("delay_days", 0)
+        d_title = html_mod.escape(dit.get("title", ""))
+        d_link = html_mod.escape(dit.get("link") or dit.get("detail_url") or "#")
+        d_pub = html_mod.escape(str(dit.get("pub_time", ""))[:16])
+        d_area = html_mod.escape(str(dit.get("areaname", "") or dit.get("source", "")))
+        d_stage = html_mod.escape(str(dit.get("stage", "") or "公告"))
+        rows_h.append(
+            f'<a class="delayed-item-row" href="{d_link}" target="_blank" rel="noopener noreferrer">\n'
+            f'    <div class="delayed-item-main">\n'
+            f'        <span class="delayed-days-tag">滞后 {d_delay} 天</span>\n'
+            f'        <span class="delayed-item-title">{d_title}</span>\n'
+            f'    </div>\n'
+            f'    <div class="delayed-item-meta">\n'
+            f'        <span>【{d_area}·{d_stage}】</span>\n'
+            f'        <span>官方标称: {d_pub}</span>\n'
+            f'        <span style="color:#ea580c;font-weight:700;">今日回扫捕获</span>\n'
+            f'    </div>\n'
+            f'</a>'
+        )
+    
+    total_d_cnt = len(rows_h)
+    if total_d_cnt > 5:
+        top_rows = "".join(rows_h[:5])
+        more_rows = "".join(rows_h[5:])
+        list_inner = (
+            f'{top_rows}\n'
+            f'<div id="delayedAlertMore" style="display:none;flex-direction:column;gap:8px;">{more_rows}</div>\n'
+            f'<button type="button" class="btn-toggle-delayed-more" id="btnToggleDelayedMore"'
+            f' onclick="var el=document.getElementById(\'delayedAlertMore\');'
+            f'if(el.style.display===\'none\'){{el.style.display=\'flex\';this.textContent=\'收起其余 {total_d_cnt - 5} 条 ▲\';}}'
+            f'else{{el.style.display=\'none\';this.textContent=\'展开查看全部 {total_d_cnt} 条滞后项目（已显示前 5 条） ▼\';}}">'
+            f'展开查看全部 {total_d_cnt} 条滞后项目（已显示前 5 条） ▼</button>'
+        )
+    else:
+        list_inner = "".join(rows_h)
+
+    delayed_alert_html = (
+        f'<div class="delayed-alert-box" id="delayedAlertBox">\n'
+        f'    <div class="delayed-alert-header">\n'
+        f'        <div class="delayed-alert-title-row">\n'
+        f'            <span class="delayed-alert-badge">🚨 历史回扫特别预警</span>\n'
+        f'            <span class="delayed-alert-title">今日回扫捕获 <strong>{len(today_delayed_items)}</strong> 条被官方隐匿/滞后补录的项目</span>\n'
+        f'        </div>\n'
+        f'        <div class="delayed-alert-desc">官方标称发布于 2~30 天前，此前未在公开列表出现，在今日定时回扫中首次捕获并按重点预警处理</div>\n'
+        f'    </div>\n'
+        f'    <div class="delayed-alert-list">\n'
+        f'        {list_inner}\n'
+        f'    </div>\n'
+        f'</div>'
+    )
+else:
+    delayed_alert_html = ""
+
+html = html.replace("__DELAYED_ALERT_BOX__", delayed_alert_html)
+html = html.replace("__DELAYED_DATA__", json.dumps(today_delayed_items, ensure_ascii=False), 1)
 
 lines = ",\n".join("    " + json.dumps(it, ensure_ascii=False) for it in items)
 html = html.replace("__RAW_DATA__", lines, 1)
@@ -1062,6 +1352,8 @@ assert n == 1, "focusCount"
 overtime_n = sum(1 for it in items if it.get("is_overtime"))
 html, n = re.subn(r'(id="overtimeCount">)0(<)', lambda m: m.group(1) + str(overtime_n) + m.group(2), html)
 assert n == 1, "overtimeCount"
+html, n = re.subn(r'(id="delayedCount">)0(<)', lambda m: m.group(1) + str(delayed_n) + m.group(2), html)
+assert n == 1, "delayedCount"
 html = html.replace("当前筛选匹配 <strong>0</strong>", "当前筛选匹配 <strong>%d</strong>" % total_n, 1)
 
 is_final_page = bool(getattr(ARGS, "final", False) or (config.STATE_DIR / ("final-%s.json" % DAY)).exists())

@@ -23,6 +23,8 @@ FILES_TO_PACK = [
     "scripts/build_exe.py",
     "scripts/build_exe.bat",
     "scripts/overtime_helper.py",
+    "scripts/delayed_helper.py",
+    "scripts/backscan_delayed.py",
     "scripts/diff_missing.py",
     "scripts/fetcher.py",
     "scripts/fetch_detail.py",

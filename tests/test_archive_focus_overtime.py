@@ -37,25 +37,32 @@ class TestArchiveFocusOvertime(unittest.TestCase):
         index_html = (config.SITE_DIR / "index.html").read_text(encoding="utf-8")
         self.assertIn('data-date="2026-09-22"', index_html)
         self.assertIn('data-focus="3"', index_html)
-        self.assertIn('data-overtime="22"', index_html)
         self.assertIn('⚡3', index_html)
-        self.assertIn('🌙22', index_html)
         self.assertIn('重点 3', index_html)
-        self.assertIn('加班 22', index_html)
+        # 首页不显示加班发布数量
+        self.assertNotIn('🌙', index_html)
+        self.assertNotIn('加班 22', index_html)
 
     def test_list_view_displays_counts(self):
         index_html = (config.SITE_DIR / "index.html").read_text(encoding="utf-8")
         self.assertIn('class="chip-alert"', index_html)
-        self.assertIn('class="chip-nonwork"', index_html)
         self.assertIn('当日重点信息 3 条', index_html)
-        self.assertIn('当日加班发布 22 条', index_html)
+        # 首页不显示加班发布数量
+        self.assertNotIn('class="chip-nonwork"', index_html)
+        self.assertNotIn('当日加班发布', index_html)
 
     def test_month_stats_group(self):
         index_html = (config.SITE_DIR / "index.html").read_text(encoding="utf-8")
         self.assertIn('alert-pill', index_html)
-        self.assertIn('nonwork-pill', index_html)
         self.assertIn('重点信息:', index_html)
-        self.assertIn('加班发布:', index_html)
+        # 首页不显示加班发布数量
+        self.assertNotIn('nonwork-pill', index_html)
+        self.assertNotIn('加班发布:', index_html)
+
+    def test_archive_hint_does_not_display_overtime(self):
+        index_html = (config.SITE_DIR / "index.html").read_text(encoding="utf-8")
+        self.assertIn('重点信息', index_html)
+        self.assertNotIn('加班发布', index_html)
 
 if __name__ == "__main__":
     unittest.main()

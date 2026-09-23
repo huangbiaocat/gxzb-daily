@@ -369,6 +369,18 @@ def build_rich_summary(day: str, total_count: int, focus_count: int, failed_step
                     focus_items.append(it)
                     break
 
+    # 今日回扫捕获的历史滞后补录项目（按重点处理）
+    delayed_items = []
+    today_del_file = config.get_delayed_today_path(day)
+    if today_del_file.is_file():
+        try:
+            delayed_items = json.loads(today_del_file.read_text(encoding="utf-8"))
+        except Exception:
+            delayed_items = []
+    in_items_delayed = [it for it in items if it.get("is_delayed")]
+    known_del_ids = {str(d.get("infoid")) for d in delayed_items if d.get("infoid")}
+    all_delayed = delayed_items + [it for it in in_items_delayed if str(it.get("infoid")) not in known_del_ids]
+
     # 组织富文本（用于测试号万能模板 {{content.DATA}}）
     lines = []
     if is_final:
@@ -380,6 +392,18 @@ def build_rich_summary(day: str, total_count: int, focus_count: int, failed_step
 
     if ind_str:
         lines.append(f"🏢 行业分布：{ind_str}")
+
+    if all_delayed:
+        lines.append(f"\n🚨【特别预警】历史回扫捕获 {len(all_delayed)} 条滞后补录/隐匿现身项目：")
+        for it in all_delayed[:3]:
+            city = (it.get("areaname") or it.get("city") or "广西").replace("市", "")
+            stage = it.get("stage") or "公告"
+            delay = it.get("delay_days", 0)
+            p_date = (it.get("pub_time") or "")[:10]
+            title = it.get("title", "").strip().replace("\r", "").replace("\n", " ")
+            if len(title) > 26:
+                title = title[:25].rstrip("(-_/:· ") + "…"
+            lines.append(f"⚠️ [滞后{delay}天·标称{p_date}] 【{city}·{stage}】{title}")
 
     # 组合推荐项目（优先重点项目，不足3条时用最新精选补齐）
     display_tuples = [(it, True) for it in focus_items]
@@ -421,6 +445,15 @@ def build_rich_summary(day: str, total_count: int, focus_count: int, failed_step
     remark_parts = []
     if ind_str:
         remark_parts.append(f"📊 行业：{ind_str}")
+    if all_delayed:
+        remark_parts.append(f"🚨 历史滞后补录预警（{len(all_delayed)}条）：")
+        for idx, it in enumerate(all_delayed[:2], 1):
+            c = (it.get("areaname") or "").replace("市", "")
+            d_days = it.get("delay_days", 0)
+            t = it.get("title", "").strip().replace("\r", "").replace("\n", " ")
+            if len(t) > 20:
+                t = t[:19].rstrip("(-_/:· ") + "…"
+            remark_parts.append(f"  [滞后{d_days}天]【{c}】{t}")
     if display_tuples:
         header_sub = "🎯 重点标讯推荐：" if focus_items else "📌 最新精选标讯："
         remark_parts.append(header_sub)
@@ -446,7 +479,12 @@ def build_rich_summary(day: str, total_count: int, focus_count: int, failed_step
         kw1 = f"广西全区标讯汇总（共 {total_count} 条）"
 
     kw2 = city_str or "广西公共资源交易 · 崇左阳光采购"
-    kw3 = f"今日共 {total_count} 条（重点预警 {focus_count} 条）" if focus_count > 0 else f"今日共 {total_count} 条（常规流转）"
+    if all_delayed:
+        kw3 = f"共 {total_count} 条（重点预警 {focus_count} 条 · 滞后补录 {len(all_delayed)} 条）"
+    elif focus_count > 0:
+        kw3 = f"今日共 {total_count} 条（重点预警 {focus_count} 条）"
+    else:
+        kw3 = f"今日共 {total_count} 条（常规流转）"
     kw4 = day
 
     return {
