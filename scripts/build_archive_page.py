@@ -784,7 +784,7 @@ _FIELDS = {
     "base_script": base_script,
     "site": html.escape(arc.get("site", "广西全区招投标数据监控中心")),
     "subtitle": html.escape(arc.get("subtitle", "广西公共资源交易 · 工程建设类公告每日归档")),
-    "app_version": getattr(config, "APP_VERSION", "v0.1.7"),
+    "app_version": getattr(config, "APP_VERSION", "v0.1.8"),
     "day_count": comma(day_count),
     "total_all": comma(total_all),
     "total_focus": comma(arc.get("total_focus", sum(d.get("focus_count", 0) for d in days))),

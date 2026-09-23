@@ -226,6 +226,8 @@ log_index = logstore.load_index()
 
 # ------------------------------------------------------------------ 1. 数据统计
 stage_counter = collections.Counter(it["stage"] for it in items)
+total_n = len(items)
+focus_n = sum(1 for it in items if it.get("is_focus"))
 stat_map = {
     "stat-plan": stage_counter.get("招标计划", 0),
     "stat-notice": stage_counter.get("招标公告", 0),
@@ -233,9 +235,8 @@ stat_map = {
     "stat-control": stage_counter.get("控制价公示", 0),
     "stat-candidate": stage_counter.get("中标公示", 0),
     "stat-result": stage_counter.get("中标公告", 0),
+    "stat-focus": focus_n,
 }
-total_n = len(items)
-focus_n = sum(1 for it in items if it.get("is_focus"))
 city_n = len(set(it.get("areaname", "") for it in items))
 cat_n = len(set(it.get("industry", "") for it in items))
 valid_times = [it.get("pub_time") for it in items if it.get("pub_time")]
@@ -262,26 +263,37 @@ if not scan_time:
 # ------------------------------------------------------------------ 2. 每日页定制样式（preview 未覆盖的组件）
 DAILY_CSS = """
         /* ===== 每日明细页定制（建立在 preview 设计系统之上） ===== */
-        /* 6 大业务环节统计卡：沿用 preview .stat-box，仅调整列数 */
+        /* 业务环节与重点信息统计卡：沿用 preview .stat-box，自适应 7 列栅格 */
+        .stats-grid.cols-7 { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; }
         .stats-grid.cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-        .stats-grid.cols-6 .stat-box { padding: 14px 16px; }
-        .stats-grid.cols-6 .stat-box .sb-value { font-size: 1.5rem; }
-        .stats-grid.cols-6 .stat-box.clickable {
+        .stats-grid.cols-7 .stat-box, .stats-grid.cols-6 .stat-box { padding: 13px 14px; }
+        .stats-grid.cols-7 .stat-box .sb-value, .stats-grid.cols-6 .stat-box .sb-value { font-size: 1.45rem; }
+        .stats-grid.cols-7 .stat-box.clickable, .stats-grid.cols-6 .stat-box.clickable {
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             user-select: none;
         }
-        .stats-grid.cols-6 .stat-box.clickable:hover {
+        .stats-grid.cols-7 .stat-box.clickable:hover, .stats-grid.cols-6 .stat-box.clickable:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 16px -4px rgba(15, 23, 42, 0.12);
         }
-        .stats-grid.cols-6 .stat-box.clickable.active {
+        .stats-grid.cols-7 .stat-box.clickable.active, .stats-grid.cols-6 .stat-box.clickable.active {
             box-shadow: 0 0 0 2px #0f172a, 0 6px 20px -4px rgba(15, 23, 42, 0.2);
             transform: translateY(-2px);
         }
-        @media (max-width: 1100px) { .stats-grid.cols-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-        @media (max-width: 760px) { .stats-grid.cols-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-        @media (max-width: 520px) { .stats-grid.cols-6 { grid-template-columns: 1fr; } }
+        .stats-grid.cols-7 .stat-box.stage-focus.clickable.active {
+            box-shadow: 0 0 0 2px #dc2626, 0 6px 20px -4px rgba(220, 38, 38, 0.25);
+        }
+        @media (max-width: 1200px) {
+            .stats-grid.cols-7 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .stats-grid.cols-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        @media (max-width: 760px) {
+            .stats-grid.cols-7, .stats-grid.cols-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 520px) {
+            .stats-grid.cols-7, .stats-grid.cols-6 { grid-template-columns: 1fr; }
+        }
 
         /* 页头胶囊导航组 */
         .nav-caps { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -451,6 +463,9 @@ DAILY_CSS = """
         .stat-box.stage-award { background: #fdf4ff !important; border-color: #f0abfc !important; }
         .stat-box.stage-award .sb-label { color: #c026d3 !important; }
         .stat-box.stage-award .sb-value { color: #a21caf !important; }
+        .stat-box.stage-focus { background: #fef2f2 !important; border-color: #fecaca !important; }
+        .stat-box.stage-focus .sb-label { color: #dc2626 !important; }
+        .stat-box.stage-focus .sb-value { color: #dc2626 !important; }
 
         .hero-badge-final {
             background: #ecfdf5 !important;
@@ -590,7 +605,7 @@ __DAILY_CSS__
             </div>
             <h2 class="hero-title">广西全区招投标公告日报（__DATE__）</h2>
             <p class="hero-desc">按 6 大业务环节与工程类别归集当日全区公共资源交易公告，每条公告以官方唯一识别码（infoid）入库，便于溯源与查重，点击标题可跳转至官方公告页面查看原文。支持关键词检索、工程大类 / 地市 / 业务环节筛选与重点预警；无公告更新的类别与类型不在此页展示。</p>
-            <div class="stats-grid cols-6">
+            <div class="stats-grid cols-7">
                 <div class="stat-box stage-plan clickable" data-stage="招标计划" title="点击筛选 招标计划">
                     <div class="sb-label">招标计划</div>
                     <div class="sb-value" id="stat-plan">0<span class="sb-unit">条</span></div>
@@ -614,6 +629,10 @@ __DAILY_CSS__
                 <div class="stat-box stage-award clickable" data-stage="中标公告" title="点击筛选 中标公告">
                     <div class="sb-label">中标公告</div>
                     <div class="sb-value" id="stat-result">0<span class="sb-unit">条</span></div>
+                </div>
+                <div class="stat-box stage-focus clickable" data-stage="__focus__" title="点击筛选 重点信息">
+                    <div class="sb-label">重点信息</div>
+                    <div class="sb-value" id="stat-focus">0<span class="sb-unit">条</span></div>
                 </div>
             </div>
         </div>
@@ -932,9 +951,16 @@ function apply() {
     hint.innerHTML = '当前筛选匹配 <strong>' + shown + '</strong> 条标讯';
     empty.style.display = shown === 0 ? 'block' : 'none';
 
-    /* 同步高亮业务环节统计卡激活状态 */
+    /* 同步高亮业务环节与重点信息统计卡激活状态 */
     document.querySelectorAll('.stat-box.clickable').forEach(function(box) {
-        if (stage && box.getAttribute('data-stage') === stage) {
+        var st = box.getAttribute('data-stage');
+        if (st === '__focus__') {
+            if (focusOnly) {
+                box.classList.add('active');
+            } else {
+                box.classList.remove('active');
+            }
+        } else if (stage && st === stage) {
             box.classList.add('active');
         } else {
             box.classList.remove('active');
@@ -981,7 +1007,10 @@ document.getElementById('btnReset').addEventListener('click', function () {
 document.querySelectorAll('.stat-box.clickable').forEach(function(box) {
     box.addEventListener('click', function() {
         var targetStage = this.getAttribute('data-stage');
-        if (stageFilter.value === targetStage) {
+        if (targetStage === '__focus__') {
+            focusOnly = !focusOnly;
+            btnFocus.classList.toggle('active', focusOnly);
+        } else if (stageFilter.value === targetStage) {
             stageFilter.value = '';
         } else {
             stageFilter.value = targetStage;
@@ -997,6 +1026,10 @@ document.querySelectorAll('.stat-box.clickable').forEach(function(box) {
 document.getElementById('focusCount').textContent = RAW_DATA.filter(function (d) { return d.is_focus; }).length;
 const otCountEl = document.getElementById('overtimeCount');
 if (otCountEl) otCountEl.textContent = RAW_DATA.filter(function (d) { return d.is_overtime; }).length;
+const statFocusEl = document.getElementById('stat-focus');
+if (statFocusEl && statFocusEl.firstChild) {
+    statFocusEl.firstChild.textContent = RAW_DATA.filter(function (d) { return d.is_focus; }).length;
+}
 
 build();
 apply();
@@ -1012,7 +1045,7 @@ html = html.replace("__DAILY_CSS__", DAILY_CSS.strip())
 html = html.replace("__LATEST_PUB__", latest_pub)
 html = html.replace("__SCAN_TIME__", scan_time)
 html = html.replace("__LATEST__", latest_pub)
-html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.1.7"))
+html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.1.8"))
 html = html.replace("__DATE__", DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))
 html = html.replace("__NEXT_URL__", neighbor_url(1))
@@ -1078,7 +1111,7 @@ check("数据条数", len(raw_rows) == total_n, "RAW_DATA=%d 期望=%d" % (len(r
 check("唯一识别码", len({r["infoid"] for r in raw_rows}) == total_n, "infoid 唯一")
 check("官方链接", all(("projectDetails.html?infoid=" in r["link"] or "cz.gxygcg.com" in r["link"]) for r in raw_rows))
 check("无自造编号", ("code-tag" not in out) and ("data-code" not in out) and ("GX%s" % DAY_KEY) not in out)
-check("指标卡", static.count('class="sb-label"') == 6, json.dumps(stat_map, ensure_ascii=False))
+check("指标卡", static.count('class="sb-label"') == 7, json.dumps(stat_map, ensure_ascii=False))
 check("筛选控件", static.count('class="select-input"') == 4 and "仅看重点预警" in static and "仅看加班发布" in static and "重置所有筛选" in static)
 check("静态 div 配平", static.count("<div") == static.count("</div>"))
 check("外部依赖", not any(k in out.lower() for k in ("tailwind", "all.min.css", "saved_resource", "file://")))
