@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""滞后/隐藏发布检测与元数据辅助模块。
+"""滞后公开检测与存证元数据辅助模块。
 
 功能定义：
 1. 计算公告官方标称发布时间与首次扫描捕获日期的间隔天数（delay_days）。
-2. 当 delay_days >= 阈值（默认 2 天）时，判定为「滞后发布 / 隐藏补录」公告。
-3. 按重点处理：自动标记 is_focus=1，增加 focus_tags=["滞后补录"] 与详细说明。
-4. 维护全局首次发现注册表（delayed_registry.json），确保回扫时精准判定条目是历史已有还是新冒出。
+2. 当 delay_days >= 阈值（默认 2 天）时，判定为「滞后公开」公告。
+3. 按重点处理：自动标记 is_focus=1，增加 focus_tags=["滞后公开"] 与证据链说明。
+4. 接入首次扫描记录数据库（ScanRecordDB），确保回扫与日常抓取均具备不可篡改的存证。
 """
 import json
 import os
@@ -13,6 +13,7 @@ from datetime import datetime, date
 from pathlib import Path
 
 import config
+from scripts.scan_record_db import get_scan_record_db
 
 
 def parse_date_str(val):
@@ -48,13 +49,13 @@ def calc_delay_days(pub_time, first_seen_date=None):
 
 
 def is_delayed_notice(pub_time, first_seen_date=None, min_delay_days=None):
-    """判断是否属于滞后补录/隐藏现身公告（默认 delay_days >= 2）。"""
+    """判断是否属于滞后公开公告（默认 delay_days >= 2）。"""
     thresh = config.BACKSCAN_MIN_DELAY if min_delay_days is None else int(min_delay_days)
     return calc_delay_days(pub_time, first_seen_date) >= thresh
 
 
 def annotate_delayed_item(item, first_seen_date=None, min_delay_days=None):
-    """对公告字典注入滞后补录标记与重点关注元数据（原地修改并返回）。
+    """对公告字典注入滞后公开标记与重点关注元数据（原地修改并返回）。
     
     规则（按重点处理）：
     1. item["is_delayed"] = 1
@@ -62,8 +63,8 @@ def annotate_delayed_item(item, first_seen_date=None, min_delay_days=None):
     3. item["first_seen_date"] = first_seen_date
     4. item["delayed_reason"] = 详细文本描述
     5. item["is_focus"] = 1
-    6. item["focus_tags"] 包含 "滞后补录"
-    7. item["focus_reason"] 包含滞后补录说明
+    6. item["focus_tags"] 包含 "滞后公开"
+    7. item["focus_reason"] 包含滞后公开说明
     """
     if not isinstance(item, dict):
         return item
@@ -79,10 +80,11 @@ def annotate_delayed_item(item, first_seen_date=None, min_delay_days=None):
     if delay_days >= thresh:
         item["is_delayed"] = 1
         item["delay_days"] = delay_days
+        item["delayed_type"] = "滞后公开"
         item["first_seen_date"] = s_date_str
         reason = (
-            f"官方标称 {pub_date_str} 发布，于 {s_date_str} 定时回扫捕获"
-            f"（滞后 {delay_days} 天补录/隐匿现身）"
+            f"【存证判定】官方标称发布于 {pub_date_str}，"
+            f"本系统于 {s_date_str} 首次扫描捕获，确证滞后公开 {delay_days} 天。"
         )
         item["delayed_reason"] = reason
         
@@ -91,14 +93,15 @@ def annotate_delayed_item(item, first_seen_date=None, min_delay_days=None):
         tags = item.get("focus_tags")
         if not isinstance(tags, list):
             tags = [tags] if tags else []
-        if "滞后补录" not in tags:
-            tags.append("滞后补录")
+        tags = [t for t in tags if t != "滞后补录"]
+        if "滞后公开" not in tags:
+            tags.append("滞后公开")
         item["focus_tags"] = tags
         
         f_reasons = item.get("focus_reason")
         if not isinstance(f_reasons, list):
             f_reasons = [f_reasons] if f_reasons else []
-        f_reason_str = f"滞后 {delay_days} 天补录现身 (官方日期 {pub_date_str} -> 首次捕获 {s_date_str})"
+        f_reason_str = f"滞后 {delay_days} 天公开现身 (官方日期 {pub_date_str} -> 首次捕获 {s_date_str})"
         if f_reason_str not in f_reasons:
             f_reasons.append(f_reason_str)
         item["focus_reason"] = f_reasons
@@ -191,7 +194,7 @@ def bootstrap_registry_from_files(daily_dir=None, collect_dir=None, path=None):
 
 
 def record_notice_seen(infoid, pub_time, seen_date=None, registry=None, min_delay_days=None):
-    """记录条目发现状态并判定是否为滞后补录。
+    """记录条目发现状态并判定是否为滞后公开。
     
     Returns:
         (is_new, delay_days, is_delayed, record)
@@ -211,6 +214,20 @@ def record_notice_seen(infoid, pub_time, seen_date=None, registry=None, min_dela
         rec = registry[infoid]
         return False, rec.get("delay_days", 0), bool(rec.get("is_delayed")), rec
     
+    # 同时同步记录到 ScanRecordDB 存证库
+    try:
+        db = get_scan_record_db()
+        db.record_scan(
+            infoid=infoid,
+            title=str(pub_time or ""),
+            pub_time=pub_time,
+            scan_time=f"{s_date_str} 18:00:00",
+            scan_source="registry_sync",
+            min_delay_days=thresh,
+        )
+    except Exception:
+        pass
+
     # 全新发现条目！计算是否滞后
     delay = calc_delay_days(pub_time, s_date)
     is_del = delay >= thresh

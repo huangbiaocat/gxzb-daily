@@ -229,7 +229,7 @@ def main(argv=None):
     ap.add_argument("--skip-collect", action="store_true")
     ap.add_argument("--skip-backscan", action="store_true", help="跳过历史回扫排查")
     ap.add_argument("--backscan-days", type=int, default=getattr(config, "BACKSCAN_DAYS", 30), help="历史回扫天数（默认 30）")
-    ap.add_argument("--min-delay", type=int, default=getattr(config, "BACKSCAN_MIN_DELAY", 2), help="滞后判定阈值天数（默认 2）")
+    ap.add_argument("--min-delay", type=int, default=getattr(config, "BACKSCAN_MIN_DELAY", 2), help="滞后公开判定阈值天数（默认 2）")
     ap.add_argument("--skip-archive", action="store_true")
     ap.add_argument("--no-push", action="store_true")
     ap.add_argument("--strict", action="store_true", help="存在缺失条目时退出码 2")
@@ -309,9 +309,9 @@ def main(argv=None):
         except Exception as exc_cz:
             print("崇左阳光采购平台采集异常：", exc_cz)
 
-        # 1.2) 定时回扫过去 30 天公告（排查滞后补录/隐匿现身项目）
+        # 1.2) 定时回扫过去 30 天公告（排查滞后公开/隐匿现身项目）
         if getattr(config, "BACKSCAN_ENABLED", True) and not args.skip_backscan:
-            banner("1.2/8", f"定时回扫历史公告（排查过去 {args.backscan_days} 天滞后补录/隐匿现身项目）")
+            banner("1.2/8", f"定时回扫历史公告（排查过去 {args.backscan_days} 天滞后公开/隐匿现身项目）")
             try:
                 rc_bs, ok_bs = run([
                     PY, SCRIPT / "backscan_delayed.py",

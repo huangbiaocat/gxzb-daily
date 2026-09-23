@@ -318,6 +318,15 @@ def collect(day, centers=None, save_raw=True, quiet=False, page_size=None):
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
 
+    # 记录到首次扫描记录存证数据库（ScanRecordDB）
+    try:
+        from scripts.scan_record_db import get_scan_record_db
+        scan_db = get_scan_record_db()
+        scan_db.batch_record_scans(rows, scan_source="daily_collect")
+    except Exception as e_db:
+        if not quiet:
+            print("   [提示] 首次扫描存证库同步:", e_db)
+
     totalcount_sum = sum(int(c.get("totalcount") or 0) for c in reconcile_centers.values())
     mismatch = [c for c, v in reconcile_centers.items() if not v["aligned"]]
     reconcile = {

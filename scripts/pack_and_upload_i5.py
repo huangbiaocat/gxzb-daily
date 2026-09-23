@@ -24,6 +24,7 @@ FILES_TO_PACK = [
     "scripts/build_exe.bat",
     "scripts/overtime_helper.py",
     "scripts/delayed_helper.py",
+    "scripts/scan_record_db.py",
     "scripts/backscan_delayed.py",
     "scripts/diff_missing.py",
     "scripts/fetcher.py",

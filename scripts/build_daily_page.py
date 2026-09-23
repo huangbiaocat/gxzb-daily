@@ -39,8 +39,10 @@ import logstore    # noqa: E402
 from overtime_helper import annotate_item_overtime  # noqa: E402
 try:
     from scripts.delayed_helper import annotate_delayed_item
+    from scripts.scan_record_db import get_scan_record_db
 except ImportError:
     from delayed_helper import annotate_delayed_item
+    from scan_record_db import get_scan_record_db
 
 
 def parse_args(argv=None):
@@ -209,16 +211,37 @@ for it in items:
         it["focus_tags"] = []
 
     annotate_item_overtime(it)
-    annotate_delayed_item(it, DAY)
-    if it.get("is_delayed"):
+    # 滞后公开判定：直接以首次扫描记录存证库（ScanRecordDB）为不可篡改的证据准绳
+    rec = get_scan_record_db().get_record(it.get("infoid"))
+    if rec and rec.get("is_delayed"):
+        it["is_delayed"] = 1
+        it["delay_days"] = rec.get("delay_days", 0)
+        it["delayed_type"] = "滞后公开"
+        it["first_seen_date"] = rec.get("first_scan_date")
+        it["delayed_reason"] = rec.get("evidence_text")
         it["is_focus"] = 1
         tags = it.setdefault("focus_tags", [])
-        if "滞后补录" not in tags:
-            tags.append("滞后补录")
+        tags = [t for t in tags if t != "滞后补录"]
+        if "滞后公开" not in tags:
+            tags.append("滞后公开")
+        it["focus_tags"] = tags
         reasons = it.setdefault("focus_reason", [])
-        d_reason = it.get("delayed_reason") or f"滞后 {it.get('delay_days', 0)} 天补录现身"
-        if d_reason not in reasons:
-            reasons.append(d_reason)
+        ev = rec.get("evidence_text") or f"滞后 {it.get('delay_days', 0)} 天公开现身"
+        if ev not in reasons:
+            reasons.append(ev)
+    elif rec:
+        it["is_delayed"] = 0
+        it["delay_days"] = 0
+        it.pop("delayed_reason", None)
+        it.pop("first_seen_date", None)
+        tags = it.get("focus_tags")
+        if isinstance(tags, list):
+            it["focus_tags"] = [t for t in tags if t not in ("滞后补录", "滞后公开")]
+            if not it["focus_tags"]:
+                it["is_focus"] = 0
+                it["focus_reason"] = []
+    else:
+        annotate_delayed_item(it, DAY)
 
 # 回写清洗更新后的 items 到当日 JSON 文件，彻底消除历史脏数据残留
 if DATA.exists():
@@ -401,27 +424,30 @@ DAILY_CSS = """
             font-size: 0.7rem;
             font-weight: 700;
             line-height: 1.6;
-            padding: 1px 8px;
+            padding: 2px 9px;
             border-radius: 9999px;
             margin-top: 1px;
             letter-spacing: 0.02em;
             display: inline-flex;
             align-items: center;
-            gap: 3px;
+            gap: 4px;
             background: #fff7ed;
-            color: #ea580c;
+            color: #c2410c;
             border: 1px solid #fed7aa;
             cursor: default;
+            box-shadow: 0 1px 2px rgba(194, 65, 12, 0.08);
             transition: all 0.15s ease;
         }
         .delayed-chip:hover {
-            background: #fed7aa;
+            background: #ffedd5;
             color: #9a3412;
+            border-color: #fdba74;
         }
         .focus-chip-delayed {
             background: #fff7ed;
             color: #c2410c;
             border: 1px solid #fed7aa;
+            border-radius: 9999px !important;
         }
 
         .delayed-alert-box {
@@ -883,9 +909,9 @@ __DAILY_CSS__
                     <svg fill="none" height="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="13"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                     仅看加班发布 (<span class="overtime-count" id="overtimeCount">0</span>)
                 </button>
-                <button class="btn-delayed" id="btnDelayedOnly" type="button" title="点击筛选官方标称发布于数天前、但在近期回扫中才首次捕获的隐匿/滞后补录项目">
+                <button class="btn-delayed" id="btnDelayedOnly" type="button" title="点击筛选官方标称发布于数天前、但在近期回扫中才首次捕获的滞后公开项目">
                     <svg fill="none" height="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="13"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>
-                    仅看滞后补录 (<span class="delayed-count" id="delayedCount">0</span>)
+                    仅看滞后公开 (<span class="delayed-count" id="delayedCount">0</span>)
                 </button>
                 <button class="btn-reset" id="btnReset" type="button">
                     <svg fill="none" height="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="13"><path d="M3 12a9 9 0 1 0 3-6.7"></path><polyline points="3 4 3 9 8 9"></polyline></svg>
@@ -1015,8 +1041,12 @@ function build() {
                     }
                     for (var ti = 0; ti < tags.length; ti++) {
                         var tname = tags[ti];
+                        // 若已渲染专门的滞后公开胶囊，避免在 focus tags 中重复显示
+                        if (d.is_delayed && (tname === "滞后公开" || tname === "滞后补录")) {
+                            continue;
+                        }
                         var cls = "focus-chip";
-                        if (tname === "滞后补录") cls += " focus-chip-delayed";
+                        if (tname === "滞后公开" || tname === "滞后补录") cls += " focus-chip-delayed";
                         else if (tname === "重点项目") cls += " focus-chip-project";
                         else if (tname === "重点业主") cls += " focus-chip-owner";
                         else if (tname === "重点关键词") cls += " focus-chip-keyword";
@@ -1031,8 +1061,8 @@ function build() {
                     html += '<span class="overtime-chip" title="' + esc(otTip) + '">' + OT_ICON + '加班发布</span>';
                 }
                 if (d.is_delayed) {
-                    var delTip = d.delayed_reason || ('滞后 ' + d.delay_days + ' 天补录现身');
-                    html += '<span class="delayed-chip" title="' + esc(delTip) + '">' + DEL_ICON + '滞后补录 · ' + d.delay_days + '天</span>';
+                    var delTip = d.delayed_reason || ('【存证判定】官网标称发布于 ' + (d.pub_time || '') + '，滞后公开 ' + d.delay_days + ' 天');
+                    html += '<span class="delayed-chip" title="' + esc(delTip) + '">' + DEL_ICON + '滞后公开 · ' + d.delay_days + '天</span>';
                 }
                 html += '<span class="notice-time">' + esc(String(d.pub_time || '').substring(5, 16)) + '</span>';
                 html += '</a>';
@@ -1070,8 +1100,12 @@ function build() {
                     if (!tags || !tags.length) { tags = ["重点预警"]; }
                     for (var ti = 0; ti < tags.length; ti++) {
                         var tname = tags[ti];
+                        // 若已渲染专门的滞后公开胶囊，避免在 focus tags 中重复显示
+                        if (d.is_delayed && (tname === "滞后公开" || tname === "滞后补录")) {
+                            continue;
+                        }
                         var cls = "focus-chip";
-                        if (tname === "滞后补录") cls += " focus-chip-delayed";
+                        if (tname === "滞后公开" || tname === "滞后补录") cls += " focus-chip-delayed";
                         else if (tname === "重点项目") cls += " focus-chip-project";
                         else if (tname === "重点业主") cls += " focus-chip-owner";
                         else if (tname === "重点关键词") cls += " focus-chip-keyword";
@@ -1086,8 +1120,8 @@ function build() {
                     html += '<span class="overtime-chip" title="' + esc(otTip) + '">' + OT_ICON + '加班发布</span>';
                 }
                 if (d.is_delayed) {
-                    var delTip = d.delayed_reason || ('滞后 ' + d.delay_days + ' 天补录现身');
-                    html += '<span class="delayed-chip" title="' + esc(delTip) + '">' + DEL_ICON + '滞后补录 · ' + d.delay_days + '天</span>';
+                    var delTip = d.delayed_reason || ('【存证判定】官网标称发布于 ' + (d.pub_time || '') + '，滞后公开 ' + d.delay_days + ' 天');
+                    html += '<span class="delayed-chip" title="' + esc(delTip) + '">' + DEL_ICON + '滞后公开 · ' + d.delay_days + '天</span>';
                 }
                 html += '<span class="notice-time">' + esc(String(d.pub_time || '').substring(5, 16)) + '</span>';
                 html += '</a>';
@@ -1275,7 +1309,7 @@ html = html.replace("__DAILY_CSS__", DAILY_CSS.strip())
 html = html.replace("__LATEST_PUB__", latest_pub)
 html = html.replace("__SCAN_TIME__", scan_time)
 html = html.replace("__LATEST__", latest_pub)
-html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.1.9"))
+html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.2.0"))
 html = html.replace("__DATE__", DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))
 html = html.replace("__NEXT_URL__", neighbor_url(1))
@@ -1293,7 +1327,7 @@ if today_delayed_items:
         rows_h.append(
             f'<a class="delayed-item-row" href="{d_link}" target="_blank" rel="noopener noreferrer">\n'
             f'    <div class="delayed-item-main">\n'
-            f'        <span class="delayed-days-tag">滞后 {d_delay} 天</span>\n'
+            f'        <span class="delayed-days-tag" style="border-radius:9999px;padding:2px 8px;">滞后公开 {d_delay} 天</span>\n'
             f'        <span class="delayed-item-title">{d_title}</span>\n'
             f'    </div>\n'
             f'    <div class="delayed-item-meta">\n'
@@ -1314,8 +1348,8 @@ if today_delayed_items:
             f'<button type="button" class="btn-toggle-delayed-more" id="btnToggleDelayedMore"'
             f' onclick="var el=document.getElementById(\'delayedAlertMore\');'
             f'if(el.style.display===\'none\'){{el.style.display=\'flex\';this.textContent=\'收起其余 {total_d_cnt - 5} 条 ▲\';}}'
-            f'else{{el.style.display=\'none\';this.textContent=\'展开查看全部 {total_d_cnt} 条滞后项目（已显示前 5 条） ▼\';}}">'
-            f'展开查看全部 {total_d_cnt} 条滞后项目（已显示前 5 条） ▼</button>'
+            f'else{{el.style.display=\'none\';this.textContent=\'展开查看全部 {total_d_cnt} 条滞后公开项目（已显示前 5 条） ▼\';}}">'
+            f'展开查看全部 {total_d_cnt} 条滞后公开项目（已显示前 5 条） ▼</button>'
         )
     else:
         list_inner = "".join(rows_h)
@@ -1324,10 +1358,10 @@ if today_delayed_items:
         f'<div class="delayed-alert-box" id="delayedAlertBox">\n'
         f'    <div class="delayed-alert-header">\n'
         f'        <div class="delayed-alert-title-row">\n'
-        f'            <span class="delayed-alert-badge">🚨 历史回扫特别预警</span>\n'
-        f'            <span class="delayed-alert-title">今日回扫捕获 <strong>{len(today_delayed_items)}</strong> 条被官方隐匿/滞后补录的项目</span>\n'
+        f'            <span class="delayed-alert-badge" style="border-radius:9999px;">🚨 历史回扫特别预警</span>\n'
+        f'            <span class="delayed-alert-title">今日回扫捕获 <strong>{len(today_delayed_items)}</strong> 条被官方滞后公开的项目</span>\n'
         f'        </div>\n'
-        f'        <div class="delayed-alert-desc">官方标称发布于 2~30 天前，此前未在公开列表出现，在今日定时回扫中首次捕获并按重点预警处理</div>\n'
+        f'        <div class="delayed-alert-desc">官方标称发布于 2~30 天前，此前巡检未见该条目，在今日定时回扫中首次扫描捕获并确证存证</div>\n'
         f'    </div>\n'
         f'    <div class="delayed-alert-list">\n'
         f'        {list_inner}\n'

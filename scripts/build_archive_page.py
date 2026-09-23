@@ -200,16 +200,17 @@ extra_style = """
 
         .cal-pill-today {
             font-size: 0.65rem;
-            padding: 1px 6px;
+            padding: 2px 7px;
             background: #dc2626;
             color: #ffffff;
-            border-radius: 4px;
+            border-radius: 9999px;
             font-weight: 700;
             letter-spacing: 0.02em;
             box-shadow: 0 1px 2px rgba(220, 38, 38, 0.35);
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            line-height: 1.2;
         }
 
         .chip-today {
@@ -273,15 +274,17 @@ extra_style = """
         }
         .cal-pill-delayed {
             font-size: 0.65rem;
-            padding: 1px 5px;
+            padding: 2px 7px;
             background: #ea580c;
             color: white;
-            border-radius: 4px;
+            border-radius: 9999px;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             white-space: nowrap;
+            box-shadow: 0 1px 2px rgba(234, 88, 12, 0.25);
+            line-height: 1.2;
         }
 
         .cal-pill-group {
@@ -294,16 +297,17 @@ extra_style = """
 
         .cal-pill-alert {
             font-size: 0.65rem;
-            padding: 1px 5px;
+            padding: 2px 7px;
             background: #dc2626;
             color: white;
-            border-radius: 4px;
+            border-radius: 9999px;
             font-weight: 700;
             box-shadow: 0 1px 2px rgba(220, 38, 38, 0.3);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             white-space: nowrap;
+            line-height: 1.2;
         }
 
         .cal-meta-focus {
@@ -417,7 +421,7 @@ for ym in months:
             if focus_cnt > 0:
                 pills.append(f'<span class="cal-pill-alert" title="当日重点信息 {focus_cnt} 条">⚡{focus_cnt}</span>')
             if delayed_cnt > 0:
-                pills.append(f'<span class="cal-pill-delayed" title="滞后补录 {delayed_cnt} 条">滞后{delayed_cnt}</span>')
+                pills.append(f'<span class="cal-pill-delayed" title="滞后公开 {delayed_cnt} 条">滞后{delayed_cnt}</span>')
             if today_pill:
                 pills.append(today_pill)
             pill_html = "".join(pills)
@@ -506,9 +510,9 @@ for d in days:
     delayed_chip_html = ""
     if delayed_cnt > 0:
         delayed_chip_html = (
-            f'<span class="chip-delayed" title="历史回扫发现滞后补录 {delayed_cnt} 条">\n'
+            f'<span class="chip-delayed" title="历史回扫确证滞后公开 {delayed_cnt} 条">\n'
             f'<svg fill="none" height="12" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" width="12"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg>\n'
-            f'<span>滞后 {delayed_cnt}</span>\n'
+            f'<span>滞后公开 {delayed_cnt}</span>\n'
             f'</span>\n'
         )
 
@@ -774,7 +778,7 @@ _FIELDS = {
     "base_script": base_script,
     "site": html.escape(arc.get("site", "广西全区招投标数据监控中心")),
     "subtitle": html.escape(arc.get("subtitle", "广西公共资源交易 · 工程建设类公告每日归档")),
-    "app_version": getattr(config, "APP_VERSION", "v0.1.9"),
+    "app_version": getattr(config, "APP_VERSION", "v0.2.0"),
     "day_count": comma(day_count),
     "total_all": comma(total_all),
     "total_focus": comma(arc.get("total_focus", sum(d.get("focus_count", 0) for d in days))),

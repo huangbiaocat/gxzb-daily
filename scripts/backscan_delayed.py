@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""定时回扫历史公告：检测被官方滞后补录或隐匿现身的项目。
+"""定时回扫历史公告：检测被官方滞后公开或隐匿现身的项目。
 
 核心逻辑：
 1. 默认回扫过去 30 天（如当前为 T，回扫 T-30 至 T-1）。
-2. 与已知库（delayed_registry.json 及 daily/*.json）比对，捕获上次扫描时不存在、如今突然出现的新条目。
-3. 若首次发现日期与官方标称发布日期间隔 >= 2 天，标记为「滞后发布 / 隐藏现身」重点公告。
+2. 与首次扫描存证库（ScanRecordDB）比对，捕获上次扫描时不存在、如今突然出现的新条目。
+3. 若首次发现日期与官方标称发布日期间隔 >= 2 天，标记为「滞后公开」重点公告，并生成存证证据链。
 4. 产出今日捕获清单（data/state/delayed_today_{today}.json），并同步回补至历史归属日数据中。
 
 用法:
@@ -24,6 +24,7 @@ if str(ROOT) not in sys.path:
 
 import config
 from scripts import fetcher
+from scripts.scan_record_db import get_scan_record_db
 from scripts.delayed_helper import (
     calc_delay_days,
     annotate_delayed_item,
@@ -169,12 +170,13 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
     print(f"=== 开始执行历史回扫任务 ===")
     print(f"  回扫基准日 (今日): {today}")
     print(f"  回扫历史窗口: {start_date} 至 {end_date} (共 {days} 天)")
-    print(f"  滞后判定阈值: >= {min_delay} 天")
+    print(f"  滞后公开判定阈值: >= {min_delay} 天")
     print(f"  写入模式: {'DRY RUN (只检测不写入)' if dry_run else 'ACTIVE (自动持久化与回补历史)'}")
     
-    # 1. 加载已知条目注册表
+    # 1. 加载首次扫描存证库与已知条目注册表
+    scan_db = get_scan_record_db()
     registry = load_delayed_registry()
-    print(f"  当前已知历史公告条目数: {len(registry)}")
+    print(f"  当前存证库与已知公告条目数: {len(registry)}")
     
     # 2. 从广西公共资源交易中心抓取
     print(f"  正在回扫广西公共资源交易中心 15 个中心...")
@@ -202,8 +204,8 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
             continue
         seen_in_batch.add(infoid)
         
-        # 检查是否已在注册表中
-        if infoid in registry:
+        # 检查是否已在存证库或注册表中
+        if scan_db.has_record(infoid) or infoid in registry:
             continue
             
         # 全新出现的公告！
@@ -218,8 +220,19 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
         if is_delayed:
             delayed_notices.append(item)
             
-        # 记录到更新注册表
+        # 记录到首次扫描存证数据库与注册表
         if not dry_run:
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            scan_db.record_scan(
+                infoid=infoid,
+                title=item.get("title") or "",
+                pub_time=pub_time,
+                scan_time=now_str,
+                scan_source=f"backscan_{days}d",
+                center=item.get("areaname") or item.get("source") or "",
+                link=item.get("link") or item.get("detail_url") or "",
+                min_delay_days=min_delay,
+            )
             record_notice_seen(infoid, pub_time, today, registry=registry, min_delay_days=min_delay)
             
         pub_date = str(parse_date_str(pub_time) or pub_time[:10])
@@ -227,12 +240,12 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
         
     print(f"  差异分析完成:")
     print(f"    - 新增发现条目: {len(new_notices)} 条")
-    print(f"    - 其中滞后补录条目 (>= {min_delay} 天): {len(delayed_notices)} 条")
+    print(f"    - 其中确证滞后公开条目 (>= {min_delay} 天): {len(delayed_notices)} 条")
     
     # 5. 打印重点滞后公告明细
     if delayed_notices:
         print("\n" + "=" * 60)
-        print(f"🚨【重点预警】回扫发现 {len(delayed_notices)} 条被官方滞后补录/隐匿现身公告:")
+        print(f"🚨【重点预警】回扫发现 {len(delayed_notices)} 条被官方滞后公开/隐匿现身公告:")
         for idx, it in enumerate(delayed_notices, 1):
             p_date = it.get("pub_time", "")[:10]
             delay = it.get("delay_days", 0)
@@ -242,7 +255,7 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
             print(f"     链接: {it.get('link') or it.get('detail_url')}")
         print("=" * 60 + "\n")
     else:
-        print("  ✓ 未发现新增滞后补录条目，历史数据完整度正常。")
+        print("  ✓ 未发现新增滞后公开条目，历史数据完整度正常。")
         
     if dry_run:
         return {
@@ -303,10 +316,10 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
 
 
 def main():
-    parser = argparse.ArgumentParser(description="历史公告回扫（检测滞后补录/隐匿现身项目）")
+    parser = argparse.ArgumentParser(description="历史公告回扫（检测滞后公开/隐匿现身项目）")
     parser.add_argument("--date", default=None, help="基准日期 YYYY-MM-DD（默认今天）")
     parser.add_argument("--days", type=int, default=config.BACKSCAN_DAYS, help="回扫天数（默认 30）")
-    parser.add_argument("--min-delay", type=int, default=config.BACKSCAN_MIN_DELAY, help="滞后判定阈值天数（默认 2）")
+    parser.add_argument("--min-delay", type=int, default=config.BACKSCAN_MIN_DELAY, help="滞后公开判定阈值天数（默认 2）")
     parser.add_argument("--dry-run", action="store_true", help="只比对扫描，不修改持久化数据")
     parser.add_argument("--no-sync-history", action="store_true", help="不回补历史日期的 daily.json")
     args = parser.parse_args()

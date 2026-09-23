@@ -369,7 +369,7 @@ def build_rich_summary(day: str, total_count: int, focus_count: int, failed_step
                     focus_items.append(it)
                     break
 
-    # 今日回扫捕获的历史滞后补录项目（按重点处理）
+    # 今日回扫捕获的历史滞后公开项目（按重点处理）
     delayed_items = []
     today_del_file = config.get_delayed_today_path(day)
     if today_del_file.is_file():
@@ -394,7 +394,7 @@ def build_rich_summary(day: str, total_count: int, focus_count: int, failed_step
         lines.append(f"🏢 行业分布：{ind_str}")
 
     if all_delayed:
-        lines.append(f"\n🚨【特别预警】历史回扫捕获 {len(all_delayed)} 条滞后补录/隐匿现身项目：")
+        lines.append(f"\n🚨【特别预警】历史回扫捕获 {len(all_delayed)} 条滞后公开/隐匿现身项目：")
         for it in all_delayed[:3]:
             city = (it.get("areaname") or it.get("city") or "广西").replace("市", "")
             stage = it.get("stage") or "公告"
@@ -446,7 +446,7 @@ def build_rich_summary(day: str, total_count: int, focus_count: int, failed_step
     if ind_str:
         remark_parts.append(f"📊 行业：{ind_str}")
     if all_delayed:
-        remark_parts.append(f"🚨 历史滞后补录预警（{len(all_delayed)}条）：")
+        remark_parts.append(f"🚨 历史滞后公开预警（{len(all_delayed)}条）：")
         for idx, it in enumerate(all_delayed[:2], 1):
             c = (it.get("areaname") or "").replace("市", "")
             d_days = it.get("delay_days", 0)
@@ -480,7 +480,7 @@ def build_rich_summary(day: str, total_count: int, focus_count: int, failed_step
 
     kw2 = city_str or "广西公共资源交易 · 崇左阳光采购"
     if all_delayed:
-        kw3 = f"共 {total_count} 条（重点预警 {focus_count} 条 · 滞后补录 {len(all_delayed)} 条）"
+        kw3 = f"共 {total_count} 条（重点预警 {focus_count} 条 · 滞后公开 {len(all_delayed)} 条）"
     elif focus_count > 0:
         kw3 = f"今日共 {total_count} 条（重点预警 {focus_count} 条）"
     else:

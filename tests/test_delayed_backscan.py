@@ -69,9 +69,9 @@ class TestDelayedBackscan(unittest.TestCase):
         self.assertEqual(item["first_seen_date"], "2026-09-23")
         # 按重点处理核验
         self.assertEqual(item["is_focus"], 1)
-        self.assertIn("滞后补录", item["focus_tags"])
+        self.assertIn("滞后公开", item["focus_tags"])
         self.assertTrue(any("滞后 18 天" in r for r in item["focus_reason"]))
-        self.assertIn("滞后 18 天补录", item["delayed_reason"])
+        self.assertIn("滞后公开 18 天", item["delayed_reason"])
 
     def test_registry_bootstrap_and_record(self):
         """测试注册表从历史 daily 文件初始化及新条目识别。"""
@@ -143,7 +143,8 @@ class TestDelayedBackscan(unittest.TestCase):
         
         with patch("config.DELAYED_REGISTRY_PATH", reg_file), \
              patch("config.DAILY_DIR", self.daily_dir), \
-             patch("config.STATE_DIR", self.state_dir):
+             patch("config.STATE_DIR", self.state_dir), \
+             patch("config.DB_PATH", self.tmp_dir / "test_gxzb.sqlite3"):
              
             res = scan_delayed_notices(
                 today_str=today,
@@ -160,7 +161,7 @@ class TestDelayedBackscan(unittest.TestCase):
             self.assertEqual(del_item["is_delayed"], 1)
             self.assertEqual(del_item["delay_days"], 13)
             self.assertEqual(del_item["is_focus"], 1)
-            self.assertIn("滞后补录", del_item["focus_tags"])
+            self.assertIn("滞后公开", del_item["focus_tags"])
             
             # 验证今日发现文件已生成
             today_path = self.state_dir / f"delayed_today_{today}.json"
@@ -214,13 +215,13 @@ class TestDelayedBackscan(unittest.TestCase):
             
             content_val = summary.get("content_text", "")
             # 验证滞后预警文字已注入富文本消息
-            self.assertIn("🚨【特别预警】历史回扫捕获 1 条滞后补录/隐匿现身项目", content_val)
+            self.assertIn("🚨【特别预警】历史回扫捕获 1 条滞后公开/隐匿现身项目", content_val)
             self.assertIn("滞后15天", content_val)
             self.assertIn("南宁市某地下综合管廊施工隐匿补录工程", content_val)
             
             remark_val = summary.get("remark_val", "")
             self.assertIn("滞后15天", remark_val)
-            self.assertIn("滞后补录 1 条", summary.get("kw3", ""))
+            self.assertIn("滞后公开 1 条", summary.get("kw3", ""))
 
 
 if __name__ == "__main__":
