@@ -332,13 +332,13 @@ DAILY_CSS = """
             border-color: transparent;
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
         }
-        .btn-overtime { color: #c2410c; background: #fff7ed; border: 1px solid #fed7aa; }
-        .btn-overtime:hover { background: #ffedd5; }
+        .btn-overtime { color: var(--text-secondary); background: #f8fafc; border: 1px solid #e2e8f0; }
+        .btn-overtime:hover { background: #f1f5f9; color: var(--text-primary); }
         .btn-overtime.active {
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            background: #475569;
             color: #ffffff;
             border-color: transparent;
-            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
+            box-shadow: 0 2px 6px rgba(71, 85, 105, 0.2);
         }
         .btn-overtime .overtime-count { font-weight: 800; }
         .btn-reset { color: var(--text-secondary); background: #f1f5f9; border: 1px solid transparent; }
@@ -384,7 +384,7 @@ DAILY_CSS = """
         .overtime-chip {
             flex-shrink: 0;
             font-size: 0.7rem;
-            font-weight: 700;
+            font-weight: 600;
             line-height: 1.6;
             padding: 1px 8px;
             border-radius: 9999px;
@@ -393,15 +393,15 @@ DAILY_CSS = """
             display: inline-flex;
             align-items: center;
             gap: 3px;
-            background: #fff7ed;
-            color: #c2410c;
-            border: 1px solid #fed7aa;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
             cursor: default;
             transition: all 0.15s ease;
         }
         .overtime-chip:hover {
-            background: #ffedd5;
-            border-color: #fb923c;
+            background: #e2e8f0;
+            border-color: #cbd5e1;
         }
 
         @media (max-width: 640px) {

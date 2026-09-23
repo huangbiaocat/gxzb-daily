@@ -252,13 +252,13 @@ extra_style = """
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            background: #fff7ed;
-            color: #c2410c;
-            border: 1px solid #fed7aa;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
             padding: 3px 9px;
             border-radius: 9999px;
             font-size: 0.76rem;
-            font-weight: 700;
+            font-weight: 600;
             flex-shrink: 0;
             transition: all 0.15s ease;
         }
@@ -295,23 +295,23 @@ extra_style = """
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: #fff7ed;
-            color: #c2410c;
+            background: #f1f5f9;
+            color: #475569;
             font-size: 0.65rem;
-            font-weight: 700;
+            font-weight: 600;
             padding: 1px 5px;
             border-radius: 4px;
-            border: 1px solid #fed7aa;
+            border: 1px solid #e2e8f0;
             white-space: nowrap;
         }
 
         .stat-pill.nonwork-pill {
-            background: #fff7ed;
-            border-color: #fed7aa;
-            color: #c2410c;
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            color: var(--text-secondary);
         }
         .stat-pill.nonwork-pill strong {
-            color: #ea580c;
+            color: var(--text-primary);
         }
 
         .cal-meta-focus {
@@ -319,8 +319,8 @@ extra_style = """
             font-weight: 700;
         }
         .cal-meta-overtime {
-            color: #c2410c;
-            font-weight: 700;
+            color: var(--text-secondary);
+            font-weight: 500;
         }
         .cal-meta-zero {
             color: var(--text-muted);
