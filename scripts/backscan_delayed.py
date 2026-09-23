@@ -208,17 +208,58 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
         if scan_db.has_record(infoid) or infoid in registry:
             continue
             
-        # 全新出现的公告！
         pub_time = item.get("pub_time") or item.get("infodatepx") or ""
+        pub_date = str(parse_date_str(pub_time) or pub_time[:10])
+
+        # 判定数据源，用于匹配底边快照
+        link_str = str(item.get("link") or item.get("detail_url") or "")
+        areaname = str(item.get("areaname") or item.get("source") or "")
+        if "cz.gxygcg.com" in link_str:
+            item_source = "cz_ygcg"
+        elif "gxzfcg.gov.cn" in link_str:
+            item_source = "gxzfcg"
+        elif areaname:
+            item_source = f"gxggzy_{areaname}"
+        else:
+            item_source = "gxggzy"
+
+        # 检查该数据源在发布日期是否已建立并锁定底边基线
+        has_base = scan_db.has_baseline(item_source, pub_date, daily_dir=config.DAILY_DIR)
+        
+        if not has_base:
+            # 底边基线铁律：此前未建立过底边扫描的数据源/日期，本次扫描属于建立底边，绝不能判定为滞后公开
+            new_notices.append(item)
+            if not dry_run:
+                now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                scan_db.record_scan(
+                    infoid=infoid,
+                    title=item.get("title") or "",
+                    pub_time=pub_time,
+                    scan_time=now_str,
+                    scan_source=f"backscan_{days}d",
+                    center=areaname,
+                    link=link_str,
+                    min_delay_days=min_delay,
+                    is_baseline=True,
+                )
+                record_notice_seen(infoid, pub_time, today, registry=registry, min_delay_days=min_delay)
+            new_by_pub_date.setdefault(pub_date, []).append(item)
+            continue
+
+        # 该源已有锁定底边基线！核查确为底边快照外新显现的条目
         delay_days = calc_delay_days(pub_time, today)
         is_delayed = delay_days >= min_delay
         
-        # 注入滞后与重点元数据（按重点处理）
-        annotate_delayed_item(item, today, min_delay)
+        if is_delayed:
+            item["is_delayed"] = 1
+            item["delay_days"] = delay_days
+            annotate_delayed_item(item, today, min_delay, force_delayed=True)
+            delayed_notices.append(item)
+        else:
+            item["is_delayed"] = 0
+            item["delay_days"] = delay_days
         
         new_notices.append(item)
-        if is_delayed:
-            delayed_notices.append(item)
             
         # 记录到首次扫描存证数据库与注册表
         if not dry_run:
@@ -229,13 +270,13 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
                 pub_time=pub_time,
                 scan_time=now_str,
                 scan_source=f"backscan_{days}d",
-                center=item.get("areaname") or item.get("source") or "",
-                link=item.get("link") or item.get("detail_url") or "",
+                center=areaname,
+                link=link_str,
                 min_delay_days=min_delay,
+                is_baseline=False,
             )
             record_notice_seen(infoid, pub_time, today, registry=registry, min_delay_days=min_delay)
             
-        pub_date = str(parse_date_str(pub_time) or pub_time[:10])
         new_by_pub_date.setdefault(pub_date, []).append(item)
         
     print(f"  差异分析完成:")

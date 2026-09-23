@@ -107,8 +107,8 @@ def run(args, allow_codes=(0,)):
                 sys.argv = old_argv
             return ret_code, ret_code in allow_codes
 
-   proc = subprocess.run([str(a) for a in args], capture_output=True, text=True, encoding="utf-8", errors="replace")
-   if proc.stdout:
+    proc = subprocess.run([str(a) for a in args], capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if proc.stdout:
         try:
             print(proc.stdout.rstrip(), flush=True)
         except UnicodeEncodeError:

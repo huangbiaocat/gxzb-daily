@@ -54,7 +54,7 @@ def is_delayed_notice(pub_time, first_seen_date=None, min_delay_days=None):
     return calc_delay_days(pub_time, first_seen_date) >= thresh
 
 
-def annotate_delayed_item(item, first_seen_date=None, min_delay_days=None):
+def annotate_delayed_item(item, first_seen_date=None, min_delay_days=None, force_delayed=None):
     """对公告字典注入滞后公开标记与重点关注元数据（原地修改并返回）。
     
     规则（按重点处理）：
@@ -77,7 +77,12 @@ def annotate_delayed_item(item, first_seen_date=None, min_delay_days=None):
     
     pub_date_str = str(parse_date_str(pub_time) or pub_time[:10])
     
-    if delay_days >= thresh:
+    if force_delayed is not None:
+        is_delayed = bool(force_delayed)
+    else:
+        is_delayed = delay_days >= thresh
+
+    if is_delayed:
         item["is_delayed"] = 1
         item["delay_days"] = delay_days
         item["delayed_type"] = "滞后公开"
@@ -110,6 +115,27 @@ def annotate_delayed_item(item, first_seen_date=None, min_delay_days=None):
         item["delay_days"] = delay_days
         item["first_seen_date"] = s_date_str
     
+    return item
+
+
+def clean_false_delayed_notices(item):
+    """清理公告中误判的滞后公开属性与重点标签。"""
+    if not isinstance(item, dict):
+        return item
+    item["is_delayed"] = 0
+    item["delay_days"] = 0
+    item.pop("delayed_reason", None)
+    item.pop("delayed_type", None)
+    item.pop("first_seen_date", None)
+    tags = item.get("focus_tags")
+    if isinstance(tags, list):
+        item["focus_tags"] = [t for t in tags if t not in ("滞后补录", "滞后公开")]
+    reasons = item.get("focus_reason")
+    if isinstance(reasons, list):
+        item["focus_reason"] = [r for r in reasons if not str(r).startswith("滞后公开")]
+    if not item.get("focus_tags"):
+        item["is_focus"] = 0
+        item["focus_reason"] = []
     return item
 
 
@@ -214,10 +240,12 @@ def record_notice_seen(infoid, pub_time, seen_date=None, registry=None, min_dela
         rec = registry[infoid]
         return False, rec.get("delay_days", 0), bool(rec.get("is_delayed")), rec
     
-    # 同时同步记录到 ScanRecordDB 存证库
+    # 通过 ScanRecordDB 底边存证库判定是否真正滞后
+    is_del = False
+    delay = calc_delay_days(pub_time, s_date)
     try:
         db = get_scan_record_db()
-        db.record_scan(
+        db_res = db.record_scan(
             infoid=infoid,
             title=str(pub_time or ""),
             pub_time=pub_time,
@@ -225,12 +253,11 @@ def record_notice_seen(infoid, pub_time, seen_date=None, registry=None, min_dela
             scan_source="registry_sync",
             min_delay_days=thresh,
         )
+        is_del = bool(db_res.get("is_delayed", False))
+        delay = int(db_res.get("delay_days", delay))
     except Exception:
         pass
 
-    # 全新发现条目！计算是否滞后
-    delay = calc_delay_days(pub_time, s_date)
-    is_del = delay >= thresh
     pub_str = str(pub_time or "")
     pub_date = pub_str[:10] if len(pub_str) >= 10 else s_date_str
     

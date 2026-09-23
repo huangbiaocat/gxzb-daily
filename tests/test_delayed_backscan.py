@@ -223,6 +223,70 @@ class TestDelayedBackscan(unittest.TestCase):
             self.assertIn("滞后15天", remark_val)
             self.assertIn("滞后公开 1 条", summary.get("kw3", ""))
 
+    @patch("scripts.backscan_delayed.fetch_gx_center_window")
+    @patch("scripts.backscan_delayed.fetch_cz_ygcg_window")
+    def test_baseline_prevents_false_positive_when_new_source_added(self, mock_cz, mock_gx):
+        """核心场景测试（底边扫描数据库）：
+        当新接入数据源（如崇左阳光采购）首次抓取历史公告时，
+        系统因无原始底边快照，必须作为底边原始数据纳入，绝不能误判为滞后公开。
+        只有当底边基线已建立后，再次回扫发现底边外的新公告，才确证为滞后公开。
+        """
+        today = "2026-09-23"
+        reg_file = self.state_dir / "delayed_registry.json"
+        db_file = self.tmp_dir / "test_baseline_gxzb.sqlite3"
+        
+        # 崇左阳光采购平台抓到一条标称 2026-09-17 发布的历史公告
+        cz_item_1 = {
+            "infoid": "cz-baseline-001",
+            "title": "崇左某水利工程监理招标公告",
+            "pub_time": "2026-09-17 10:00:00",
+            "areaname": "崇左市",
+            "link": "https://cz.gxygcg.com/purchase/detail/?notice_id=cz-baseline-001",
+        }
+        
+        mock_gx.return_value = []
+        mock_cz.return_value = [dict(cz_item_1)]
+        
+        with patch("config.DELAYED_REGISTRY_PATH", reg_file), \
+             patch("config.DAILY_DIR", self.daily_dir), \
+             patch("config.STATE_DIR", self.state_dir), \
+             patch("config.DB_PATH", db_file):
+             
+            # 第一次回扫：该源在 2026-09-17 无底边基线，应纳入底边，绝不产生滞后误报
+            res1 = scan_delayed_notices(
+                today_str=today,
+                days=30,
+                min_delay=2,
+                dry_run=False,
+            )
+            self.assertEqual(res1["delayed_count"], 0, "新接入源首次扫描历史条目不能误判为滞后公开")
+            self.assertEqual(res1["new_count"], 1)
+            
+            # 为该源锁定 2026-09-17 的底边快照
+            from scripts.scan_record_db import get_scan_record_db
+            db = get_scan_record_db(db_file)
+            db.record_baseline_snapshot("cz_ygcg", "2026-09-17", notice_count=1)
+            
+            # 第二次回扫：该源在 2026-09-17 官网又悄悄冒出一条新条目 cz-delayed-002
+            cz_item_2 = {
+                "infoid": "cz-delayed-002",
+                "title": "崇左某被隐匿悄悄补录的施工公告",
+                "pub_time": "2026-09-17 14:00:00",
+                "areaname": "崇左市",
+                "link": "https://cz.gxygcg.com/purchase/detail/?notice_id=cz-delayed-002",
+            }
+            mock_cz.return_value = [dict(cz_item_1), dict(cz_item_2)]
+            
+            res2 = scan_delayed_notices(
+                today_str=today,
+                days=30,
+                min_delay=2,
+                dry_run=False,
+            )
+            self.assertEqual(res2["delayed_count"], 1, "底边基线已建立后回扫发现底边外的新公告，必须确证为滞后公开")
+            self.assertEqual(res2["delayed_notices"][0]["infoid"], "cz-delayed-002")
+            self.assertEqual(res2["delayed_notices"][0]["delay_days"], 6)
+
 
 if __name__ == "__main__":
     unittest.main()

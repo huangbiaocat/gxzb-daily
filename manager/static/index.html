@@ -43,7 +43,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.2.0</span>
+                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.3.0</span>
                     </div>
                     <p class="text-xs text-slate-500">Tender Data Control & Settings Center</p>
                 </div>
@@ -390,6 +390,45 @@
                         </div>
                     </div>
 
+                    <!-- 历史回扫与滞后公开排查配置 (Backscan & Baseline DB) -->
+                    <div class="space-y-4 pt-4 border-t border-slate-100">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-1.5 h-4 bg-purple-600 rounded-full"></span>
+                            <h3 class="text-sm font-bold text-slate-800">历史回扫与滞后公开排查配置 (Backscan & Baseline DB)</h3>
+                            <span class="text-[11px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full font-medium border border-purple-200">底边基线差异比对机制</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">历史回扫开关 (BACKSCAN_ENABLED)</label>
+                                <select id="cfg-backscan-enabled" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="true">开启 (True) - 每日回扫历史公告排查滞后公开</option>
+                                    <option value="false">关闭 (False) - 仅抓取当日最新公告</option>
+                                </select>
+                                <span class="text-[11px] text-slate-400 mt-1 block">开启后每日流水线自动回溯历史公告并比对底边数据库</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">回扫时间窗口 (BACKSCAN_DAYS)</label>
+                                <div class="relative">
+                                    <input id="cfg-backscan-days" type="number" min="1" max="90" value="30" placeholder="30" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 pr-12 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                    <span class="absolute right-3 top-2 text-xs text-slate-400">天</span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 mt-1 block">默认回溯过去 30 天公告，排查官方事后隐匿补录条目</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">滞后判定门槛 (BACKSCAN_MIN_DELAY)</label>
+                                <div class="relative">
+                                    <input id="cfg-backscan-min-delay" type="number" min="1" max="30" value="2" placeholder="2" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 pr-12 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                    <span class="absolute right-3 top-2 text-xs text-slate-400">天</span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 mt-1 block">首次捕获日期与官网标称日期相差 ≥ 此天数才认定为滞后公开</span>
+                            </div>
+                        </div>
+                        <div class="bg-purple-50/70 border border-purple-100 rounded-lg p-3 text-xs text-purple-900 leading-relaxed">
+                            <span class="font-bold text-purple-950">底边扫描比对机制保障：</span>
+                            系统严格基于<strong>底边扫描数据库（Baseline DB）</strong>进行双向差异校验。只有对历史上<strong>已建立并锁定底边快照</strong>的日期，回扫时比对发现官方官网事后悄悄冒出、底边快照中原本不存在的新条目，且间隔达到门槛时，才确证判定为滞后公开；若某日期历史未建底边（如新增平台或首次建库），系统自动录入为底边基准线，坚决不发生误判。
+                        </div>
+                    </div>
+
                     <!-- 微信服务号通知配置 -->
                     <div class="space-y-4 pt-4 border-t border-slate-100">
                         <div class="flex items-center justify-between">
@@ -548,16 +587,36 @@
                                 <label class="block text-xs font-semibold text-slate-700 mb-1">云端 Web 根目录路径 (VPS_PATH)</label>
                                 <input id="cfg-vps-path" type="text" placeholder="/opt/1panel/www/tender_site/" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
                             </div>
+                            <div class="sm:col-span-3">
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="block text-xs font-semibold text-slate-700">指定私钥文件路径 (VPS_KEY_PATH) <span class="text-slate-400 font-normal">[选填]</span></label>
+                                    <button type="button" onclick="testSshConnection()" id="btn-test-ssh" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-[11px] rounded border border-indigo-200 transition inline-flex items-center gap-1 cursor-pointer">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                        一键测试 SSH 连通性
+                                    </button>
+                                </div>
+                                <input id="cfg-vps-key-path" type="text" placeholder="留空则自动使用本机默认路径，或放入软件 data/id_rsa" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                <div class="mt-1.5 text-[11px] text-slate-500 flex flex-wrap items-center gap-2">
+                                    <span>当前电脑默认检测路径: <code id="cfg-system-default-key" class="bg-slate-100 px-1 py-0.5 rounded font-mono text-slate-700"></code></span>
+                                    <span id="cfg-system-key-badge" class="px-1.5 py-0.5 rounded font-medium"></span>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- 认证机制提示 -->
-                        <div class="p-3 rounded-lg bg-indigo-50/70 border border-indigo-100 text-[11px] text-indigo-950 leading-relaxed flex items-start gap-2">
-                            <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                            </svg>
-                            <div>
-                                <strong>【为什么没有密码输入框？】</strong>
-                                后台同步为无人值守自动化任务，采用工业标准的 <strong>SSH 公钥免密认证</strong>（基于系统的 <code>~/.ssh/id_rsa.pub</code> 或 <code>id_ed25519.pub</code> 授权），不支持且严禁在网页中明文保存密码。当前本机与 I5 主机均已对云端服务器授权，无需输入密码即可直接同步。
+                        <!-- 换电脑安装指引提示 -->
+                        <div class="p-3.5 rounded-lg bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-950 leading-relaxed space-y-2">
+                            <div class="flex items-start gap-2">
+                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <div>
+                                    <strong class="font-bold text-slate-800">【换电脑安装/迁移后，私钥应该放哪里？】</strong>
+                                    <div class="mt-1.5 text-slate-600 space-y-1.5">
+                                        <div><strong>方案 A（Windows 万能快捷方式，最省心）：</strong>按下键盘 <kbd class="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-mono text-[10px]">Win + R</kbd> 打开运行窗口，输入 <code class="bg-indigo-100/70 text-indigo-900 px-1 py-0.5 rounded font-mono font-bold select-all">%USERPROFILE%\.ssh</code> 并回车。系统会自动打开当前用户的 SSH 文件夹，将私钥文件重命名为 <code class="font-mono font-bold text-slate-800">id_rsa</code> 粘贴进去即可。</div>
+                                        <div><strong>方案 B（随软件便携模式）：</strong>直接把私钥文件复制到本软件的 <code class="bg-indigo-100/70 text-indigo-900 px-1 py-0.5 rounded font-mono">data/</code> 目录下（命名为 <code>id_rsa</code> 或 <code>vps_key.pem</code>），软件会自动优先使用。</div>
+                                        <div><strong>方案 C（自定义任意位置）：</strong>放在电脑任意盘符，在上方【指定私钥文件路径】输入完整绝对路径。</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -590,7 +649,7 @@
         <!-- ============================================== -->
         <div id="tab-content-dashboard" class="space-y-6 hidden">
             <!-- 状态卡片概览 -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
                     <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">今日数据采集状态</div>
                     <div class="mt-2 flex items-baseline justify-between">
@@ -626,6 +685,21 @@
                     </div>
                     <div id="stat-wechat-desc" class="text-xs text-slate-500 mt-1">--</div>
                 </div>
+
+                <div class="bg-white p-5 rounded-xl border border-purple-200 shadow-sm">
+                    <div class="text-xs font-medium text-purple-700 uppercase tracking-wider flex items-center justify-between">
+                        <span>底边扫描与滞后排查</span>
+                        <span id="stat-baseline-badge" class="px-1.5 py-0.5 rounded text-[10px] bg-purple-100 text-purple-800 font-bold">已启用</span>
+                    </div>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <span id="stat-baseline-count" class="text-xl font-bold text-slate-800">--</span>
+                        <span class="text-xs text-slate-500">条底边原始数据</span>
+                    </div>
+                    <div class="text-xs text-slate-500 mt-1 flex items-center justify-between">
+                        <span>确证滞后: <span id="stat-baseline-delayed" class="font-bold text-emerald-600">0</span> 条</span>
+                        <span>覆盖 <span id="stat-baseline-dates" class="font-bold text-slate-700">--</span> 天</span>
+                    </div>
+                </div>
             </div>
 
             <!-- 监控调度时间状态提示条 -->
@@ -644,6 +718,8 @@
                             <span>刷新周期：<span id="dash-monitor-interval" class="text-indigo-700 font-mono font-bold">每 10 分钟</span></span>
                             <span class="text-slate-300">|</span>
                             <span>昨日终版归档：<span id="dash-yesterday-final" class="text-emerald-700 font-bold">每日 00:10 自动封存</span></span>
+                            <span class="text-slate-300">|</span>
+                            <span>历史回扫排查：<span id="dash-backscan-info" class="text-purple-700 font-bold">回溯 30 天 (门槛 ≥ 2 天)</span></span>
                         </div>
                         <div class="text-slate-500 text-[11px] mt-0.5">到达时间窗口内自动运行采集并核验入库；非监控时段自动休眠防干扰。</div>
                     </div>
@@ -749,6 +825,20 @@
                             <button onclick="triggerReapplyRules()" class="btn-action flex flex-col items-center justify-center p-3 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 text-amber-800 transition">
                                 <span class="text-xs font-semibold">历史重算标注</span>
                                 <span class="text-[10px] text-amber-600 mt-0.5">reapply_rules.py</span>
+                            </button>
+                            <button onclick="openBackscanModal()" class="btn-action flex flex-col items-center justify-center p-3 bg-purple-50 hover:bg-purple-100 rounded-xl border border-purple-200 text-purple-800 transition shadow-xs">
+                                <div class="flex items-center space-x-1">
+                                    <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span class="text-xs font-semibold">历史回扫排查</span>
+                                </div>
+                                <span class="text-[10px] text-purple-600 mt-0.5">backscan_delayed.py</span>
+                            </button>
+                            <button onclick="triggerRebuildBaseline()" class="btn-action flex flex-col items-center justify-center p-3 bg-teal-50 hover:bg-teal-100 rounded-xl border border-teal-200 text-teal-800 transition shadow-xs">
+                                <div class="flex items-center space-x-1">
+                                    <svg class="w-3.5 h-3.5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v6m-3-3h6"></path></svg>
+                                    <span class="text-xs font-semibold">校准底边基线</span>
+                                </div>
+                                <span class="text-[10px] text-teal-600 mt-0.5">scan_record_db.py</span>
                             </button>
                             <button onclick="openBatchScanModal()" class="btn-action flex flex-col items-center justify-center p-3 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 text-indigo-700 transition">
                                 <span class="text-xs font-semibold">区间批量补扫</span>
@@ -933,7 +1023,7 @@
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.2.0</span>
+        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.3.0</span>
         · <span class="text-slate-400">已接入: 广西公共资源交易平台 · 崇左阳光采购服务平台</span>
     </footer>
 
@@ -1147,6 +1237,26 @@
                     wxDesc.textContent = "未填 AppID / Secret";
                 }
 
+                // 获取底边扫描数据库与滞后排查状态
+                try {
+                    const baseRes = await fetch("/api/baseline_status");
+                    const baseData = await baseRes.json();
+                    if (baseData.ok && baseData.stats) {
+                        const st = baseData.stats;
+                        const bCountEl = document.getElementById("stat-baseline-count");
+                        const bDelayedEl = document.getElementById("stat-baseline-delayed");
+                        const bDatesEl = document.getElementById("stat-baseline-dates");
+                        if (bCountEl) bCountEl.textContent = st.baseline_records || st.total_records || 0;
+                        if (bDelayedEl) {
+                            bDelayedEl.textContent = st.delayed_records || 0;
+                            bDelayedEl.className = (st.delayed_records > 0) ? "font-bold text-rose-600 animate-pulse" : "font-bold text-emerald-600";
+                        }
+                        if (bDatesEl) bDatesEl.textContent = st.dates_covered || 0;
+                    }
+                } catch (e) {
+                    console.warn("获取底边状态失败", e);
+                }
+
                 if (data.monitor_start_time && data.monitor_end_time) {
                     const winElem = document.getElementById("dash-monitor-window");
                     if (winElem) winElem.textContent = `${data.monitor_start_time} - ${data.monitor_end_time}`;
@@ -1282,6 +1392,23 @@
                 setVal("cfg-vps-port", data.VPS_PORT || "22");
                 setVal("cfg-vps-user", data.VPS_USER || "root");
                 setVal("cfg-vps-path", data.VPS_PATH || "");
+                setVal("cfg-vps-key-path", data.VPS_KEY_PATH || "");
+
+                const defKeyElem = document.getElementById("cfg-system-default-key");
+                const badgeElem = document.getElementById("cfg-system-key-badge");
+                if (defKeyElem) defKeyElem.textContent = data.SYSTEM_DEFAULT_KEY || "~/.ssh/id_rsa";
+                if (badgeElem) {
+                    if (data.SYSTEM_KEY_EXISTS) {
+                        badgeElem.className = "px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-semibold";
+                        badgeElem.textContent = "✅ 已检测到系统私钥";
+                    } else if (data.VPS_KEY_PATH) {
+                        badgeElem.className = "px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-800 font-semibold";
+                        badgeElem.textContent = "ℹ️ 已指定自定义私钥";
+                    } else {
+                        badgeElem.className = "px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800 font-semibold";
+                        badgeElem.textContent = "⚠️ 未检测到系统私钥";
+                    }
+                }
                 setVal("cfg-wx-appid", data.WECHAT_APPID || "");
                 setVal("cfg-wx-appsecret", data.WECHAT_APPSECRET || "");
                 setVal("cfg-wx-touser", data.WECHAT_TOUSER || "");
@@ -1293,11 +1420,25 @@
                 setVal("cfg-monitor-interval", data.MONITOR_INTERVAL_MINUTES || 10);
                 setVal("cfg-yesterday-final", (data.ENABLE_YESTERDAY_FINAL !== "false") ? "true" : "false");
                 setVal("cfg-yesterday-final-time", data.YESTERDAY_FINAL_TIME || "00:10");
+                setVal("cfg-backscan-enabled", (data.BACKSCAN_ENABLED !== "false" && data.BACKSCAN_ENABLED !== false) ? "true" : "false");
+                setVal("cfg-backscan-days", data.BACKSCAN_DAYS || 30);
+                setVal("cfg-backscan-min-delay", data.BACKSCAN_MIN_DELAY || 2);
                 
                 const winElem = document.getElementById("dash-monitor-window");
                 if (winElem) winElem.textContent = `${data.MONITOR_START_TIME || "08:00"} - ${data.MONITOR_END_TIME || "20:00"}`;
                 const ivElem = document.getElementById("dash-monitor-interval");
                 if (ivElem) ivElem.textContent = `每 ${data.MONITOR_INTERVAL_MINUTES || 10} 分钟`;
+
+                const bsElem = document.getElementById("dash-backscan-info");
+                if (bsElem) {
+                    if (String(data.BACKSCAN_ENABLED).toLowerCase() === "false") {
+                        bsElem.className = "text-slate-400 font-bold";
+                        bsElem.textContent = "已关闭";
+                    } else {
+                        bsElem.className = "text-purple-700 font-bold";
+                        bsElem.textContent = `回溯 ${data.BACKSCAN_DAYS || 30} 天 (门槛 ≥ ${data.BACKSCAN_MIN_DELAY || 2} 天)`;
+                    }
+                }
             } catch (err) {
                 console.error("获取配置失败", err);
             }
@@ -1355,6 +1496,7 @@
                 VPS_PORT: getVal("cfg-vps-port", "22"),
                 VPS_USER: getVal("cfg-vps-user", "root"),
                 VPS_PATH: getVal("cfg-vps-path"),
+                VPS_KEY_PATH: getVal("cfg-vps-key-path"),
                 WECHAT_APPID: getVal("cfg-wx-appid"),
                 WECHAT_APPSECRET: getVal("cfg-wx-appsecret"),
                 WECHAT_TOUSER: getVal("cfg-wx-touser"),
@@ -1365,7 +1507,10 @@
                 MONITOR_END_TIME: getVal("cfg-monitor-end", "20:00"),
                 MONITOR_INTERVAL_MINUTES: getVal("cfg-monitor-interval", 10),
                 ENABLE_YESTERDAY_FINAL: getVal("cfg-yesterday-final", "true"),
-                YESTERDAY_FINAL_TIME: getVal("cfg-yesterday-final-time", "00:10")
+                YESTERDAY_FINAL_TIME: getVal("cfg-yesterday-final-time", "00:10"),
+                BACKSCAN_ENABLED: getVal("cfg-backscan-enabled", "true"),
+                BACKSCAN_DAYS: getVal("cfg-backscan-days", "30"),
+                BACKSCAN_MIN_DELAY: getVal("cfg-backscan-min-delay", "2")
             };
 
             try {
@@ -1385,6 +1530,37 @@
                 }
             } catch (err) {
                 showTip("❌ 网络或接口异常: " + err, "text-xs text-red-600 font-semibold");
+            }
+        }
+
+        async function testSshConnection() {
+            const btn = document.getElementById("btn-test-ssh");
+            const oldText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin inline mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> 测试连接中...`;
+
+            try {
+                const getVal = (id, def = "") => {
+                    const el = document.getElementById(id);
+                    return el ? el.value.trim() : def;
+                };
+                const res = await fetch("/api/test_ssh", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        host: getVal("cfg-vps-host"),
+                        port: getVal("cfg-vps-port", "22"),
+                        user: getVal("cfg-vps-user", "root"),
+                        key_path: getVal("cfg-vps-key-path")
+                    })
+                });
+                const data = await res.json();
+                alert(data.msg);
+            } catch (e) {
+                alert("测试请求失败: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = oldText;
             }
         }
 
@@ -1783,6 +1959,73 @@
 
         function closeBatchScanModal() {
             document.getElementById("batch-scan-modal").classList.add("hidden");
+        }
+
+        function openBackscanModal() {
+            const daysCfg = document.getElementById("cfg-backscan-days")?.value || "30";
+            const minDelayCfg = document.getElementById("cfg-backscan-min-delay")?.value || "2";
+            document.getElementById("backscan-modal-days").value = daysCfg;
+            document.getElementById("backscan-modal-min-delay").value = minDelayCfg;
+            document.getElementById("backscan-modal").classList.remove("hidden");
+        }
+
+        function closeBackscanModal() {
+            document.getElementById("backscan-modal").classList.add("hidden");
+        }
+
+        function setBackscanDaysPreset(days) {
+            document.getElementById("backscan-modal-days").value = days;
+        }
+
+        async function submitBackscan(event) {
+            event.preventDefault();
+            const days = parseInt(document.getElementById("backscan-modal-days").value) || 30;
+            const minDelay = parseInt(document.getElementById("backscan-modal-min-delay").value) || 2;
+
+            closeBackscanModal();
+            switchTab("dashboard");
+
+            const logEl = document.getElementById("log-container");
+            logEl.textContent = `[Web Controller] 正在启动历史回扫比对任务 (回溯过去 ${days} 天, 判定门槛 ≥ ${minDelay} 天)...\n`;
+
+            try {
+                const res = await fetch("/api/run_backscan", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ days, min_delay: minDelay })
+                });
+                const d = await res.json();
+                if (d.ok) {
+                    startPollingLog();
+                } else {
+                    alert("启动历史回扫失败: " + d.msg);
+                }
+            } catch (err) {
+                logEl.textContent += `[System Error] 请求异常: ${err}\n`;
+            }
+        }
+
+        async function triggerRebuildBaseline() {
+            if (!confirm("确定要根据历史已归档日常数据校准底边基线数据库吗？\n该操作将清除历史误判条目，并将已有数据全量固化为原始底边快照。")) {
+                return;
+            }
+            switchTab("dashboard");
+            const logEl = document.getElementById("log-container");
+            logEl.textContent = `[Web Controller] 正在执行底边扫描基线校准与重建 (scan_record_db.py --rebuild-baseline)...\n`;
+            try {
+                const res = await fetch("/api/rebuild_baseline", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                });
+                const d = await res.json();
+                if (d.ok) {
+                    startPollingLog();
+                } else {
+                    alert("启动校准底边基线失败: " + d.msg);
+                }
+            } catch (err) {
+                logEl.textContent += `[System Error] 请求异常: ${err}\n`;
+            }
         }
 
         async function submitBatchScan(event) {
@@ -2267,6 +2510,69 @@
                     <button type="submit" id="btn-submit-batch-scan" class="px-4 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition flex items-center space-x-1.5">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg>
                         <span>开始补扫</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 历史回扫排查弹窗 (Backscan Modal)              -->
+    <!-- ============================================== -->
+    <div id="backscan-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-purple-200 max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center space-x-2">
+                    <div class="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">历史回扫排查与滞后公开比对</h3>
+                        <p class="text-[11px] text-slate-400">调用 scripts/backscan_delayed.py 比对底边基线数据库</p>
+                    </div>
+                </div>
+                <button onclick="closeBackscanModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <form id="backscan-form" onsubmit="submitBackscan(event)" class="space-y-4 mt-4">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[11px] text-slate-500">回扫时间跨度:</span>
+                    <button type="button" onclick="setBackscanDaysPreset(7)" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-purple-50 hover:text-purple-600 transition-colors">7天</button>
+                    <button type="button" onclick="setBackscanDaysPreset(15)" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-purple-50 hover:text-purple-600 transition-colors">15天</button>
+                    <button type="button" onclick="setBackscanDaysPreset(30)" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-purple-50 hover:text-purple-600 transition-colors">30天(推荐)</button>
+                    <button type="button" onclick="setBackscanDaysPreset(60)" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-purple-50 hover:text-purple-600 transition-colors">60天</button>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">回溯天数 (天)</label>
+                        <input type="number" id="backscan-modal-days" min="1" max="90" value="30" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-purple-500 font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">滞后判定门槛 (天)</label>
+                        <input type="number" id="backscan-modal-min-delay" min="1" max="30" value="2" required class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-purple-500 font-mono">
+                    </div>
+                </div>
+
+                <div class="bg-purple-50/70 rounded-xl p-3 border border-purple-100 text-xs text-purple-900 space-y-1.5 leading-relaxed">
+                    <div class="font-semibold flex items-center space-x-1">
+                        <span>🛡️ 底边扫描比对逻辑：</span>
+                    </div>
+                    <ul class="list-disc list-inside space-y-1 text-[11px] text-purple-800/90 pl-1">
+                        <li>仅当该平台历史发布日期<strong>已存在底边扫描基线</strong>时，回扫发现此前不存在的新公告，才确证为「滞后公开」；</li>
+                        <li>若某数据源此前从未建立底边扫描，回扫将自动纳入为底边基准线，坚决不发生误判；</li>
+                        <li>确证滞后条目将按重点标讯处理并在首页实时告警。</li>
+                    </ul>
+                </div>
+
+                <div class="flex items-center justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeBackscanModal()" class="px-3.5 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg transition font-medium">取消</button>
+                    <button type="submit" id="btn-submit-backscan" class="px-4 py-1.5 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-sm transition flex items-center space-x-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg>
+                        <span>开始历史回扫比对</span>
                     </button>
                 </div>
             </form>

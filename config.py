@@ -20,7 +20,7 @@ else:
     REPO_ROOT = Path(__file__).resolve().parent
 
 # ------------------------------------------------------------------ 统一版本
-APP_VERSION = "v0.2.0"
+APP_VERSION = "v0.3.0"
 
 # ------------------------------------------------------------------ .env 解析
 def load_env_file(path=None):
@@ -379,6 +379,7 @@ VPS_HOST = get("VPS_HOST", "217.142.149.2").strip()
 VPS_PORT = get("VPS_PORT", "22").strip()
 VPS_USER = get("VPS_USER", "root").strip()
 VPS_PATH = get("VPS_PATH", "/opt/1panel/www/tender_site/").strip()
+VPS_KEY_PATH = get("VPS_KEY_PATH", "").strip()
 MANAGER_PORT = int(get("MANAGER_PORT", "8089"))
 KEEP_DAYS = int(get("KEEP_DAYS", "0"))  # >0 时保留最近 N 天采集原始响应，0 表示全部保留
 

@@ -65,6 +65,16 @@ def main():
 
     print(f"[VPS] 准备同步 {len(items)} 个文件/目录 -> {remote_target} (端口: {port})")
     cmd = ["scp", "-P", port, "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", "-o", "StrictHostKeyChecking=no"]
+    key_path = getattr(config, "VPS_KEY_PATH", "").strip()
+    if not key_path:
+        local_key1 = Path(config.ROOT_DIR) / "data" / "id_rsa"
+        local_key2 = Path(config.ROOT_DIR) / "data" / "vps_key.pem"
+        if local_key1.is_file():
+            key_path = str(local_key1)
+        elif local_key2.is_file():
+            key_path = str(local_key2)
+    if key_path and Path(key_path).expanduser().is_file():
+        cmd.extend(["-i", str(Path(key_path).expanduser().resolve())])
     if sys.platform != "win32":
         cmd.extend(["-o", "ControlMaster=auto", "-o", "ControlPath=/tmp/ssh-%r@%h:%p", "-o", "ControlPersist=10m"])
     cmd.extend(["-r"] + items + [remote_target])

@@ -18,7 +18,7 @@ try {
         Expand-Archive -Path $zipPath -DestinationPath $targetDir -Force
         Remove-Item $zipPath -Force
         Write-Host "========================================" -ForegroundColor Green
-        Write-Host "   v0.2.0 脚本与控制台已成功更新就绪！   " -ForegroundColor Green
+        Write-Host "   v0.3.0 脚本与控制台已成功更新就绪！   " -ForegroundColor Green
         Write-Host "========================================" -ForegroundColor Green
     }
 } catch {

@@ -184,11 +184,11 @@ def get_git_info():
         )
         if res.returncode == 0:
             commit = res.stdout.strip()
-            app_ver = getattr(config, "APP_VERSION", "v0.2.0")
+            app_ver = getattr(config, "APP_VERSION", "v0.3.0")
             return {"commit": commit, "version": f"{app_ver} (#{commit})"}
     except Exception:
         pass
-    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.2.0")}
+    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.3.0")}
 
 def get_scheduled_task_status():
     """检测 Windows 计划任务 ZtbCollector_Sync 的运行/就绪/启用状态"""
@@ -433,6 +433,10 @@ def read_config_env():
         "VPS_PORT": getattr(config, "VPS_PORT", "22"),
         "VPS_USER": getattr(config, "VPS_USER", "root"),
         "VPS_PATH": getattr(config, "VPS_PATH", "/opt/1panel/www/tender_site/"),
+        "VPS_KEY_PATH": getattr(config, "VPS_KEY_PATH", ""),
+        "SYSTEM_DEFAULT_KEY": str(Path.home() / ".ssh" / "id_rsa"),
+        "SYSTEM_SSH_DIR": str(Path.home() / ".ssh"),
+        "SYSTEM_KEY_EXISTS": (Path.home() / ".ssh" / "id_rsa").is_file() or (Path.home() / ".ssh" / "id_ed25519").is_file(),
         "SITE_BASE_URL": getattr(config, "SITE_BASE_URL", "https://ztb.139771.xyz"),
         "WECHAT_APPID": getattr(config, "WECHAT_APPID", ""),
         "WECHAT_APPSECRET": getattr(config, "WECHAT_APPSECRET", ""),
@@ -453,6 +457,9 @@ def read_config_env():
         "MONITOR_INTERVAL_MINUTES": getattr(config, "MONITOR_INTERVAL_MINUTES", 10),
         "ENABLE_YESTERDAY_FINAL": "true" if getattr(config, "ENABLE_YESTERDAY_FINAL", True) else "false",
         "YESTERDAY_FINAL_TIME": getattr(config, "YESTERDAY_FINAL_TIME", "00:10"),
+        "BACKSCAN_ENABLED": "true" if getattr(config, "BACKSCAN_ENABLED", True) else "false",
+        "BACKSCAN_DAYS": getattr(config, "BACKSCAN_DAYS", 30),
+        "BACKSCAN_MIN_DELAY": getattr(config, "BACKSCAN_MIN_DELAY", 2),
     }
     return res
 
@@ -485,6 +492,7 @@ def save_config_env(data):
         "VPS_PORT": data.get("VPS_PORT", "22").strip(),
         "VPS_USER": data.get("VPS_USER", "root").strip(),
         "VPS_PATH": data.get("VPS_PATH", "").strip(),
+        "VPS_KEY_PATH": data.get("VPS_KEY_PATH", "").strip(),
         "SITE_BASE_URL": data.get("SITE_BASE_URL", "").strip(),
         "WECHAT_APPID": data.get("WECHAT_APPID", "").strip(),
         "WECHAT_APPSECRET": data.get("WECHAT_APPSECRET", "").strip(),
@@ -498,13 +506,16 @@ def save_config_env(data):
         "PUSH_NOTIFY_ERROR": data.get("PUSH_NOTIFY_ERROR", "true").strip().lower(),
         "PUSH_BATCH_HOURS": data.get("PUSH_BATCH_HOURS", "08:00, 17:30").strip(),
         "PUSH_CONDITIONAL_INCREMENTAL": data.get("PUSH_CONDITIONAL_INCREMENTAL", "true").strip().lower(),
-        "PUSH_TRIGGER_RULES": data.get("PUSH_TRIGGER_RULES", "focus,complete,error").strip(),
+        "PUSH_TRIGGER_RULES": ",".join(data.get("PUSH_TRIGGER_RULES")) if isinstance(data.get("PUSH_TRIGGER_RULES"), list) else str(data.get("PUSH_TRIGGER_RULES", "focus,complete,error")).strip(),
         "PUSH_LARGE_AMOUNT": str(data.get("PUSH_LARGE_AMOUNT", "5000")).strip(),
         "MONITOR_START_TIME": data.get("MONITOR_START_TIME", "08:00").strip(),
         "MONITOR_END_TIME": data.get("MONITOR_END_TIME", "20:00").strip(),
         "MONITOR_INTERVAL_MINUTES": str(data.get("MONITOR_INTERVAL_MINUTES", "10")).strip(),
         "ENABLE_YESTERDAY_FINAL": data.get("ENABLE_YESTERDAY_FINAL", "true").strip().lower(),
         "YESTERDAY_FINAL_TIME": data.get("YESTERDAY_FINAL_TIME", "00:10").strip(),
+        "BACKSCAN_ENABLED": "1" if str(data.get("BACKSCAN_ENABLED", "true")).strip().lower() in ("true", "1") else "0",
+        "BACKSCAN_DAYS": str(data.get("BACKSCAN_DAYS", "30")).strip(),
+        "BACKSCAN_MIN_DELAY": str(data.get("BACKSCAN_MIN_DELAY", "2")).strip(),
     }
 
     for line in lines:
@@ -610,6 +621,16 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
 
         if path == "/api/config":
             self.send_json(read_config_env())
+            return
+
+        if path == "/api/baseline_status":
+            try:
+                from scripts.scan_record_db import get_scan_record_db
+                db = get_scan_record_db()
+                stats = db.get_baseline_stats()
+                self.send_json({"ok": True, "stats": stats})
+            except Exception as e:
+                self.send_json({"ok": False, "error": str(e), "stats": {}})
             return
 
         if path == "/api/runs":
@@ -798,6 +819,20 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             self.send_json({"ok": ok, "msg": msg})
             return
 
+        if path == "/api/run_backscan":
+            days = int(post_data.get("days", getattr(config, "BACKSCAN_DAYS", 30)))
+            min_delay = int(post_data.get("min_delay", getattr(config, "BACKSCAN_MIN_DELAY", 2)))
+            cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "backscan_delayed.py"), "--days", str(days), "--min-delay", str(min_delay)]
+            ok, msg = PROC_MGR.start_task(f"历史公告回扫比对 (排查过去 {days} 天滞后公开公告)", cmd)
+            self.send_json({"ok": ok, "msg": msg})
+            return
+
+        if path == "/api/rebuild_baseline":
+            cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "scan_record_db.py"), "--rebuild-baseline"]
+            ok, msg = PROC_MGR.start_task("同步与校准底边扫描数据库基线", cmd)
+            self.send_json({"ok": ok, "msg": msg})
+            return
+
         if path == "/api/delete_date":
             # 支持批量删除：可接收 dates 列表、或 date 单一日期、或 start_date / end_date 区间
             target_dates = []
@@ -953,6 +988,39 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "upload_vps.py")]
             ok, msg = PROC_MGR.start_task("同步上传静态文件至 VPS", cmd)
             self.send_json({"ok": ok, "msg": msg})
+            return
+
+        if path == "/api/test_ssh":
+            host = post_data.get("host", "").strip() or getattr(config, "VPS_HOST", "217.142.149.2")
+            port = str(post_data.get("port", "").strip() or getattr(config, "VPS_PORT", "22"))
+            user = post_data.get("user", "").strip() or getattr(config, "VPS_USER", "root")
+            key_path = post_data.get("key_path", "").strip() or getattr(config, "VPS_KEY_PATH", "")
+
+            ssh_cmd = ["ssh", "-p", port, "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-o", "StrictHostKeyChecking=no"]
+            if not key_path:
+                local_key1 = ROOT_DIR / "data" / "id_rsa"
+                local_key2 = ROOT_DIR / "data" / "vps_key.pem"
+                if local_key1.is_file():
+                    key_path = str(local_key1)
+                elif local_key2.is_file():
+                    key_path = str(local_key2)
+            if key_path and Path(key_path).expanduser().is_file():
+                ssh_cmd.extend(["-i", str(Path(key_path).expanduser().resolve())])
+            ssh_cmd.extend([f"{user}@{host}", "echo SSH_TEST_OK"])
+
+            try:
+                res = subprocess.run(ssh_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=12)
+                if res.returncode == 0 and "SSH_TEST_OK" in res.stdout:
+                    self.send_json({"ok": True, "msg": f"SSH 连通成功！已成功登录 {user}@{host}:{port}。"})
+                else:
+                    err_msg = res.stderr.strip() or res.stdout.strip() or "登录鉴权失败"
+                    def_key = str(Path.home() / ".ssh" / "id_rsa")
+                    self.send_json({
+                        "ok": False,
+                        "msg": f"SSH 连接失败: {err_msg}。\n\n【排查建议】\n1. 请检查私钥是否放置于：{def_key}\n2. 或在下方【指定私钥路径】填入私钥文件的绝对路径\n3. 确保云端服务器 ~/.ssh/authorized_keys 中已添加对应公钥。"
+                    })
+            except Exception as e:
+                self.send_json({"ok": False, "msg": f"测试执行异常: {str(e)}"})
             return
 
         if path == "/api/test_wechat":
