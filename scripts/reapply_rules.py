@@ -23,6 +23,7 @@ if str(REPO_ROOT) not in sys.path:
 
 import config
 from scripts.collect import normalize
+from scripts.overtime_helper import annotate_item_overtime
 
 def _reapply_item(item, day):
     """重新应用规则：区分崇左阳光采购与普通公共资源交易中心公告。"""
@@ -81,9 +82,13 @@ def _reapply_item(item, day):
         if type_hits: focus_tags.append("重点类型")
         if kw_hits: focus_tags.append("重点关键词")
         item["focus_tags"] = focus_tags
+        annotate_item_overtime(item)
         return item
     else:
-        return normalize(item, day)
+        res = normalize(item, day)
+        if res:
+            annotate_item_overtime(res)
+        return res
 
 
 def reapply_for_date(day: str) -> dict:

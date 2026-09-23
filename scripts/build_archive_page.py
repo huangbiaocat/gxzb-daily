@@ -17,6 +17,10 @@ from pathlib import Path
 _REPO = Path(__file__).resolve().parent.parent
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
+try:
+    from scripts.overtime_helper import is_overtime_publication
+except ImportError:
+    from overtime_helper import is_overtime_publication
 import config  # noqa: E402
 
 # 归档首页样板（视觉体系来源）与数据源、产物目录全部走配置，无硬编码路径
@@ -60,9 +64,16 @@ def rebuild_archive_json():
                         finalized_at = fin_data.get("finalized_at", "")
                     except Exception:
                         pass
+                focus_count = sum(1 for r in rows if r.get("is_focus"))
+                overtime_count = sum(
+                    1 for r in rows
+                    if r.get("is_overtime") or (r.get("is_overtime") is None and is_overtime_publication(r.get("pub_time", ""))[0])
+                )
                 entry = {
                     "date": day,
                     "file": f"{day}.html",
+                    "focus_count": focus_count,
+                    "overtime_count": overtime_count,
                     "total": len(rows),
                     "cities": len({r.get("areaname", "") for r in rows if r.get("areaname")}),
                     "cat_count": len(groups),
@@ -79,6 +90,8 @@ def rebuild_archive_json():
     archive["days"] = days_list
     archive["day_count"] = len(days_list)
     archive["total_all"] = sum(int(d.get("total") or 0) for d in days_list)
+    archive["total_focus"] = sum(int(d.get("focus_count") or 0) for d in days_list)
+    archive["total_overtime"] = sum(int(d.get("overtime_count") or 0) for d in days_list)
     archive["generated"] = config.now_stamp()
     ARCHIVE.parent.mkdir(parents=True, exist_ok=True)
     ARCHIVE.write_text(json.dumps(archive, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -213,6 +226,107 @@ extra_style = """
             font-weight: 700;
         }
 
+        /* ===== 重点提醒与加班发布胶囊样式 ===== */
+        .chip-alert {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 3px 9px;
+            border-radius: 9999px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            transition: all 0.15s ease;
+        }
+        .chip-alert.chip-zero {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .chip-nonwork {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #fed7aa;
+            padding: 3px 9px;
+            border-radius: 9999px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            transition: all 0.15s ease;
+        }
+        .chip-nonwork.chip-zero {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .cal-pill-group {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .cal-pill-alert {
+            font-size: 0.65rem;
+            padding: 1px 5px;
+            background: #dc2626;
+            color: white;
+            border-radius: 4px;
+            font-weight: 700;
+            box-shadow: 0 1px 2px rgba(220, 38, 38, 0.3);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        .cal-pill-nonwork {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff7ed;
+            color: #c2410c;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: 4px;
+            border: 1px solid #fed7aa;
+            white-space: nowrap;
+        }
+
+        .stat-pill.nonwork-pill {
+            background: #fff7ed;
+            border-color: #fed7aa;
+            color: #c2410c;
+        }
+        .stat-pill.nonwork-pill strong {
+            color: #ea580c;
+        }
+
+        .cal-meta-focus {
+            color: #dc2626;
+            font-weight: 700;
+        }
+        .cal-meta-overtime {
+            color: #c2410c;
+            font-weight: 700;
+        }
+        .cal-meta-zero {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
         .history-row-today {
             border-left: 4px solid var(--primary) !important;
             background: linear-gradient(to right, rgba(240, 249, 255, 0.85), var(--card-bg)) !important;
@@ -236,7 +350,9 @@ extra_style = """
             }
             .item-col-metrics {
                 width: 100%;
-                justify-content: space-between;
+                justify-content: flex-start;
+                gap: 8px;
+                flex-wrap: wrap;
             }
         }
     </style>
@@ -290,6 +406,8 @@ for ym in months:
     y, m = int(ym[:4]), int(ym[5:7])
     m_days = [d for d in days if d["date"][:7] == ym]
     m_total = sum(d["total"] for d in m_days)
+    m_focus = sum(d.get("focus_count", 0) for d in m_days)
+    m_overtime = sum(d.get("overtime_count", 0) for d in m_days)
     cells = []
     lead = datetime.date(y, m, 1).weekday()
     cells.extend(['<div class="cal-cell cal-cell-empty"></div>'] * lead)
@@ -307,19 +425,35 @@ for ym in months:
         if ds in day_map:
             d = day_map[ds]
             dens = density_of(d["total"])
+            focus_cnt = d.get("focus_count", 0)
+            overtime_cnt = d.get("overtime_count", 0)
+
+            pills = []
+            if focus_cnt > 0:
+                pills.append(f'<span class="cal-pill-alert" title="当日重点信息 {focus_cnt} 条">⚡{focus_cnt}</span>')
+            if overtime_cnt > 0:
+                pills.append(f'<span class="cal-pill-nonwork" title="当日加班发布 {overtime_cnt} 条">🌙{overtime_cnt}</span>')
+            if today_pill:
+                pills.append(today_pill)
+            pill_html = "".join(pills)
+
+            f_cls = "cal-meta-focus" if focus_cnt > 0 else "cal-meta-zero"
+            ot_cls = "cal-meta-overtime" if overtime_cnt > 0 else "cal-meta-zero"
+
             cells.append(
-                '<a class="cal-cell cal-cell-active density-{dens}{today_cls}" data-count="{cnt}" data-cities="{cities}" '
-                'data-date="{ds}" href="./{ds}.html">\n'
+                '<a class="cal-cell cal-cell-active density-{dens}{today_cls}" data-count="{cnt}" data-cities="{cities}" data-focus="{focus_cnt}" data-overtime="{overtime_cnt}" data-date="{ds}" href="./{ds}.html" title="{ds}：收录 {cnt} 条（重点信息 {focus_cnt} 条，加班发布 {overtime_cnt} 条）">\n'
                 '<div class="cal-cell-header">\n'
                 '<span class="cal-date-num">{day}</span>\n'
-                '<div class="cal-pill-group">{today_pill}</div>\n'
+                '<div class="cal-pill-group">{pill_html}</div>\n'
                 '</div>\n'
                 '<div class="cal-cell-body">\n'
                 '<span class="cal-count-badge">{cnt}<span class="unit">条</span></span>\n'
-                '<span class="cal-meta-line">{cities} 个地市 · {cats} 个类别</span>\n'
+                '<span class="cal-meta-line"><span class="{f_cls}">重点 {focus_cnt}</span> · <span class="{ot_cls}">加班 {overtime_cnt}</span></span>\n'
                 '</div>\n'
                 '</a>'.format(dens=dens, cnt=comma(d["total"]), cities=d.get("cities", 0),
-                              cats=d.get("cat_count", 0), ds=ds, day=day, today_cls=today_cls, today_pill=today_pill)
+                              focus_cnt=focus_cnt, overtime_cnt=overtime_cnt,
+                              f_cls=f_cls, ot_cls=ot_cls,
+                              ds=ds, day=day, today_cls=today_cls, pill_html=pill_html)
             )
         else:
             cells.append(
@@ -348,7 +482,8 @@ for ym in months:
         '</div>\n'
         '<div class="month-stats-group">\n'
         '<span class="stat-pill"><span class="label">本月收录:</span> <strong>{mtotal}</strong> 条</span>\n'
-        '<span class="stat-pill"><span class="label">覆盖地市:</span> <strong>{mcities}</strong> 个</span>\n'
+        '<span class="stat-pill alert-pill"><span class="label">重点信息:</span> <strong>{mfocus}</strong> 条</span>\n'
+        '<span class="stat-pill nonwork-pill"><span class="label">加班发布:</span> <strong>{movertime}</strong> 条</span>\n'
         '</div>\n'
         '</div>\n'
         '<div class="cal-weekdays-row">\n'
@@ -357,7 +492,7 @@ for ym in months:
         '<div class="cal-grid-body">\n{cells}\n</div>\n'
         '</div>'.format(
             ym=ym, y=y, m=m, mdays=len(m_days), mtotal=comma(m_total),
-            mcities=max((d.get("cities", 0) for d in m_days), default=0),
+            mfocus=comma(m_focus), movertime=comma(m_overtime),
             cells="\n".join(cells)
         )
     )
@@ -383,8 +518,14 @@ for d in days:
     else:
         today_chip = ''
     row_today_cls = " history-row-today" if is_today else ""
+
+    focus_cnt = d.get("focus_count", 0)
+    overtime_cnt = d.get("overtime_count", 0)
+    f_chip_cls = "chip-alert" if focus_cnt > 0 else "chip-alert chip-zero"
+    ot_chip_cls = "chip-nonwork" if overtime_cnt > 0 else "chip-nonwork chip-zero"
+
     rows.append(
-        '<a class="history-row-item{row_today_cls}" data-cities="{cities}" data-count="{cnt}" data-date="{ds}" data-month="{m}" data-year="{y}" href="./{ds}.html">\n'
+        '<a class="history-row-item{row_today_cls}" data-cities="{cities}" data-count="{cnt}" data-focus="{focus_cnt}" data-overtime="{overtime_cnt}" data-date="{ds}" data-month="{m}" data-year="{y}" href="./{ds}.html">\n'
         '<div class="item-col-date">\n'
         '<div class="date-calendar-box">\n'
         '<span class="dc-month">{m:02d}月</span>\n'
@@ -403,8 +544,15 @@ for d in days:
         '</div>\n'
         '</div>\n'
         '<div class="item-col-metrics">\n'
+        '<span class="{f_chip_cls}" title="当日重点信息 {focus_cnt} 条">\n'
+        '<svg fill="currentColor" height="12" viewBox="0 0 24 24" width="12"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>\n'
+        '<span>重点 {focus_cnt}</span>\n'
+        '</span>\n'
+        '<span class="{ot_chip_cls}" title="当日加班发布 {overtime_cnt} 条">\n'
+        '<svg fill="none" height="12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="12"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>\n'
+        '<span>加班 {overtime_cnt}</span>\n'
+        '</span>\n'
         '<span class="metric-chip">{cities} 个地市</span>\n'
-        '<span class="metric-chip">{cats} 个类别</span>\n'
         '<div class="metrics-visual">\n'
         '<div class="num-wrapper">\n'
         '<span class="count-value">{cnt}</span>\n'
@@ -417,7 +565,9 @@ for d in days:
         '</div>\n'
         '</a>'.format(
             ds=ds, y=dt.year, m=dt.month, day=dt.day, wk=WEEK[dt.weekday()],
-            cnt=comma(d["total"]), cities=d.get("cities", 0), cats=d.get("cat_count", 0),
+            focus_cnt=focus_cnt, overtime_cnt=overtime_cnt,
+            f_chip_cls=f_chip_cls, ot_chip_cls=ot_chip_cls,
+            cnt=comma(d["total"]), cities=d.get("cities", 0),
             tags="\n".join(tags),
             today_chip=today_chip,
             row_today_cls=row_today_cls
@@ -525,7 +675,7 @@ PAGE = """<!DOCTYPE html>
 <!-- Archive summary hint -->
 <section class="filter-section" style="padding-top: 0; border: none; background: transparent; box-shadow: none;">
 <div class="filter-left">
-<span class="archive-hint" id="archiveHint">共 <strong>{day_count}</strong> 个简报日 · 累计 <strong>{total_all}</strong> 条公告 · 最近更新 {latest_date}</span>
+<span class="archive-hint" id="archiveHint">共 <strong>{day_count}</strong> 个简报日 · 累计 <strong>{total_all}</strong> 条公告 · 重点信息 <strong>{total_focus}</strong> 条 · 加班发布 <strong>{total_overtime}</strong> 条 · 最近更新 {latest_date}</span>
 </div>
 </section>
 <!-- Empty search state -->
@@ -638,9 +788,11 @@ _FIELDS = {
     "base_script": base_script,
     "site": html.escape(arc.get("site", "广西全区招投标数据监控中心")),
     "subtitle": html.escape(arc.get("subtitle", "广西公共资源交易 · 工程建设类公告每日归档")),
-    "app_version": getattr(config, "APP_VERSION", "v0.1.6"),
+    "app_version": getattr(config, "APP_VERSION", "v0.1.7"),
     "day_count": comma(day_count),
     "total_all": comma(total_all),
+    "total_focus": comma(arc.get("total_focus", sum(d.get("focus_count", 0) for d in days))),
+    "total_overtime": comma(arc.get("total_overtime", sum(d.get("overtime_count", 0) for d in days))),
     "latest_date": latest_date,
     "latest_hhmm": latest_hhmm or "",
     "latest_updated": latest_updated or latest_date,

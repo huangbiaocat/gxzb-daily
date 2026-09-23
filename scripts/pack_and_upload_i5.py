@@ -22,6 +22,7 @@ FILES_TO_PACK = [
     "scripts/build_archive_page.py",
     "scripts/build_exe.py",
     "scripts/build_exe.bat",
+    "scripts/overtime_helper.py",
     "scripts/diff_missing.py",
     "scripts/fetcher.py",
     "scripts/fetch_detail.py",

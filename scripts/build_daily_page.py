@@ -35,6 +35,7 @@ if str(_REPO) not in sys.path:
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import config      # noqa: E402
 import logstore    # noqa: E402
+from overtime_helper import annotate_item_overtime  # noqa: E402
 
 
 def parse_args(argv=None):
@@ -202,6 +203,8 @@ for it in items:
         it["focus_reason"] = []
         it["focus_tags"] = []
 
+    annotate_item_overtime(it)
+
 # 回写清洗更新后的 items 到当日 JSON 文件，彻底消除历史脏数据残留
 if DATA.exists():
     try:
@@ -310,7 +313,7 @@ DAILY_CSS = """
         .select-input:focus { background-color: #ffffff; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12); }
         .filter-row.bottom { justify-content: space-between; border-top: 1px solid var(--border-light); padding-top: 12px; }
         .filter-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .btn-focus, .btn-reset {
+        .btn-focus, .btn-overtime, .btn-reset {
             display: inline-flex;
             align-items: center;
             gap: 6px;
@@ -329,6 +332,15 @@ DAILY_CSS = """
             border-color: transparent;
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
         }
+        .btn-overtime { color: #c2410c; background: #fff7ed; border: 1px solid #fed7aa; }
+        .btn-overtime:hover { background: #ffedd5; }
+        .btn-overtime.active {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
+        }
+        .btn-overtime .overtime-count { font-weight: 800; }
         .btn-reset { color: var(--text-secondary); background: #f1f5f9; border: 1px solid transparent; }
         .btn-reset:hover { background: #e2e8f0; color: var(--text-primary); }
         .btn-focus .focus-count { font-weight: 800; }
@@ -368,6 +380,28 @@ DAILY_CSS = """
             background: #eff6ff;
             color: #1d4ed8;
             border: 1px solid #bfdbfe;
+        }
+        .overtime-chip {
+            flex-shrink: 0;
+            font-size: 0.7rem;
+            font-weight: 700;
+            line-height: 1.6;
+            padding: 1px 8px;
+            border-radius: 9999px;
+            margin-top: 1px;
+            letter-spacing: 0.02em;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            background: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #fed7aa;
+            cursor: default;
+            transition: all 0.15s ease;
+        }
+        .overtime-chip:hover {
+            background: #ffedd5;
+            border-color: #fb923c;
         }
 
         @media (max-width: 640px) {
@@ -639,6 +673,10 @@ __DAILY_CSS__
                     <svg fill="none" height="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="13"><path d="M12 3.5 14.6 9.2l6.4.8-4.7 4.3 1.2 6.2L12 17.6 6.5 20.5l1.2-6.2L3 10l6.4-.8z"></path></svg>
                     仅看重点预警 (<span class="focus-count" id="focusCount">0</span>)
                 </button>
+                <button class="btn-overtime" id="btnOvertimeOnly" type="button" title="点击仅筛选法定节假日、周末或下班后非工作时间发布的公告">
+                    <svg fill="none" height="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="13"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    仅看加班发布 (<span class="overtime-count" id="overtimeCount">0</span>)
+                </button>
                 <button class="btn-reset" id="btnReset" type="button">
                     <svg fill="none" height="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="13"><path d="M3 12a9 9 0 1 0 3-6.7"></path><polyline points="3 4 3 9 8 9"></polyline></svg>
                     重置所有筛选
@@ -672,6 +710,7 @@ __RAW_DATA__
 const IND_ORDER = ['水利工程', '交通工程', '铁路工程', '房建市政工程', '其他项目'];
 const STAGE_ORDER = ['招标计划', '招标公告', '澄清/答疑', '控制价公示', '中标公示', '中标公告'];
 const EXT_ICON = '<svg class="ext-icon" fill="none" height="12" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="12"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path></svg>';
+const OT_ICON = '<svg fill="none" height="11" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="11" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
 const CAT_ICON = {
     '水利工程': '<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" viewBox="0 0 24 24" width="20"><path d="M3 7.5c2-1.7 4-1.7 6 0s4 1.7 6 0 4-1.7 6 0"></path><path d="M3 12c2-1.7 4-1.7 6 0s4 1.7 6 0 4-1.7 6 0"></path><path d="M3 16.5c2-1.7 4-1.7 6 0s4 1.7 6 0 4-1.7 6 0"></path></svg>',
     '交通工程': '<svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="20"><path d="M4.5 20 8 4h8l3.5 16"></path><path d="M12 4v4"></path><path d="M12 12v3"></path><path d="M6.6 10h10.8"></path></svg>',
@@ -746,6 +785,7 @@ function build() {
                       + ' data-city="' + esc(d.areaname || '崇左市') + '"'
                       + ' data-stage="' + esc(d.stage) + '"'
                       + ' data-focus="' + (d.is_focus ? 1 : 0) + '"'
+                      + ' data-overtime="' + (d.is_overtime ? 1 : 0) + '"'
                       + ' href="' + esc(d.link) + '" rel="noopener noreferrer" target="_blank"'
                       + ' title="' + esc(d.title) + '">';
                 html += '<span class="city-tag">' + esc(shortArea(d.areaname || '崇左市')) + '</span>';
@@ -770,6 +810,10 @@ function build() {
                         html += '<span class="' + cls + '" title="' + esc(rtip) + '">' + esc(tname) + '</span>';
                     }
                 }
+                if (d.is_overtime) {
+                    var otTip = d.overtime_reason || '加班/非工作时间发布';
+                    html += '<span class="overtime-chip" title="' + esc(otTip) + '">' + OT_ICON + '加班发布</span>';
+                }
                 html += '<span class="notice-time">' + esc(String(d.pub_time || '').substring(5, 16)) + '</span>';
                 html += '</a>';
             });
@@ -792,6 +836,7 @@ function build() {
                       + ' data-city="' + esc(d.areaname || '崇左市') + '"'
                       + ' data-stage="' + esc(d.stage || '其他') + '"'
                       + ' data-focus="' + (d.is_focus ? 1 : 0) + '"'
+                      + ' data-overtime="' + (d.is_overtime ? 1 : 0) + '"'
                       + ' href="' + esc(d.link) + '" rel="noopener noreferrer" target="_blank"'
                       + ' title="' + esc(d.title) + '">';
                 html += '<span class="city-tag">' + esc(shortArea(d.areaname || '崇左市')) + '</span>';
@@ -813,6 +858,10 @@ function build() {
                         var rtip = Array.isArray(d.focus_reason) ? d.focus_reason.join("; ") : (d.focus_reason || tname);
                         html += '<span class="' + cls + '" title="' + esc(rtip) + '">' + esc(tname) + '</span>';
                     }
+                }
+                if (d.is_overtime) {
+                    var otTip = d.overtime_reason || '加班/非工作时间发布';
+                    html += '<span class="overtime-chip" title="' + esc(otTip) + '">' + OT_ICON + '加班发布</span>';
                 }
                 html += '<span class="notice-time">' + esc(String(d.pub_time || '').substring(5, 16)) + '</span>';
                 html += '</a>';
@@ -854,6 +903,7 @@ function apply() {
         }
         if (ok && stage && it.getAttribute('data-stage') !== stage) { ok = false; }
         if (ok && focusOnly && it.getAttribute('data-focus') !== '1') { ok = false; }
+        if (ok && overtimeOnly && it.getAttribute('data-overtime') !== '1') { ok = false; }
         it.hidden = !ok;
         if (ok) { shown++; }
     });
@@ -904,6 +954,16 @@ btnFocus.addEventListener('click', function () {
     apply();
 });
 
+let overtimeOnly = false;
+const btnOvertime = document.getElementById('btnOvertimeOnly');
+if (btnOvertime) {
+    btnOvertime.addEventListener('click', function () {
+        overtimeOnly = !overtimeOnly;
+        this.classList.toggle('active', overtimeOnly);
+        apply();
+    });
+}
+
 document.getElementById('btnReset').addEventListener('click', function () {
     searchInput.value = '';
     industryFilter.value = '';
@@ -912,6 +972,8 @@ document.getElementById('btnReset').addEventListener('click', function () {
     stageFilter.value = '';
     focusOnly = false;
     btnFocus.classList.remove('active');
+    overtimeOnly = false;
+    if (btnOvertime) btnOvertime.classList.remove('active');
     apply();
 });
 
@@ -933,6 +995,8 @@ document.querySelectorAll('.stat-box.clickable').forEach(function(box) {
 });
 
 document.getElementById('focusCount').textContent = RAW_DATA.filter(function (d) { return d.is_focus; }).length;
+const otCountEl = document.getElementById('overtimeCount');
+if (otCountEl) otCountEl.textContent = RAW_DATA.filter(function (d) { return d.is_overtime; }).length;
 
 build();
 apply();
@@ -948,7 +1012,7 @@ html = html.replace("__DAILY_CSS__", DAILY_CSS.strip())
 html = html.replace("__LATEST_PUB__", latest_pub)
 html = html.replace("__SCAN_TIME__", scan_time)
 html = html.replace("__LATEST__", latest_pub)
-html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.1.6"))
+html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.1.7"))
 html = html.replace("__DATE__", DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))
 html = html.replace("__NEXT_URL__", neighbor_url(1))
@@ -962,6 +1026,9 @@ for sid, val in stat_map.items():
 
 html, n = re.subn(r'(id="focusCount">)0(<)', lambda m: m.group(1) + str(focus_n) + m.group(2), html)
 assert n == 1, "focusCount"
+overtime_n = sum(1 for it in items if it.get("is_overtime"))
+html, n = re.subn(r'(id="overtimeCount">)0(<)', lambda m: m.group(1) + str(overtime_n) + m.group(2), html)
+assert n == 1, "overtimeCount"
 html = html.replace("当前筛选匹配 <strong>0</strong>", "当前筛选匹配 <strong>%d</strong>" % total_n, 1)
 
 is_final_page = bool(getattr(ARGS, "final", False) or (config.STATE_DIR / ("final-%s.json" % DAY)).exists())
@@ -1012,7 +1079,7 @@ check("唯一识别码", len({r["infoid"] for r in raw_rows}) == total_n, "infoi
 check("官方链接", all(("projectDetails.html?infoid=" in r["link"] or "cz.gxygcg.com" in r["link"]) for r in raw_rows))
 check("无自造编号", ("code-tag" not in out) and ("data-code" not in out) and ("GX%s" % DAY_KEY) not in out)
 check("指标卡", static.count('class="sb-label"') == 6, json.dumps(stat_map, ensure_ascii=False))
-check("筛选控件", static.count('class="select-input"') == 4 and "仅看重点预警" in static and "重置所有筛选" in static)
+check("筛选控件", static.count('class="select-input"') == 4 and "仅看重点预警" in static and "仅看加班发布" in static and "重置所有筛选" in static)
 check("静态 div 配平", static.count("<div") == static.count("</div>"))
 check("外部依赖", not any(k in out.lower() for k in ("tailwind", "all.min.css", "saved_resource", "file://")))
 check("运行日志", log_rows == total_n, "%s 行=%d 待重取=%d" % (LOG, log_rows, len(log_pending)))

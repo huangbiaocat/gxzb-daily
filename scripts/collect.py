@@ -51,6 +51,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import config      # noqa: E402
 import fetcher     # noqa: E402
 import logstore    # noqa: E402
+from overtime_helper import annotate_item_overtime  # noqa: E402
 
 JSON_HEADERS = {
     "Content-Type": "application/json;charset=UTF-8",
@@ -145,6 +146,8 @@ def normalize(rec, day=None):
         "owner": "",
         "source": "广西公资",
     }
+    annotate_item_overtime(ret)
+    return ret
 
 
 # ------------------------------------------------------------------ 接口
