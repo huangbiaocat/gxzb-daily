@@ -55,6 +55,16 @@ import argparse
 import json
 import subprocess
 import sys
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent
@@ -97,11 +107,17 @@ def run(args, allow_codes=(0,)):
                 sys.argv = old_argv
             return ret_code, ret_code in allow_codes
 
-    proc = subprocess.run([str(a) for a in args], capture_output=True, text=True, encoding="utf-8", errors="replace")
-    if proc.stdout:
-        print(proc.stdout.rstrip(), flush=True)
+   proc = subprocess.run([str(a) for a in args], capture_output=True, text=True, encoding="utf-8", errors="replace")
+   if proc.stdout:
+        try:
+            print(proc.stdout.rstrip(), flush=True)
+        except UnicodeEncodeError:
+            print(proc.stdout.rstrip().encode("gbk", errors="replace").decode("gbk"), flush=True)
     if proc.stderr:
-        print(proc.stderr.rstrip(), file=sys.stderr, flush=True)
+        try:
+            print(proc.stderr.rstrip(), file=sys.stderr, flush=True)
+        except UnicodeEncodeError:
+            print(proc.stderr.rstrip().encode("gbk", errors="replace").decode("gbk"), file=sys.stderr, flush=True)
     return proc.returncode, proc.returncode in allow_codes
 
 
