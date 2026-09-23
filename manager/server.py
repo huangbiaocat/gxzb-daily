@@ -186,8 +186,8 @@ def get_git_info():
             commit = res.stdout.strip()
             app_ver = getattr(config, "APP_VERSION", "v0.1.6")
             return {"commit": commit, "version": f"{app_ver} (#{commit})"}
-        except Exception:
-            pass
+    except Exception:
+        pass
     return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.1.6")}
 
 def get_scheduled_task_status():
