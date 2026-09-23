@@ -19,8 +19,13 @@ class TestFooterTime(unittest.TestCase):
         res = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
         self.assertEqual(res.returncode, 0, msg=f"build_daily_page failed: {res.stderr}")
 
+        data_file = config.DATA_DIR / "daily" / "2026-09-21.json"
+        items = json.loads(data_file.read_text(encoding="utf-8")) if data_file.exists() else []
+        valid_pubs = [it.get("pub_time") for it in items if it.get("pub_time")]
+        expected_pub = max(valid_pubs) if valid_pubs else "暂无"
+
         out_html = (config.SITE_DIR / "2026-09-21.html").read_text(encoding="utf-8")
-        self.assertIn("最新公告时间：2026-09-21 17:22:01", out_html)
+        self.assertIn(f"最新公告时间：{expected_pub}", out_html)
         self.assertIn("最近扫描时间：2026-09-23 16:00:00", out_html)
         self.assertIn("由自动化采集监控系统", out_html)
 
