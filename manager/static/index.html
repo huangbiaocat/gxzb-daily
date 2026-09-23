@@ -549,6 +549,17 @@
                                 <input id="cfg-vps-path" type="text" placeholder="/opt/1panel/www/tender_site/" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
                             </div>
                         </div>
+
+                        <!-- 认证机制提示 -->
+                        <div class="p-3 rounded-lg bg-indigo-50/70 border border-indigo-100 text-[11px] text-indigo-950 leading-relaxed flex items-start gap-2">
+                            <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                            <div>
+                                <strong>【为什么没有密码输入框？】</strong>
+                                后台同步为无人值守自动化任务，采用工业标准的 <strong>SSH 公钥免密认证</strong>（基于系统的 <code>~/.ssh/id_rsa.pub</code> 或 <code>id_ed25519.pub</code> 授权），不支持且严禁在网页中明文保存密码。当前本机与 I5 主机均已对云端服务器授权，无需输入密码即可直接同步。
+                            </div>
+                        </div>
                     </div>
 
                     <!-- 线上展示基准域名 -->
