@@ -43,6 +43,7 @@ def parse_args(argv=None):
     ap.add_argument("--refetch", action="store_true", help="只列出日志中待重取的条目")
     ap.add_argument("--no-vps", action="store_true", help="跳过自动同步上传 VPS")
     ap.add_argument("--final", action="store_true", help="标记为全天最终版封存页面")
+    ap.add_argument("--scan-time", default="", help="指定本次扫描/封版时间戳 (YYYY-MM-DD HH:MM:SS)")
     return ap.parse_args(argv)
 
 
@@ -235,7 +236,25 @@ focus_n = sum(1 for it in items if it.get("is_focus"))
 city_n = len(set(it.get("areaname", "") for it in items))
 cat_n = len(set(it.get("industry", "") for it in items))
 valid_times = [it.get("pub_time") for it in items if it.get("pub_time")]
-latest = max(valid_times) if valid_times else config.now_stamp()
+latest_pub = max(valid_times) if valid_times else "暂无"
+
+# ------------------------------------------------------------------ 状态与时间口径：
+# 1. 最新公告时间 (latest_pub)：当天已收录数据中最新的发布时间；若无数据则为“暂无”
+# 2. 最近扫描时间 (scan_time)：
+#    - 命令行 --scan-time 显式指定时优先；
+#    - 若为已终版封存的归档页面且未重新加 --final 跑，则保留封存时写入的 finalized_at；
+#    - 否则（日常定时扫描即使无新数据、或执行 --final 终版封装时），均记录当前时间 config.now_stamp()
+final_state_file = config.STATE_DIR / ("final-%s.json" % DAY)
+is_final_page = bool(getattr(ARGS, "final", False) or final_state_file.exists())
+scan_time = getattr(ARGS, "scan_time", "").strip()
+if not scan_time and is_final_page and not getattr(ARGS, "final", False) and final_state_file.exists():
+    try:
+        fin_info = json.loads(final_state_file.read_text(encoding="utf-8"))
+        scan_time = fin_info.get("finalized_at", "").strip()
+    except Exception:
+        pass
+if not scan_time:
+    scan_time = config.now_stamp()
 
 # ------------------------------------------------------------------ 2. 每日页定制样式（preview 未覆盖的组件）
 DAILY_CSS = """
@@ -642,7 +661,7 @@ __DAILY_CSS__
 
 <footer class="site-footer">
 <p>广西公共资源交易平台体系自动化监控系统 · 工程大类及业务环节多层级结构视图</p>
-<p style="margin-top: 6px;">更新时间：__LATEST__ · 由自动化采集监控系统 __APP_VERSION__ 生成</p>
+<p style="margin-top: 6px;">最新公告时间：__LATEST_PUB__ · 最近扫描时间：__SCAN_TIME__ · 由自动化采集监控系统 __APP_VERSION__ 生成</p>
 </footer>
 
 <script>
@@ -926,7 +945,9 @@ apply();
 html = PAGE
 html = html.replace("__PREVIEW_CSS__", PREVIEW_CSS)
 html = html.replace("__DAILY_CSS__", DAILY_CSS.strip())
-html = html.replace("__LATEST__", latest)
+html = html.replace("__LATEST_PUB__", latest_pub)
+html = html.replace("__SCAN_TIME__", scan_time)
+html = html.replace("__LATEST__", latest_pub)
 html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.1.6"))
 html = html.replace("__DATE__", DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))

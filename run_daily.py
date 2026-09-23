@@ -194,6 +194,8 @@ def refresh_archive(day):
     groups = {}
     for r in rows:
         groups[r.get("industry", "")] = groups.get(r.get("industry", ""), 0) + 1
+    valid_pubs = [r.get("pub_time") for r in rows if r.get("pub_time")]
+    latest_pub = max(valid_pubs) if valid_pubs else ""
     final_file = config.STATE_DIR / ("final-%s.json" % day)
     is_final_entry = final_file.exists()
     finalized_at = ""
@@ -206,7 +208,7 @@ def refresh_archive(day):
     entry = {"date": day, "file": "%s.html" % day, "total": len(rows),
              "cities": len({r.get("areaname", "") for r in rows}),
              "cat_count": len({r.get("industry", "") for r in rows}),
-             "groups": groups, "updated": config.now_stamp(),
+             "groups": groups, "latest_pub": latest_pub, "updated": config.now_stamp(),
              "is_final": is_final_entry, "finalized_at": finalized_at}
     days = [d for d in archive.get("days", []) if d.get("date") != day] + [entry]
     days.sort(key=lambda d: d.get("date", ""), reverse=True)

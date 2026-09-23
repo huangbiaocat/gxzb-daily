@@ -49,6 +49,8 @@ def rebuild_archive_json():
                 for r in rows:
                     ind = r.get("industry", "") or "其他"
                     groups[ind] = groups.get(ind, 0) + 1
+                valid_pubs = [r.get("pub_time") for r in rows if r.get("pub_time")]
+                latest_pub = max(valid_pubs) if valid_pubs else ""
                 final_file = config.STATE_DIR / f"final-{day}.json"
                 is_final = final_file.exists()
                 finalized_at = ""
@@ -65,6 +67,7 @@ def rebuild_archive_json():
                     "cities": len({r.get("areaname", "") for r in rows if r.get("areaname")}),
                     "cat_count": len(groups),
                     "groups": groups,
+                    "latest_pub": latest_pub,
                     "updated": config.now_stamp(),
                     "is_final": is_final,
                     "finalized_at": finalized_at
@@ -249,6 +252,12 @@ total_all = arc.get("total_all", sum(d["total"] for d in days))
 latest = days[0] if days else {"date": "", "total": 0, "cities": 0, "cat_count": 0, "updated": ""}
 latest_date = latest["date"]
 latest_updated = latest.get("updated", "")
+latest_pub_time = latest.get("latest_pub", "")
+footer_time_info = (
+    f"最新公告时间：{latest_pub_time} · 最近扫描时间：{latest_updated}"
+    if latest_pub_time
+    else f"最近扫描时间：{latest_updated}"
+)
 
 def extract_time_24h(updated_str: str) -> str:
     """提取 24 小时制时间 'HH:mm'（严格按时分解析，避免切片截成分秒）"""
@@ -540,7 +549,7 @@ PAGE = """<!DOCTYPE html>
 </main>
 <footer class="site-footer">
 <p>广西公共资源交易平台体系自动化监控系统 · 历史归档与数据追溯中心</p>
-<p style="margin-top: 6px;">更新时间：{latest_updated} · 由自动化采集监控系统 {app_version} 生成</p>
+<p style="margin-top: 6px;">{footer_time_info} · 由自动化采集监控系统 {app_version} 生成</p>
 </footer>
 {base_script}
 <script>
@@ -635,6 +644,7 @@ _FIELDS = {
     "latest_date": latest_date,
     "latest_hhmm": latest_hhmm or "",
     "latest_updated": latest_updated or latest_date,
+    "footer_time_info": footer_time_info,
     "cities_all": cities_all,
     "calendar_html": calendar_html,
     "list_html": list_html,

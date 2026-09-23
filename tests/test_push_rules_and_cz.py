@@ -167,7 +167,7 @@ class TestPushRulesAndCZ(unittest.TestCase):
         self.assertIn("🎯 精选重点标讯推荐：", summary["content_text"])
         self.assertTrue(len(summary["kw1"]) > 0)
         self.assertTrue(len(summary["kw2"]) > 0)
-        self.assertIn("重点预警标讯 5 条", summary["kw3"])
+        self.assertIn("重点预警 5 条", summary["kw3"])
 
         # 测试终版封存
         final_sum = build_rich_summary("2026-09-20", total_count=127, focus_count=5, is_final=True)
