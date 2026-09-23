@@ -418,8 +418,6 @@ for ym in months:
         today_cls = " cal-today" if is_today else ""
         if is_today:
             today_pill = '<span class="cal-pill-today">今日</span>'
-        elif ds in day_map and day_map[ds].get("is_final"):
-            today_pill = '<span class="cal-pill-final">终版</span>'
         else:
             today_pill = ''
         if ds in day_map:
@@ -513,8 +511,6 @@ for d in days:
     is_today = (ds == today_str)
     if is_today:
         today_chip = '<span class="status-chip chip-today">今日</span>'
-    elif d.get("is_final"):
-        today_chip = '<span class="status-chip chip-final">终版</span>'
     else:
         today_chip = ''
     row_today_cls = " history-row-today" if is_today else ""
