@@ -375,7 +375,7 @@ DAILY_CSS = """
         .select-input:focus { background-color: #ffffff; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12); }
         .filter-row.bottom { justify-content: space-between; border-top: 1px solid var(--border-light); padding-top: 12px; }
         .filter-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .btn-focus, .btn-overtime, .btn-reset {
+        .btn-focus, .btn-overtime, .btn-delayed, .btn-reset {
             display: inline-flex;
             align-items: center;
             gap: 6px;
@@ -383,6 +383,7 @@ DAILY_CSS = """
             border-radius: 9999px;
             font-size: 0.82rem;
             font-weight: 600;
+            font-family: inherit;
             cursor: pointer;
             transition: all 0.2s ease;
         }
@@ -1309,7 +1310,7 @@ html = html.replace("__DAILY_CSS__", DAILY_CSS.strip())
 html = html.replace("__LATEST_PUB__", latest_pub)
 html = html.replace("__SCAN_TIME__", scan_time)
 html = html.replace("__LATEST__", latest_pub)
-html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.3.0"))
+html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.3.1"))
 html = html.replace("__DATE__", DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))
 html = html.replace("__NEXT_URL__", neighbor_url(1))
