@@ -248,7 +248,23 @@ day_count = arc.get("day_count", len(days))
 total_all = arc.get("total_all", sum(d["total"] for d in days))
 latest = days[0] if days else {"date": "", "total": 0, "cities": 0, "cat_count": 0, "updated": ""}
 latest_date = latest["date"]
-latest_hhmm = latest.get("updated", "")[-5:]
+latest_updated = latest.get("updated", "")
+
+def extract_time_24h(updated_str: str) -> str:
+    """提取 24 小时制时间 'HH:mm'（严格按时分解析，避免切片截成分秒）"""
+    if not updated_str:
+        return ""
+    parts = updated_str.strip().split()
+    time_part = parts[1] if len(parts) > 1 else parts[0]
+    t_tokens = time_part.split(":")
+    if len(t_tokens) >= 2:
+        try:
+            return f"{int(t_tokens[0]):02d}:{int(t_tokens[1]):02d}"
+        except ValueError:
+            return f"{t_tokens[0]}:{t_tokens[1]}"
+    return time_part
+
+latest_hhmm = extract_time_24h(latest_updated)
 last_month = latest_date[:7] if latest_date else ""
 cities_all = max((d.get("cities", 0) for d in days), default=0)
 
@@ -459,7 +475,7 @@ PAGE = """<!DOCTYPE html>
 </div>
 <div class="stat-box">
 <div class="sb-label">最近更新日期</div>
-<div class="sb-value" style="font-size: 1.35rem;">{latest_date}<span class="sb-unit">{latest_hhmm}</span></div>
+<div class="sb-value" style="font-size: 1.35rem;" title="最近更新时间：{latest_updated}（24小时制）">{latest_date}<span class="sb-unit">{latest_hhmm}</span></div>
 </div>
 <div class="stat-box">
 <div class="sb-label">最近覆盖地市</div>
@@ -524,7 +540,7 @@ PAGE = """<!DOCTYPE html>
 </main>
 <footer class="site-footer">
 <p>广西公共资源交易平台体系自动化监控系统 · 历史归档与数据追溯中心</p>
-<p style="margin-top: 6px;">更新时间：{latest_date} · 由自动化采集监控系统 {app_version} 生成</p>
+<p style="margin-top: 6px;">更新时间：{latest_updated} · 由自动化采集监控系统 {app_version} 生成</p>
 </footer>
 {base_script}
 <script>
@@ -618,6 +634,7 @@ _FIELDS = {
     "total_all": comma(total_all),
     "latest_date": latest_date,
     "latest_hhmm": latest_hhmm or "",
+    "latest_updated": latest_updated or latest_date,
     "cities_all": cities_all,
     "calendar_html": calendar_html,
     "list_html": list_html,
