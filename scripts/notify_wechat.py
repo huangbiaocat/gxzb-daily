@@ -313,7 +313,19 @@ def build_rich_summary(day: str, total_count: int, focus_count: int, failed_step
         kw2 = city_str
         kw3 = f"重点预警标讯 {focus_count} 条" if focus_count > 0 else "常规增量标讯"
         kw4 = time_desc
-        remark_val = f"自上次推送（{since_time_str or '上次'}）以来新增 {inc_count} 条标讯，点击卡片即刻查看明细。"
+        remark_parts = []
+        if display_tuples:
+            remark_parts.append("🆕 新增精选标讯：")
+            for idx, (it, is_f) in enumerate(display_tuples[:3], 1):
+                c = (it.get("areaname") or it.get("region") or "广西").replace("市", "")
+                st = it.get("stage") or "公告"
+                t = it.get("title", "").strip().replace("\r", "").replace("\n", " ")
+                if len(t) > 22:
+                    t = t[:21].rstrip("(-_/:· ") + "…"
+                f_tag = "[重点]" if is_f else ""
+                remark_parts.append(f"{idx}. {f_tag}【{c}·{st}】{t}")
+        remark_parts.append("👉 点击卡片查看今日完整标讯与筛选")
+        remark_val = "\n".join(remark_parts)
 
         return {
             "content_text": content_text,
@@ -403,10 +415,25 @@ def build_rich_summary(day: str, total_count: int, focus_count: int, failed_step
     # 组织单项结构化字段（用于传统模版）
     if is_final:
         title_val = f"【终版封存】广西招投标公告日报（{day}）"
-        remark_val = "昨日全天数据已封存对账完成，点击查看完整标讯。"
     else:
         title_val = f"广西全区招投标公告日报（{day}）"
-        remark_val = "点击本通知即可直接在手机端查看今日完整标讯明细与筛选。"
+
+    remark_parts = []
+    if ind_str:
+        remark_parts.append(f"📊 行业：{ind_str}")
+    if display_tuples:
+        header_sub = "🎯 重点标讯推荐：" if focus_items else "📌 最新精选标讯："
+        remark_parts.append(header_sub)
+        for idx, (it, is_f) in enumerate(display_tuples[:3], 1):
+            c = (it.get("areaname") or it.get("city") or "广西").replace("市", "")
+            st = it.get("stage") or "公告"
+            t = it.get("title", "").strip().replace("\r", "").replace("\n", " ")
+            if len(t) > 22:
+                t = t[:21].rstrip("(-_/:· ") + "…"
+            f_tag = "[重点]" if is_f else ""
+            remark_parts.append(f"{idx}. {f_tag}【{c}·{st}】{t}")
+    remark_parts.append("👉 点击卡片查看今日完整明细与筛选")
+    remark_val = "\n".join(remark_parts)
 
     if display_tuples:
         first_p = display_tuples[0][0]
@@ -414,12 +441,12 @@ def build_rich_summary(day: str, total_count: int, focus_count: int, failed_step
         t0 = first_p.get("title", "").strip().replace("\r", "").replace("\n", " ")
         if len(t0) > 22:
             t0 = t0[:21].rstrip("(-_/:· ") + "…"
-        kw1 = f"【{c0}】{t0}" + (f" 等{len(display_tuples)}个项目" if len(display_tuples) > 1 else "")
+        kw1 = f"【{c0}】{t0}" + (f" 等{len(display_tuples)}条精选" if len(display_tuples) > 1 else "")
     else:
         kw1 = f"广西全区标讯汇总（共 {total_count} 条）"
 
     kw2 = city_str or "广西公共资源交易 · 崇左阳光采购"
-    kw3 = f"重点预警标讯 {focus_count} 条" if focus_count > 0 else "常规流转（无重点预警）"
+    kw3 = f"今日共 {total_count} 条（重点预警 {focus_count} 条）" if focus_count > 0 else f"今日共 {total_count} 条（常规流转）"
     kw4 = day
 
     return {
