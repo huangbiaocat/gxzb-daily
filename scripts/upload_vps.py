@@ -67,8 +67,8 @@ def main():
     cmd = ["scp", "-P", port, "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", "-o", "StrictHostKeyChecking=no"]
     key_path = getattr(config, "VPS_KEY_PATH", "").strip()
     if not key_path:
-        local_key1 = Path(config.ROOT_DIR) / "data" / "id_rsa"
-        local_key2 = Path(config.ROOT_DIR) / "data" / "vps_key.pem"
+        local_key1 = REPO / "data" / "id_rsa"
+        local_key2 = REPO / "data" / "vps_key.pem"
         if local_key1.is_file():
             key_path = str(local_key1)
         elif local_key2.is_file():
