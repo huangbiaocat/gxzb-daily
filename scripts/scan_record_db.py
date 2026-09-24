@@ -29,10 +29,12 @@ import config
 class ScanRecordDB:
     """首次扫描记录与存证数据库管理类。"""
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Optional[Path] = None, auto_bootstrap: bool = True):
         self.db_path = Path(db_path or config.DB_PATH)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
+        if auto_bootstrap:
+            self.auto_bootstrap_if_needed()
 
     @contextmanager
     def _connection(self):
@@ -100,6 +102,27 @@ class ScanRecordDB:
 
             conn.commit()
 
+    def auto_bootstrap_if_needed(self, daily_dir: Optional[Path] = None) -> bool:
+        """若底边快照覆盖天数为0，但存在历史归档 daily 数据，自动执行底边基线固化与清洗，杜绝虚假滞后误判。"""
+        try:
+            with self._connection() as conn:
+                cnt = conn.execute("SELECT count(*) FROM baseline_snapshots WHERE is_locked = 1").fetchone()[0]
+            if cnt == 0:
+                if daily_dir:
+                    d_dir = Path(daily_dir)
+                elif self.db_path == Path(config.DB_PATH):
+                    d_dir = Path(config.DAILY_DIR)
+                elif (self.db_path.parent / "daily").is_dir():
+                    d_dir = self.db_path.parent / "daily"
+                else:
+                    return False
+                if d_dir.is_dir() and any(d_dir.glob("2026-*.json")):
+                    self.bootstrap_baseline_from_daily(daily_dir=d_dir, clean_false_delayed=True)
+                    return True
+        except Exception:
+            pass
+        return False
+
     @staticmethod
     def parse_date_str(val: Optional[str]) -> Optional[date]:
         """安全提取 YYYY-MM-DD 日期。"""
@@ -143,14 +166,8 @@ class ScanRecordDB:
             cur = conn.cursor()
             if s_key and s_key not in ("all", "any", "*"):
                 cur.execute(
-                    "SELECT 1 FROM baseline_snapshots WHERE source = ? AND pub_date = ? AND is_locked = 1 LIMIT 1",
+                    "SELECT 1 FROM baseline_snapshots WHERE (source = ? OR source = 'all') AND pub_date = ? AND is_locked = 1 LIMIT 1",
                     (s_key, p_date)
-                )
-                if cur.fetchone() is not None:
-                    return True
-                cur.execute(
-                    "SELECT 1 FROM baseline_snapshots WHERE source = 'all' AND pub_date = ? AND is_locked = 1 LIMIT 1",
-                    (p_date,)
                 )
                 if cur.fetchone() is not None:
                     return True
@@ -162,25 +179,52 @@ class ScanRecordDB:
                 if cur.fetchone() is not None:
                     return True
 
-        # 2. 检查历史归档日常文件
+        # 2. 检查历史归档日常文件：若磁盘有该日归档但数据库无快照，就地将该日归档纳入底边并登记快照
         d_dir = Path(daily_dir) if daily_dir else (self.db_path.parent / "daily" if (self.db_path.parent / "daily").is_dir() else config.DAILY_DIR)
         daily_file = d_dir / f"{p_date}.json"
         if daily_file.is_file():
             try:
                 items = json.loads(daily_file.read_text(encoding="utf-8"))
-                if not items:
-                    return False
-                if s_key and s_key not in ("all", "any", "*"):
-                    for it in items:
-                        link = str(it.get("link") or it.get("detail_url") or "")
-                        if s_key == "cz_ygcg" and "cz.gxygcg.com" in link:
-                            return True
-                        if s_key == "gxzfcg" and "gxzfcg.gov.cn" in link:
-                            return True
-                        if s_key.startswith("gxggzy") and (not ("cz.gxygcg.com" in link or "gxzfcg.gov.cn" in link)):
-                            return True
-                    return False
-                return True
+                if items:
+                    with self._connection() as conn:
+                        for it in items:
+                            iid = str(it.get("infoid") or "").strip()
+                            if iid and not self.has_record(iid):
+                                conn.execute("""
+                                    INSERT OR IGNORE INTO scan_records (
+                                        infoid, title, pub_time, pub_date,
+                                        first_scan_time, first_scan_date,
+                                        first_scan_source, first_scan_center, first_scan_link,
+                                        delay_days, is_delayed, is_baseline, evidence_text,
+                                        created_at, updated_at
+                                    ) VALUES (
+                                        ?, ?, ?, ?,
+                                        ?, ?,
+                                        ?, ?, ?,
+                                        0, 0, 1, ?,
+                                        datetime('now', 'localtime'), datetime('now', 'localtime')
+                                    )
+                                """, (
+                                    iid,
+                                    it.get("title") or "",
+                                    it.get("pub_time") or f"{p_date} 00:00:00",
+                                    p_date,
+                                    f"{p_date} 23:59:59",
+                                    p_date,
+                                    "daily_baseline",
+                                    it.get("center") or "",
+                                    it.get("link") or "",
+                                    f"【底边归档】作为 {p_date} 历史 daily 归档原始底边入库。"
+                                ))
+                        conn.commit()
+                    self.record_baseline_snapshot(
+                        source=s_key or "all",
+                        pub_date=p_date,
+                        notice_count=len(items),
+                        snapshot_time=f"{p_date} 23:59:59",
+                        is_locked=1,
+                    )
+                    return True
             except Exception:
                 pass
         return False
@@ -280,10 +324,11 @@ class ScanRecordDB:
             delay = 0
 
         # 核心逻辑：基于底边数据库进行判定
+        center_source = center if center else ("gxggzy" if "gxggzy" in scan_source else ("cz_ygcg" if "cz" in scan_source else ("gxzfcg" if "zfcg" in scan_source else "all")))
         # 检查该源在 pub_date 是否已存在锁定底边
-        has_base = self.has_baseline(scan_source, pub_date_str)
+        has_base = self.has_baseline(center_source or scan_source, pub_date_str)
 
-        if is_baseline is True or (is_baseline is None and not scan_source.startswith("backscan") and (not has_base or delay == 0)):
+        if is_baseline is True or scan_source == "registry_sync" or (is_baseline is None and (delay == 0 or (not scan_source.startswith("backscan") and not has_base))):
             # 无历史底边或明确指定为底边数据：纳入底边基线，绝不判定为滞后公开
             actual_is_baseline = 1
             is_del = 0
@@ -303,7 +348,9 @@ class ScanRecordDB:
             actual_is_baseline = 0
             is_del = 1 if delay >= min_delay_days else 0
             
-            snap = self.get_baseline_snapshot(scan_source, pub_date_str)
+            snap = self.get_baseline_snapshot(center_source or scan_source, pub_date_str)
+            if not snap:
+                snap = self.get_baseline_snapshot("all", pub_date_str)
             snap_desc = (
                 f"数据源 {scan_source} 于 {snap.get('snapshot_time', '历史归档')} 已锁定 {pub_date_str} 底边基线"
                 f"（当时底边共 {snap.get('notice_count', 0)} 条，无此条目）"

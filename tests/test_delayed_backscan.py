@@ -287,6 +287,52 @@ class TestDelayedBackscan(unittest.TestCase):
             self.assertEqual(res2["delayed_notices"][0]["infoid"], "cz-delayed-002")
             self.assertEqual(res2["delayed_notices"][0]["delay_days"], 6)
 
+    @patch("scripts.backscan_delayed.fetch_gx_center_window")
+    @patch("scripts.backscan_delayed.fetch_cz_ygcg_window")
+    def test_cold_start_with_existing_daily_files_prevents_false_delayed(self, mock_cz, mock_gx):
+        """冷启动防误判测试：磁盘存在历史 daily 归档但数据库全新时，回扫不得将历史公告误判为滞后。"""
+        mock_gx.return_value = []
+        
+        # 在历史 daily 中模拟写入 3 条 2026-09-15 的正常历史公告
+        history_notices = [
+            {
+                "infoid": f"hist-{i}",
+                "title": f"历史正常公告-{i}",
+                "pub_time": "2026-09-15 09:30:00",
+                "areaname": "崇左市",
+                "link": f"https://cz.gxygcg.com/purchase/detail/?notice_id=hist-{i}",
+            }
+            for i in range(1, 4)
+        ]
+        hist_file = self.daily_dir / "2026-09-15.json"
+        hist_file.write_text(json.dumps(history_notices, ensure_ascii=False), encoding="utf-8")
+        
+        # 回扫抓取到了这 3 条历史公告（官网标称为 8 天前）
+        mock_cz.return_value = [dict(x) for x in history_notices]
+        
+        with patch("scripts.backscan_delayed.config.DAILY_DIR", self.daily_dir), \
+             patch("scripts.scan_record_db.config.DAILY_DIR", self.daily_dir):
+            res = scan_delayed_notices(
+                today_str="2026-09-23",
+                days=30,
+                min_delay=2,
+                dry_run=False,
+            )
+            # 核心断言：绝对不能将历史日常归档里的公告误判为滞后！
+            self.assertEqual(res["delayed_count"], 0, "冷启动时历史归档公告绝不能被误判为滞后公开")
+            
+            from scripts.scan_record_db import get_scan_record_db
+            db = get_scan_record_db(self.tmp_dir / "test_baseline_gxzb.sqlite3")
+            stats = db.get_baseline_stats()
+            self.assertGreaterEqual(stats["dates_covered"], 1)
+            self.assertEqual(stats["delayed_records"], 0)
+            
+            for x in history_notices:
+                rec = db.get_record(x["infoid"])
+                self.assertIsNotNone(rec)
+                self.assertEqual(rec["is_delayed"], 0)
+                self.assertEqual(rec["is_baseline"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

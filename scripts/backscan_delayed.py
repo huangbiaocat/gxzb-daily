@@ -175,6 +175,13 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
     
     # 1. 加载首次扫描存证库与已知条目注册表
     scan_db = get_scan_record_db()
+    stats = scan_db.get_baseline_stats()
+    if stats.get("dates_covered", 0) == 0:
+        print("  检测到底边快照库尚未固化覆盖天数，正在自动固化底边基线与校准...")
+        scan_db.bootstrap_baseline_from_daily(clean_false_delayed=True)
+        stats = scan_db.get_baseline_stats()
+        print(f"  底边基线固化完成，当前覆盖 {stats.get('dates_covered', 0)} 天历史底边。")
+
     registry = load_delayed_registry()
     print(f"  当前存证库与已知公告条目数: {len(registry)}")
     
@@ -210,10 +217,40 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
             
         pub_time = item.get("pub_time") or item.get("infodatepx") or ""
         pub_date = str(parse_date_str(pub_time) or pub_time[:10])
-
-        # 判定数据源，用于匹配底边快照
         link_str = str(item.get("link") or item.get("detail_url") or "")
         areaname = str(item.get("areaname") or item.get("source") or "")
+
+        # 双重保险：检查是否属于历史日常归档已有条目
+        # 若属于历史日常归档已有条目，铁证为历史发布当时即已抓取，绝非滞后公开
+        in_history_daily = False
+        p_file = config.DAILY_DIR / f"{pub_date}.json"
+        if p_file.is_file():
+            try:
+                if infoid in p_file.read_text(encoding="utf-8"):
+                    in_history_daily = True
+            except Exception:
+                pass
+
+        if in_history_daily:
+            new_notices.append(item)
+            if not dry_run:
+                now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                scan_db.record_scan(
+                    infoid=infoid,
+                    title=item.get("title") or "",
+                    pub_time=pub_time,
+                    scan_time=now_str,
+                    scan_source=f"backscan_{days}d",
+                    center=areaname,
+                    link=link_str,
+                    min_delay_days=min_delay,
+                    is_baseline=True,
+                )
+                record_notice_seen(infoid, pub_time, today, registry=registry, min_delay_days=min_delay)
+            new_by_pub_date.setdefault(pub_date, []).append(item)
+            continue
+
+        # 判定数据源，用于匹配底边快照
         if "cz.gxygcg.com" in link_str:
             item_source = "cz_ygcg"
         elif "gxzfcg.gov.cn" in link_str:
@@ -273,7 +310,7 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
                 center=areaname,
                 link=link_str,
                 min_delay_days=min_delay,
-                is_baseline=False,
+                is_baseline=not is_delayed,
             )
             record_notice_seen(infoid, pub_time, today, registry=registry, min_delay_days=min_delay)
             
@@ -345,6 +382,14 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
                     json.dumps(existing_items, ensure_ascii=False, indent=2),
                     encoding="utf-8",
                 )
+                if not dry_run:
+                    scan_db.record_baseline_snapshot(
+                        source="all",
+                        pub_date=p_date,
+                        notice_count=len(existing_items),
+                        snapshot_time=f"{p_date} 23:59:59",
+                        is_locked=1,
+                    )
                 print(f"  已回补 {added_cnt} 条新公告到历史归档: {daily_file.name}")
                 
     return {

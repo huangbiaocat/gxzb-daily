@@ -628,6 +628,10 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
                 from scripts.scan_record_db import get_scan_record_db
                 db = get_scan_record_db()
                 stats = db.get_baseline_stats()
+                # 若发现覆盖天数为 0（未固化基线），自动触发自愈校准
+                if stats.get("dates_covered", 0) == 0:
+                    if db.auto_bootstrap_if_needed():
+                        stats = db.get_baseline_stats()
                 self.send_json({"ok": True, "stats": stats})
             except Exception as e:
                 self.send_json({"ok": False, "error": str(e), "stats": {}})
