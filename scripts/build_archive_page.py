@@ -418,8 +418,6 @@ for ym in months:
             delayed_cnt = d.get("delayed_count", 0)
 
             pills = []
-            if focus_cnt > 0:
-                pills.append(f'<span class="cal-pill-alert" title="当日重点信息 {focus_cnt} 条">⚡{focus_cnt}</span>')
             if delayed_cnt > 0:
                 pills.append(f'<span class="cal-pill-delayed" title="滞后公开 {delayed_cnt} 条">滞后{delayed_cnt}</span>')
             if today_pill:

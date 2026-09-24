@@ -37,7 +37,7 @@ class TestArchiveFocusOvertime(unittest.TestCase):
         index_html = (config.SITE_DIR / "index.html").read_text(encoding="utf-8")
         self.assertIn('data-date="2026-09-22"', index_html)
         self.assertIn('data-focus="3"', index_html)
-        self.assertIn('⚡3', index_html)
+        self.assertNotIn('⚡', index_html)
         self.assertIn('重点 3', index_html)
         # 首页不显示加班发布数量
         self.assertNotIn('🌙', index_html)
