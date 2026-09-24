@@ -48,6 +48,7 @@ except ImportError:
 def parse_args(argv=None):
     ap = argparse.ArgumentParser(description="生成每日明细页")
     ap.add_argument("--date", default=None, help="目标日期 YYYY-MM-DD，默认今天")
+    ap.add_argument("--all", action="store_true", help="批量重新生成所有已有日期的明细页")
     ap.add_argument("--refetch", action="store_true", help="只列出日志中待重取的条目")
     ap.add_argument("--no-vps", action="store_true", help="跳过自动同步上传 VPS")
     ap.add_argument("--final", action="store_true", help="标记为全天最终版封存页面")
@@ -56,6 +57,33 @@ def parse_args(argv=None):
 
 
 ARGS = parse_args()
+
+if ARGS.all:
+    all_json = sorted(config.DAILY_DIR.glob("*.json"))
+    dates = [p.stem for p in all_json if re.match(r"^\d{4}-\d{2}-\d{2}$", p.stem)]
+    print(f"=== 开始全量重构所有每日页面 (共 {len(dates)} 天) ===")
+    for idx, d in enumerate(dates, 1):
+        cmd = [sys.executable, str(Path(__file__).resolve()), "--date", d, "--no-vps"]
+        if ARGS.final:
+            cmd.append("--final")
+        if ARGS.scan_time:
+            cmd.extend(["--scan-time", ARGS.scan_time])
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        if res.returncode != 0:
+            print(f"[{idx}/{len(dates)}] {d} 生成失败:")
+            print(res.stderr or res.stdout)
+            raise SystemExit(1)
+        print(f"[{idx}/{len(dates)}] {d} OK")
+    if dates:
+        print("正在同步更新首页/归档索引...")
+        import run_daily
+        run_daily.refresh_archive(dates[-1])
+    if not ARGS.no_vps and getattr(config, "AUTO_UPLOAD_VPS", True):
+        print("正在全量同步上传 VPS...")
+        upload_cmd = [sys.executable, str(Path(__file__).resolve().parent / "upload_vps.py")]
+        subprocess.run(upload_cmd, check=True)
+    print("=== 所有每日页面全量重构完成 ===")
+    raise SystemExit(0)
 
 SITE_DIR = config.SITE_DIR          # 页面产物根目录
 OUTDIR = SITE_DIR
@@ -713,6 +741,27 @@ DAILY_CSS = """
             background: var(--chip-bg);
             border: 1px solid var(--chip-border, transparent);
             margin-bottom: 12px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .cat-block .type-head:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+            filter: brightness(0.96);
+        }
+        .cat-block .type-head:active {
+            transform: translateY(0);
+        }
+        .cat-block .type-head.active-filter {
+            background: var(--chip-fg) !important;
+            border-color: var(--chip-fg) !important;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 3px 10px rgba(0, 0, 0, 0.18);
+        }
+        .cat-block .type-head.active-filter .type-name,
+        .cat-block .type-head.active-filter .type-count {
+            color: #ffffff !important;
+            opacity: 1 !important;
         }
         .cat-block .type-head .type-bar { display: none; }
         .cat-block .type-head .type-name {
@@ -742,6 +791,25 @@ DAILY_CSS = """
             line-height: 1.25;
             padding: 2px 8px;
             flex-shrink: 0;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+        .cat-block .notice-item .city-tag:hover {
+            background: #e2e8f0;
+            border-color: #cbd5e1;
+            color: #0f172a;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+        }
+        .cat-block .notice-item .city-tag:active {
+            transform: translateY(0);
+        }
+        .cat-block .notice-item .city-tag.active-filter {
+            background: #2563eb !important;
+            color: #ffffff !important;
+            border-color: #1d4ed8 !important;
+            box-shadow: 0 0 0 1.5px #ffffff, 0 2px 6px rgba(37, 99, 235, 0.35);
         }
 
         .cat-block .notice-item .source-tag {
@@ -755,6 +823,66 @@ DAILY_CSS = """
             padding: 2px 8px;
             white-space: nowrap;
             flex-shrink: 0;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+        .cat-block .notice-item .source-tag:hover {
+            filter: brightness(0.94);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+        }
+        .cat-block .notice-item .source-tag:active {
+            transform: translateY(0);
+        }
+        .cat-block .notice-item .source-tag.active-filter {
+            background: #d97706 !important;
+            color: #ffffff !important;
+            border-color: #b45309 !important;
+            box-shadow: 0 0 0 1.5px #ffffff, 0 2px 6px rgba(217, 119, 6, 0.35);
+        }
+
+        .cat-header .cat-title-group {
+            cursor: pointer;
+            user-select: none;
+        }
+        .cat-header .cat-chip {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+        .cat-header .cat-chip:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+            filter: brightness(0.95);
+        }
+        .cat-header .cat-chip:active {
+            transform: translateY(0);
+        }
+        .cat-header .cat-chip.active-filter {
+            background: #059669 !important;
+            color: #ffffff !important;
+            border-color: #047857 !important;
+            box-shadow: 0 0 0 1.5px #ffffff, 0 2px 6px rgba(5, 150, 105, 0.35);
+        }
+
+        .focus-chip, .overtime-chip, .delayed-chip {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+        .focus-chip:hover, .overtime-chip:hover, .delayed-chip:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+            filter: brightness(0.95);
+        }
+        .focus-chip:active, .overtime-chip:active, .delayed-chip:active {
+            transform: translateY(0);
+        }
+        .focus-chip.active-filter, .overtime-chip.active-filter, .delayed-chip.active-filter {
+            outline: 2px solid currentColor;
+            outline-offset: 1.5px;
+            font-weight: 700;
         }
 
 """
@@ -967,6 +1095,61 @@ function shortArea(name) {
     return name.replace(/市$/, '');
 }
 
+function mapToCityFilter(raw) {
+    if (!raw) return '';
+    var s = String(raw).trim();
+    if (s.indexOf('自治区') !== -1) return '自治区';
+    var cities = ['南宁', '柳州', '桂林', '梧州', '北海', '防城港', '钦州', '贵港', '玉林', '百色', '贺州', '河池', '来宾', '崇左'];
+    for (var i = 0; i < cities.length; i++) {
+        if (s.indexOf(cities[i]) !== -1) return cities[i] + '市';
+    }
+    if (/龙州|扶绥|宁明|凭祥|大新|天等/.test(s)) return '崇左市';
+    return s.endsWith('市') ? s : (s + '市');
+}
+
+function showFilterToast(msg) {
+    var toast = document.getElementById('filterToast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'filterToast';
+        toast.style.position = 'fixed';
+        toast.style.bottom = '28px';
+        toast.style.left = '50%';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+        toast.style.background = 'rgba(15, 23, 42, 0.92)';
+        toast.style.color = '#ffffff';
+        toast.style.padding = '8px 18px';
+        toast.style.borderRadius = '9999px';
+        toast.style.fontSize = '0.85rem';
+        toast.style.fontWeight = '500';
+        toast.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.3)';
+        toast.style.zIndex = '99999';
+        toast.style.pointerEvents = 'none';
+        toast.style.backdropFilter = 'blur(6px)';
+        toast.style.webkitBackdropFilter = 'blur(6px)';
+        toast.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(function () {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(8px)';
+    }, 1600);
+}
+
+function checkScrollAfterFilter() {
+    var firstVisible = container.querySelector('.cat-block:not([hidden])');
+    if (firstVisible) {
+        var rect = firstVisible.getBoundingClientRect();
+        if (rect.top < 60 || rect.top > window.innerHeight - 100) {
+            firstVisible.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+}
+
 function esc(s) {
     return String(s == null ? '' : s)
         .replace(/&/g, '&amp;')
@@ -986,6 +1169,62 @@ const stageFilter = document.getElementById('stageFilter');
 const btnFocus = document.getElementById('btnFocusOnly');
 let focusOnly = false;
 
+function renderNoticeItem(d) {
+    var isCz = (d.source === '崇左阳光采购' || (d.link && d.link.indexOf('gxygcg.com') !== -1) || d.areaname === '崇左阳光采购');
+    var rawCity = d.areaname || (isCz ? '崇左市' : '崇左市');
+    var filterCity = mapToCityFilter(rawCity);
+    var cityLabel = esc(shortArea(d.areaname || (isCz ? '崇左阳光采购' : '崇左市')));
+
+    var s = '<a class="notice-item"'
+          + ' data-title="' + esc(d.title) + '"'
+          + ' data-industry="' + esc(d.industry) + '"'
+          + ' data-source="' + (isCz ? '崇左阳光采购' : '广西公共资源交易平台') + '"'
+          + ' data-city="' + esc(d.areaname || '崇左市') + '"'
+          + ' data-stage="' + esc(d.stage || '其他') + '"'
+          + ' data-focus="' + (d.is_focus ? 1 : 0) + '"'
+          + ' data-overtime="' + (d.is_overtime ? 1 : 0) + '"'
+          + ' data-delayed="' + (d.is_delayed ? 1 : 0) + '"'
+          + ' href="' + esc(d.link) + '" rel="noopener noreferrer" target="_blank"'
+          + ' title="' + esc(d.title) + '">';
+    s += '<span class="city-tag" data-filter-city="' + esc(filterCity) + '" title="点击筛选【' + esc(filterCity || cityLabel) + '】（再次点击取消）">' + cityLabel + '</span>';
+    if (isCz) {
+        s += '<span class="city-tag source-tag" data-filter-source="崇左阳光采购" title="点击筛选【崇左阳光采购】（再次点击取消）" style="background:#fef3c7;color:#92400e;border-color:#fde68a;">崇左阳光采购</span>';
+    }
+    s += '<span class="notice-title">' + esc(d.title) + EXT_ICON + '</span>';
+    if (d.is_focus) {
+        var tags = d.focus_tags;
+        if (!tags || !tags.length) {
+            tags = ["重点预警"];
+        }
+        for (var ti = 0; ti < tags.length; ti++) {
+            var tname = tags[ti];
+            if (d.is_delayed && (tname === "滞后公开" || tname === "滞后补录")) {
+                continue;
+            }
+            var cls = "focus-chip";
+            if (tname === "滞后公开" || tname === "滞后补录") cls += " focus-chip-delayed";
+            else if (tname === "重点项目") cls += " focus-chip-project";
+            else if (tname === "重点业主") cls += " focus-chip-owner";
+            else if (tname === "重点关键词") cls += " focus-chip-keyword";
+            else if (tname === "重点类型") cls += " focus-chip-type";
+            else cls += " focus-chip-project";
+            var rtip = Array.isArray(d.focus_reason) ? d.focus_reason.join("; ") : (d.focus_reason || tname);
+            s += '<span class="' + cls + '" data-filter-focus="1" title="' + esc(rtip) + '（点击筛选重点标讯）">' + esc(tname) + '</span>';
+        }
+    }
+    if (d.is_overtime) {
+        var otTip = d.overtime_reason || '加班/非工作时间发布';
+        s += '<span class="overtime-chip" data-filter-overtime="1" title="' + esc(otTip) + '（点击筛选加班发布）">' + OT_ICON + '加班发布</span>';
+    }
+    if (d.is_delayed) {
+        var delTip = d.delayed_reason || ('【存证判定】官网标称发布于 ' + (d.pub_time || '') + '，滞后公开 ' + d.delay_days + ' 天');
+        s += '<span class="delayed-chip" data-filter-delayed="1" title="' + esc(delTip) + '（点击筛选滞后公开）">' + DEL_ICON + '滞后公开 · ' + d.delay_days + '天</span>';
+    }
+    s += '<span class="notice-time">' + esc(String(d.pub_time || '').substring(5, 16)) + '</span>';
+    s += '</a>';
+    return s;
+}
+
 /* 三级明细渲染：工程类别 → 公告类型（业务环节）→ 条目 */
 function build() {
     let html = '';
@@ -1002,10 +1241,10 @@ function build() {
         const cityCount = Object.keys(citySet).length;
 
         html += '<section class="cat-block" data-cat="' + esc(ind) + '">';
-        html += '<div class="cat-header"><div class="cat-title-group">';
+        html += '<div class="cat-header"><div class="cat-title-group" data-filter-cat="' + esc(ind) + '" title="点击筛选【' + esc(ind) + '】大类（再次点击取消）">';
         html += '<div class="cat-icon">' + CAT_ICON[ind] + '</div>';
         html += '<span class="cat-heading">' + esc(ind) + '</span>';
-        html += '<span class="cat-chip" data-cities="' + cityCount + '" data-total="' + list.length + '">'
+        html += '<span class="cat-chip" data-filter-cat="' + esc(ind) + '" data-cities="' + cityCount + '" data-total="' + list.length + '" title="点击筛选【' + esc(ind) + '】大类（再次点击取消）">'
               + list.length + ' 条 · ' + cityCount + ' 个地市</span>';
         html += '</div></div>';
 
@@ -1013,120 +1252,22 @@ function build() {
             const sub = list.filter(function (d) { return d.stage === stage; });
             if (!sub.length) { return; }
             html += '<div class="type-block" data-type="' + esc(stage) + '">';
-            html += '<div class="type-head"><span class="type-bar"></span>'
+            html += '<div class="type-head" data-filter-stage="' + esc(stage) + '" title="点击筛选【' + esc(stage) + '】（再次点击取消）"><span class="type-bar"></span>'
                   + '<span class="type-name">' + esc(stage) + '</span>'
                   + '<span class="type-count" data-total="' + sub.length + '">(' + sub.length + ' 条)</span></div>';
             html += '<div class="notice-list">';
-            sub.forEach(function (d) {
-                var isCz = (d.source === '崇左阳光采购' || (d.link && d.link.indexOf('gxygcg.com') !== -1) || d.areaname === '崇左阳光采购');
-                html += '<a class="notice-item"'
-                      + ' data-title="' + esc(d.title) + '"'
-                      + ' data-industry="' + esc(d.industry) + '"'
-                      + ' data-source="' + (isCz ? '崇左阳光采购' : '广西公共资源交易平台') + '"'
-                      + ' data-city="' + esc(d.areaname || '崇左市') + '"'
-                      + ' data-stage="' + esc(d.stage) + '"'
-                      + ' data-focus="' + (d.is_focus ? 1 : 0) + '"'
-                      + ' data-overtime="' + (d.is_overtime ? 1 : 0) + '"'
-                      + ' data-delayed="' + (d.is_delayed ? 1 : 0) + '"'
-                      + ' href="' + esc(d.link) + '" rel="noopener noreferrer" target="_blank"'
-                      + ' title="' + esc(d.title) + '">';
-                html += '<span class="city-tag">' + esc(shortArea(d.areaname || '崇左市')) + '</span>';
-                if (isCz) {
-                    html += '<span class="city-tag source-tag" style="background:#fef3c7;color:#92400e;border-color:#fde68a;">崇左阳光采购</span>';
-                }
-                html += '<span class="notice-title">' + esc(d.title) + EXT_ICON + '</span>';
-                if (d.is_focus) {
-                    var tags = d.focus_tags;
-                    if (!tags || !tags.length) {
-                        tags = ["重点预警"];
-                    }
-                    for (var ti = 0; ti < tags.length; ti++) {
-                        var tname = tags[ti];
-                        // 若已渲染专门的滞后公开胶囊，避免在 focus tags 中重复显示
-                        if (d.is_delayed && (tname === "滞后公开" || tname === "滞后补录")) {
-                            continue;
-                        }
-                        var cls = "focus-chip";
-                        if (tname === "滞后公开" || tname === "滞后补录") cls += " focus-chip-delayed";
-                        else if (tname === "重点项目") cls += " focus-chip-project";
-                        else if (tname === "重点业主") cls += " focus-chip-owner";
-                        else if (tname === "重点关键词") cls += " focus-chip-keyword";
-                        else if (tname === "重点类型") cls += " focus-chip-type";
-                        else cls += " focus-chip-project";
-                        var rtip = Array.isArray(d.focus_reason) ? d.focus_reason.join("; ") : (d.focus_reason || tname);
-                        html += '<span class="' + cls + '" title="' + esc(rtip) + '">' + esc(tname) + '</span>';
-                    }
-                }
-                if (d.is_overtime) {
-                    var otTip = d.overtime_reason || '加班/非工作时间发布';
-                    html += '<span class="overtime-chip" title="' + esc(otTip) + '">' + OT_ICON + '加班发布</span>';
-                }
-                if (d.is_delayed) {
-                    var delTip = d.delayed_reason || ('【存证判定】官网标称发布于 ' + (d.pub_time || '') + '，滞后公开 ' + d.delay_days + ' 天');
-                    html += '<span class="delayed-chip" title="' + esc(delTip) + '">' + DEL_ICON + '滞后公开 · ' + d.delay_days + '天</span>';
-                }
-                html += '<span class="notice-time">' + esc(String(d.pub_time || '').substring(5, 16)) + '</span>';
-                html += '</a>';
-            });
+            sub.forEach(function (d) { html += renderNoticeItem(d); });
             html += '</div></div>';
         });
 
         const otherStages = list.filter(function (d) { return STAGE_ORDER.indexOf(d.stage) === -1; });
         if (otherStages.length > 0) {
             html += '<div class="type-block" data-type="其他环节">';
-            html += '<div class="type-head"><span class="type-bar"></span>'
+            html += '<div class="type-head" data-filter-stage="其他环节" title="点击筛选【其他公告】（再次点击取消）"><span class="type-bar"></span>'
                   + '<span class="type-name">其他公告</span>'
                   + '<span class="type-count" data-total="' + otherStages.length + '">(' + otherStages.length + ' 条)</span></div>';
             html += '<div class="notice-list">';
-            otherStages.forEach(function (d) {
-                var isCz = (d.source === '崇左阳光采购' || (d.link && d.link.indexOf('gxygcg.com') !== -1) || d.areaname === '崇左阳光采购');
-                html += '<a class="notice-item"'
-                      + ' data-title="' + esc(d.title) + '"'
-                      + ' data-industry="' + esc(d.industry) + '"'
-                      + ' data-source="' + (isCz ? '崇左阳光采购' : '广西公共资源交易平台') + '"'
-                      + ' data-city="' + esc(d.areaname || '崇左市') + '"'
-                      + ' data-stage="' + esc(d.stage || '其他') + '"'
-                      + ' data-focus="' + (d.is_focus ? 1 : 0) + '"'
-                      + ' data-overtime="' + (d.is_overtime ? 1 : 0) + '"'
-                      + ' data-delayed="' + (d.is_delayed ? 1 : 0) + '"'
-                      + ' href="' + esc(d.link) + '" rel="noopener noreferrer" target="_blank"'
-                      + ' title="' + esc(d.title) + '">';
-                html += '<span class="city-tag">' + esc(shortArea(d.areaname || '崇左市')) + '</span>';
-                if (isCz) {
-                    html += '<span class="city-tag source-tag" style="background:#fef3c7;color:#92400e;border-color:#fde68a;">崇左阳光采购</span>';
-                }
-                html += '<span class="notice-title">' + esc(d.title) + EXT_ICON + '</span>';
-                if (d.is_focus) {
-                    var tags = d.focus_tags;
-                    if (!tags || !tags.length) { tags = ["重点预警"]; }
-                    for (var ti = 0; ti < tags.length; ti++) {
-                        var tname = tags[ti];
-                        // 若已渲染专门的滞后公开胶囊，避免在 focus tags 中重复显示
-                        if (d.is_delayed && (tname === "滞后公开" || tname === "滞后补录")) {
-                            continue;
-                        }
-                        var cls = "focus-chip";
-                        if (tname === "滞后公开" || tname === "滞后补录") cls += " focus-chip-delayed";
-                        else if (tname === "重点项目") cls += " focus-chip-project";
-                        else if (tname === "重点业主") cls += " focus-chip-owner";
-                        else if (tname === "重点关键词") cls += " focus-chip-keyword";
-                        else if (tname === "重点类型") cls += " focus-chip-type";
-                        else cls += " focus-chip-project";
-                        var rtip = Array.isArray(d.focus_reason) ? d.focus_reason.join("; ") : (d.focus_reason || tname);
-                        html += '<span class="' + cls + '" title="' + esc(rtip) + '">' + esc(tname) + '</span>';
-                    }
-                }
-                if (d.is_overtime) {
-                    var otTip = d.overtime_reason || '加班/非工作时间发布';
-                    html += '<span class="overtime-chip" title="' + esc(otTip) + '">' + OT_ICON + '加班发布</span>';
-                }
-                if (d.is_delayed) {
-                    var delTip = d.delayed_reason || ('【存证判定】官网标称发布于 ' + (d.pub_time || '') + '，滞后公开 ' + d.delay_days + ' 天');
-                    html += '<span class="delayed-chip" title="' + esc(delTip) + '">' + DEL_ICON + '滞后公开 · ' + d.delay_days + '天</span>';
-                }
-                html += '<span class="notice-time">' + esc(String(d.pub_time || '').substring(5, 16)) + '</span>';
-                html += '</a>';
-            });
+            otherStages.forEach(function (d) { html += renderNoticeItem(d); });
             html += '</div></div>';
         }
 
@@ -1209,6 +1350,33 @@ function apply() {
             box.classList.remove('active');
         }
     });
+
+    /* 同步各胶囊的高亮与激活状态 */
+    document.querySelectorAll('.type-head').forEach(function(th) {
+        var s = th.getAttribute('data-filter-stage');
+        th.classList.toggle('active-filter', !!stage && s === stage);
+    });
+    document.querySelectorAll('.city-tag[data-filter-city]').forEach(function(ct) {
+        var c = ct.getAttribute('data-filter-city');
+        ct.classList.toggle('active-filter', !!city && c === city);
+    });
+    document.querySelectorAll('.source-tag[data-filter-source]').forEach(function(st) {
+        var s = st.getAttribute('data-filter-source');
+        st.classList.toggle('active-filter', !!src && s === src);
+    });
+    document.querySelectorAll('.cat-chip[data-filter-cat]').forEach(function(cc) {
+        var c = cc.getAttribute('data-filter-cat');
+        cc.classList.toggle('active-filter', !!ind && c === ind);
+    });
+    document.querySelectorAll('.focus-chip').forEach(function(fc) {
+        fc.classList.toggle('active-filter', focusOnly);
+    });
+    document.querySelectorAll('.overtime-chip').forEach(function(oc) {
+        oc.classList.toggle('active-filter', overtimeOnly);
+    });
+    document.querySelectorAll('.delayed-chip').forEach(function(dc) {
+        dc.classList.toggle('active-filter', delayedOnly);
+    });
 }
 
 searchInput.addEventListener('input', apply);
@@ -1260,6 +1428,7 @@ document.getElementById('btnReset').addEventListener('click', function () {
     delayedOnly = false;
     if (btnDelayed) btnDelayed.classList.remove('active');
     apply();
+    showFilterToast('已重置所有筛选条件');
 });
 
 /* 统计卡点击联动筛选与平滑滚动 */
@@ -1269,10 +1438,13 @@ document.querySelectorAll('.stat-box.clickable').forEach(function(box) {
         if (targetStage === '__focus__') {
             focusOnly = !focusOnly;
             btnFocus.classList.toggle('active', focusOnly);
+            showFilterToast(focusOnly ? '已筛选重点信息' : '已取消重点信息筛选');
         } else if (stageFilter.value === targetStage) {
             stageFilter.value = '';
+            showFilterToast('已取消环节筛选');
         } else {
             stageFilter.value = targetStage;
+            showFilterToast('已按环节筛选：' + targetStage);
         }
         apply();
         var filterEl = document.querySelector('.filter-section.daily');
@@ -1280,6 +1452,138 @@ document.querySelectorAll('.stat-box.clickable').forEach(function(box) {
             filterEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     });
+});
+
+/* 点击页面内各种胶囊直接触发维度筛选 */
+container.addEventListener('click', function(e) {
+    // 1. 业务环节胶囊 (中标公示、中标公告等)
+    var typeHead = e.target.closest('.type-head');
+    if (typeHead) {
+        e.preventDefault();
+        e.stopPropagation();
+        var targetStage = typeHead.getAttribute('data-filter-stage');
+        if (!targetStage) {
+            var tb = typeHead.closest('.type-block');
+            targetStage = tb ? tb.getAttribute('data-type') : '';
+        }
+        if (targetStage) {
+            if (stageFilter.value === targetStage) {
+                stageFilter.value = '';
+                showFilterToast('已取消环节筛选');
+            } else {
+                stageFilter.value = targetStage;
+                showFilterToast('已按环节筛选：' + targetStage);
+            }
+            apply();
+            checkScrollAfterFilter();
+        }
+        return;
+    }
+
+    // 2. 信源胶囊 (崇左阳光采购)
+    var sourceTag = e.target.closest('.source-tag');
+    if (sourceTag) {
+        e.preventDefault();
+        e.stopPropagation();
+        var targetSource = sourceTag.getAttribute('data-filter-source') || sourceTag.textContent.trim();
+        if (targetSource && sourceFilter) {
+            if (sourceFilter.value === targetSource) {
+                sourceFilter.value = '';
+                showFilterToast('已恢复全部平台信源');
+            } else {
+                sourceFilter.value = targetSource;
+                showFilterToast('已筛选平台信源：' + targetSource);
+            }
+            apply();
+            checkScrollAfterFilter();
+        }
+        return;
+    }
+
+    // 3. 地市胶囊 (来宾、崇左、柳州、区中心等)
+    var cityTag = e.target.closest('.city-tag');
+    if (cityTag) {
+        e.preventDefault();
+        e.stopPropagation();
+        var targetCity = cityTag.getAttribute('data-filter-city');
+        if (!targetCity) {
+            var it = cityTag.closest('.notice-item');
+            var rawCity = it ? it.getAttribute('data-city') : cityTag.textContent.trim();
+            targetCity = mapToCityFilter(rawCity);
+        }
+        if (targetCity) {
+            if (cityFilter.value === targetCity) {
+                cityFilter.value = '';
+                showFilterToast('已恢复全部地市');
+            } else {
+                cityFilter.value = targetCity;
+                showFilterToast('已筛选地市：' + targetCity);
+            }
+            apply();
+            checkScrollAfterFilter();
+        }
+        return;
+    }
+
+    // 4. 工程大类胶囊 (水利工程、市政公用等)
+    var catEl = e.target.closest('.cat-chip, .cat-heading, .cat-title-group');
+    if (catEl) {
+        e.preventDefault();
+        e.stopPropagation();
+        var catBlock = catEl.closest('.cat-block');
+        var targetCat = catEl.getAttribute('data-filter-cat') || (catBlock ? catBlock.getAttribute('data-cat') : '');
+        if (targetCat) {
+            if (industryFilter.value === targetCat) {
+                industryFilter.value = '';
+                showFilterToast('已恢复全部工程大类');
+            } else {
+                industryFilter.value = targetCat;
+                showFilterToast('已筛选工程大类：' + targetCat);
+            }
+            apply();
+            checkScrollAfterFilter();
+        }
+        return;
+    }
+
+    // 5. 重点标讯胶囊
+    var focusChip = e.target.closest('.focus-chip');
+    if (focusChip) {
+        e.preventDefault();
+        e.stopPropagation();
+        focusOnly = !focusOnly;
+        btnFocus.classList.toggle('active', focusOnly);
+        showFilterToast(focusOnly ? '已筛选重点预警标讯' : '已取消重点标讯筛选');
+        apply();
+        checkScrollAfterFilter();
+        return;
+    }
+
+    // 6. 加班发布胶囊
+    var otChip = e.target.closest('.overtime-chip');
+    if (otChip) {
+        e.preventDefault();
+        e.stopPropagation();
+        overtimeOnly = !overtimeOnly;
+        if (btnOvertime) btnOvertime.classList.toggle('active', overtimeOnly);
+        showFilterToast(overtimeOnly ? '已筛选加班发布标讯' : '已取消加班发布筛选');
+        apply();
+        checkScrollAfterFilter();
+        return;
+    }
+
+    // 7. 滞后公开胶囊
+    var delChip = e.target.closest('.delayed-chip');
+    if (delChip) {
+        e.preventDefault();
+        e.stopPropagation();
+        delayedOnly = !delayedOnly;
+        if (btnDelayed) btnDelayed.classList.toggle('active', delayedOnly);
+        showFilterToast(delayedOnly ? '已筛选滞后公开标讯' : '已取消滞后公开筛选');
+        apply();
+        checkScrollAfterFilter();
+        return;
+    }
 });
 
 document.getElementById('focusCount').textContent = RAW_DATA.filter(function (d) { return d.is_focus; }).length;
@@ -1310,7 +1614,7 @@ html = html.replace("__DAILY_CSS__", DAILY_CSS.strip())
 html = html.replace("__LATEST_PUB__", latest_pub)
 html = html.replace("__SCAN_TIME__", scan_time)
 html = html.replace("__LATEST__", latest_pub)
-html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.3.2"))
+html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.3.3"))
 html = html.replace("__DATE__", DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))
 html = html.replace("__NEXT_URL__", neighbor_url(1))
