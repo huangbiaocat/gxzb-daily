@@ -49,6 +49,7 @@ FILES_TO_PACK = [
     "scripts/create_desktop_shortcut.bat",
     "templates/index-sample.html",
     "templates/index-preview.html",
+    "version.json",
     "manager/server.py",
     "manager/static/index.html",
     "extractors/__init__.py",
@@ -61,8 +62,41 @@ FILES_TO_PACK = [
 ]
 
 def main():
+    # 自动生成版本与提交元数据 version.json
+    import json
+    commit = ""
+    date = ""
+    message = ""
+    commits = []
+    try:
+        commit = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=str(REPO), capture_output=True, text=True).stdout.strip()
+        date = subprocess.run(['git', 'log', '-1', '--format=%cd', '--date=short'], cwd=str(REPO), capture_output=True, text=True).stdout.strip()
+        message = subprocess.run(['git', 'log', '-1', '--format=%s'], cwd=str(REPO), capture_output=True, text=True).stdout.strip()
+        log_res = subprocess.run(['git', 'log', '-6', '--pretty=format:%h\t%an\t%ad\t%s', '--date=short'], cwd=str(REPO), capture_output=True, text=True)
+        if log_res.returncode == 0 and log_res.stdout.strip():
+            for line in log_res.stdout.strip().splitlines():
+                parts = line.split('\t')
+                if len(parts) >= 4:
+                    commits.append({'commit': parts[0], 'author': parts[1], 'date': parts[2], 'message': parts[3]})
+    except Exception as e:
+        print(f"[Warn] 读取 Git 版本信息失败: {e}")
+
+    v_info = {
+        "version": getattr(config, "APP_VERSION", "v0.3.4"),
+        "commit": commit,
+        "date": date,
+        "message": message,
+        "commits": commits
+    }
+    v_file = REPO / "version.json"
+    with open(v_file, "w", encoding="utf-8") as f:
+        json.dump(v_info, f, indent=2, ensure_ascii=False)
+    print(f"[Version] 已生成构建元数据: {commit} ({date}) -> {v_file}")
+
     dist_dir = Path(config.SITE_DIR)
     dist_dir.mkdir(parents=True, exist_ok=True)
+    dist_v_file = dist_dir / "version.json"
+    dist_v_file.write_text(v_file.read_text(encoding="utf-8"), encoding="utf-8")
     zip_path = dist_dir / "update_i5.zip"
     
     print(f"[Pack] 正在打包核心代码与静态控制台 -> {zip_path} ...")
@@ -88,11 +122,11 @@ def main():
     if not remote_path.endswith("/"):
         remote_path += "/"
     
-    print(f"[Upload] 上传 {zip_path.name} 及 dist 页面到 VPS ({host}:{remote_path}) ...")
-    cmd = ["scp", "-P", port, "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", "-o", "ControlMaster=auto", "-o", "ControlPath=/tmp/ssh-%r@%h:%p", "-o", "ControlPersist=10m", str(zip_path), f"{user}@{host}:{remote_path}"]
+    print(f"[Upload] 上传 {zip_path.name}、version.json 及 dist 页面到 VPS ({host}:{remote_path}) ...")
+    cmd = ["scp", "-P", port, "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", "-o", "ControlMaster=auto", "-o", "ControlPath=/tmp/ssh-%r@%h:%p", "-o", "ControlPersist=10m", str(zip_path), str(dist_v_file), f"{user}@{host}:{remote_path}"]
     res = subprocess.run(cmd)
     if res.returncode == 0:
-        print("  -> update_i5.zip 上传 VPS 成功！")
+        print("  -> update_i5.zip 与 version.json 上传 VPS 成功！")
     else:
         print(f"  -> 上传失败，退出码: {res.returncode}")
         return res.returncode

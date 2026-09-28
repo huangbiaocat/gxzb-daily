@@ -239,6 +239,20 @@ def check_app_upgrade():
     except Exception:
         pass
 
+    # 1.2 若非 Git 仓库或无法读取 Git，回退读取构建发布的 version.json
+    if not local_info["commit"]:
+        version_file = ROOT_DIR / "version.json"
+        if version_file.exists():
+            try:
+                with open(version_file, "r", encoding="utf-8") as vf:
+                    vdata = json.load(vf)
+                    local_info["commit"] = vdata.get("commit", "")
+                    local_info["date"] = vdata.get("date", "")
+                    local_info["message"] = vdata.get("message", "")
+                    local_info["version"] = vdata.get("version", local_info["version"])
+            except Exception:
+                pass
+
     # 2. 探测远程 origin/main 分支
     if local_info["is_git"]:
         try:
@@ -329,7 +343,44 @@ def check_app_upgrade():
         except Exception:
             pass
 
-    # 3. 若 git fetch 未成功（网络或非 git 模式），使用 GitHub API 备用方案
+    # 3. 若 git fetch 未成功（网络或非 git 模式），优先尝试国内专线云镜像 (ztb.139771.xyz)
+    if not connected:
+        import urllib.request
+        try:
+            req = urllib.request.Request(
+                f"https://ztb.139771.xyz/version.json?t={int(time.time())}",
+                headers={"User-Agent": "GXZB-Updater/1.0"}
+            )
+            with urllib.request.urlopen(req, timeout=3.5) as resp:
+                if resp.status == 200:
+                    v_remote = json.loads(resp.read().decode("utf-8"))
+                    if isinstance(v_remote, dict) and v_remote.get("commit"):
+                        connected = True
+                        remote_info["source"] = "专线云镜像"
+                        remote_info["commit"] = v_remote.get("commit", "")
+                        remote_info["version"] = v_remote.get("version", remote_info["version"])
+                        remote_info["date"] = v_remote.get("date", "")
+                        remote_info["message"] = v_remote.get("message", "")
+                        
+                        if local_info["commit"] and remote_info["commit"] != local_info["commit"]:
+                            has_update = True
+                        elif not local_info["commit"]:
+                            has_update = True
+                        
+                        r_commits = v_remote.get("commits", [])
+                        if r_commits:
+                            commits = []
+                            for item in r_commits:
+                                commits.append({
+                                    "hash": item.get("commit", item.get("hash", ""))[:7],
+                                    "author": item.get("author", "发布团队"),
+                                    "date": item.get("date", ""),
+                                    "message": item.get("message", "")
+                                })
+        except Exception:
+            pass
+
+    # 4. 若专线镜像未连通，备用尝试 GitHub API
     if not connected:
         import urllib.request
         try:
@@ -342,12 +393,15 @@ def check_app_upgrade():
                     gh_data = json.loads(resp.read().decode("utf-8"))
                     if isinstance(gh_data, list) and len(gh_data) > 0:
                         connected = True
+                        remote_info["source"] = "GitHub"
                         top = gh_data[0]
                         remote_info["commit"] = top.get("sha", "")[:7]
                         remote_info["message"] = top.get("commit", {}).get("message", "").split("\n")[0]
                         remote_info["date"] = top.get("commit", {}).get("author", {}).get("date", "")[:10]
                         
                         if local_info["commit"] and remote_info["commit"] != local_info["commit"]:
+                            has_update = True
+                        elif not local_info["commit"]:
                             has_update = True
                         
                         commits = []
@@ -363,10 +417,11 @@ def check_app_upgrade():
 
     # 生成状态提示语
     if connected:
+        src_name = remote_info.get("source", "升级服务源")
         if has_update:
-            msg = f"检测到 GitHub 远程仓库有 {behind_count or len(commits)} 个新版本提交，建议升级。"
+            msg = f"检测到 {src_name} 有新版本可用（最新 #{remote_info['commit']}），建议升级。"
         else:
-            msg = "本地代码已与 GitHub 远程仓库完全一致，当前无需升级。"
+            msg = f"本地运行版本已与 {src_name} 保持完全一致，当前无需升级。"
     else:
         remote_info["commit"] = "未知"
         remote_info["message"] = "无法连接 GitHub 检查最新提交（网络超时或未联网）"

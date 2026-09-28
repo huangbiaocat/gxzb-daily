@@ -55,10 +55,20 @@ def get_current_git_version():
                 text=True,
                 timeout=5
             )
-            msg = res_msg.stdout.strip() if res_msg.returncode == 0 else ""
-            return {"commit": commit, "message": msg}
+        msg = res_msg.stdout.strip() if res_msg.returncode == 0 else ""
+        return {"commit": commit, "message": msg}
     except Exception:
         pass
+
+    # 尝试从 version.json 构建信息文件读取
+    v_file = ROOT_DIR / "version.json"
+    if v_file.exists():
+        try:
+            with open(v_file, "r", encoding="utf-8") as vf:
+                vdata = json.load(vf)
+                return {"commit": vdata.get("commit", ""), "message": vdata.get("message", "")}
+        except Exception:
+            pass
     return None
 
 def upgrade_via_git():

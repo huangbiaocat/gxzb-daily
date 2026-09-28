@@ -1,0 +1,44 @@
+{
+  "version": "v0.3.4",
+  "commit": "d760d2b",
+  "date": "2026-09-28",
+  "message": "fix(daily): 优化单日归档页滞后公告横幅提示与控制台导航细节",
+  "commits": [
+    {
+      "commit": "d760d2b",
+      "author": "黄彪",
+      "date": "2026-09-28",
+      "message": "fix(daily): 优化单日归档页滞后公告横幅提示与控制台导航细节"
+    },
+    {
+      "commit": "d507291",
+      "author": "黄彪",
+      "date": "2026-09-28",
+      "message": "feat(release): 升级至 v0.3.4，重构控制台在线对比升级与双端发布链路"
+    },
+    {
+      "commit": "cdcd0fe",
+      "author": "黄彪",
+      "date": "2026-09-24",
+      "message": "feat(release): 升级至 v0.3.3，支持胶囊标签点击联动筛选与批量重构历史"
+    },
+    {
+      "commit": "b4ba074",
+      "author": "黄彪",
+      "date": "2026-09-24",
+      "message": "fix(ui): 将展厅大屏与计划任务暂停监控命名区分，避免歧义"
+    },
+    {
+      "commit": "6340064",
+      "author": "黄彪",
+      "date": "2026-09-24",
+      "message": "fix(baseline): 修复冷启动未固化快照导致回扫误判历史公告为滞后的缺陷"
+    },
+    {
+      "commit": "63ecf0c",
+      "author": "黄彪",
+      "date": "2026-09-24",
+      "message": "docs: 更新 README.md 对应 v0.3.2 体系架构与核心创新特性说明"
+    }
+  ]
+}
