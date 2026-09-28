@@ -604,6 +604,155 @@ def send_daily_summary(day: str, total_count: int = 0, focus_count: int = 0, fai
     return False
 
 
+def send_delayed_notice_alert(delayed_notices: list, today: str = None) -> bool:
+    """发现有滞后公开的公告时，立即推送预警通知（支持去重，新发现的条目即时触发）"""
+    if not delayed_notices:
+        return True
+
+    today_str = today or config.today()
+    state_dir = getattr(config, "STATE_DIR", Path("data/state"))
+    state_dir.mkdir(parents=True, exist_ok=True)
+    pushed_file = state_dir / "pushed_delayed_alerts.json"
+
+    pushed_map = {}
+    if pushed_file.exists():
+        try:
+            pushed_map = json.loads(pushed_file.read_text(encoding="utf-8"))
+        except Exception:
+            pushed_map = {}
+
+    # 过滤出尚未推送过的滞后公开条目
+    new_delayed = []
+    for it in delayed_notices:
+        iid = it.get("infoid") or it.get("link") or it.get("title")
+        if iid and iid not in pushed_map:
+            new_delayed.append(it)
+
+    if not new_delayed:
+        print(f"[微信推送] 发现的 {len(delayed_notices)} 条滞后公开条目均已在先前推送过，跳过重复提醒。")
+        return True
+
+    appid = config.WECHAT_APPID
+    appsecret = config.WECHAT_APPSECRET
+    touser_raw = getattr(config, "WECHAT_TOUSER", "").strip()
+    admin_touser = getattr(config, "WECHAT_ADMIN_TOUSER", "").strip()
+    tpl_id = config.WECHAT_TEMPLATE_ID
+
+    if not (appid and appsecret and (touser_raw or admin_touser) and tpl_id):
+        print(f"[微信推送] 微信配置不完整，跳过滞后公开即时提醒（捕获到 {len(new_delayed)} 条）")
+        return False
+
+    token = get_access_token(appid, appsecret)
+    if not token:
+        return False
+
+    # 接收人列表：常规订阅者 + 管理员全员覆盖
+    target_users = set()
+    if touser_raw:
+        if touser_raw.lower() in ("@all", "all", "所有人"):
+            all_users = get_all_user_openids(token)
+            target_users.update(all_users)
+        else:
+            for u in touser_raw.replace("，", ",").split(","):
+                if u.strip():
+                    target_users.add(u.strip())
+    if admin_touser:
+        for u in admin_touser.replace("，", ",").split(","):
+            if u.strip():
+                target_users.add(u.strip())
+
+    if not target_users:
+        print("[微信推送] 未找到有效的接收用户，跳过滞后公开即时提醒")
+        return False
+
+    count = len(new_delayed)
+    delay_values = [int(it.get("delay_days", 0)) for it in new_delayed if str(it.get("delay_days", "")).isdigit()]
+    if delay_values:
+        max_delay = max(delay_values)
+        min_delay = min(delay_values)
+        delay_range = f"{min_delay}~{max_delay} 天" if min_delay != max_delay else f"{min_delay} 天"
+    else:
+        delay_range = "多天"
+
+    lines = [
+        f"🚨【滞后公开预警】回扫捕获 {count} 条历史补录公告",
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"巡检基准：{today_str} 历史回扫排查",
+        f"异常特征：官方标称发布于 {delay_range}前，此前多轮巡检均未公示，今日回扫确证隐匿现身！",
+        "",
+        "📋 滞后公开清单："
+    ]
+    for idx, it in enumerate(new_delayed[:5], 1):
+        c = (it.get("areaname") or it.get("city") or "广西").replace("市", "")
+        st = it.get("stage") or "公告"
+        d_days = it.get("delay_days", 0)
+        pub_d = (it.get("pub_time") or "")[:10]
+        t = it.get("title", "").strip().replace("\r", "").replace("\n", " ")
+        if len(t) > 24:
+            t = t[:23].rstrip("(-_/:· ") + "…"
+        lines.append(f"{idx}. [滞后{d_days}天·标称{pub_d}] 【{c}·{st}】{t}")
+
+    if count > 5:
+        lines.append(f"... 等共 {count} 条滞后公开项目")
+
+    lines.append("")
+    lines.append("⚡ 存证已锁定，涉及的历史日期归档页面均已自动重新封装更新。")
+    lines.append("👉 点击卡片查看完整明细及存证证据链")
+    content_text = "\n".join(lines)
+
+    pub_dates = {it.get("pub_time", "")[:10] for it in new_delayed if it.get("pub_time")}
+    base_url = getattr(config, "SITE_BASE_URL", getattr(config, "BASE_URL", "https://ztb.139771.xyz")).rstrip("/")
+    if len(pub_dates) == 1:
+        target_date = list(pub_dates)[0]
+        page_url = f"{base_url}/{target_date}.html"
+    else:
+        page_url = f"{base_url}/archive.html"
+
+    first_title = f"🚨【滞后公开预警】回扫捕获 {count} 条历史补录公告"
+    first_item = new_delayed[0]
+    t0 = first_item.get("title", "").strip().replace("\r", "").replace("\n", " ")
+    if len(t0) > 22:
+        t0 = t0[:21].rstrip("(-_/:· ") + "…"
+    kw1 = f"【滞后{first_item.get('delay_days', 0)}天】{t0}"
+    kw2 = f"回扫发现 {count} 条（滞后 {delay_range}）"
+    kw3 = f"基准日：{today_str}"
+    kw4 = "涉及历史归档已自动封装重算"
+    remark_val = "⚠️ 官方标称时间与实际发布严重脱节，容易错失投标窗口！点击立即查看详情与证据链。"
+
+    success_cnt = 0
+    for uid in target_users:
+        payload = {
+            "touser": uid,
+            "template_id": tpl_id,
+            "url": page_url,
+            "data": {
+                "content": {"value": content_text, "color": "#dc2626"},
+                "first": {"value": first_title, "color": "#dc2626"},
+                "keyword1": {"value": kw1, "color": "#dc2626"},
+                "keyword2": {"value": kw2, "color": "#d97706"},
+                "keyword3": {"value": kw3, "color": "#1e293b"},
+                "keyword4": {"value": kw4, "color": "#2563eb"},
+                "remark": {"value": remark_val, "color": "#64748b"}
+            }
+        }
+        if send_template_message(token, payload):
+            success_cnt += 1
+
+    print(f"[微信推送] 滞后公开即时提醒发送完成: 成功 {success_cnt}/{len(target_users)}")
+    if success_cnt > 0:
+        now_iso = datetime.now().isoformat()
+        for it in new_delayed:
+            iid = it.get("infoid") or it.get("link") or it.get("title")
+            if iid:
+                pushed_map[iid] = now_iso
+        try:
+            pushed_file.write_text(json.dumps(pushed_map, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+        return True
+    return False
+
+
 def send_alert(day: str, error_msg: str, step_name: str = "每日定时任务") -> bool:
     """发送异常告警模版消息"""
     if not getattr(config, "PUSH_NOTIFY_ERROR", True):
@@ -679,11 +828,12 @@ def send_alert(day: str, error_msg: str, step_name: str = "每日定时任务") 
 
 
 
-def check_push_condition(force: bool = False, total_count: int = 0, focus_count: int = 0, max_amount: float = 0.0):
+def check_push_condition(force: bool = False, total_count: int = 0, focus_count: int = 0, max_amount: float = 0.0, delayed_count: int = 0):
     """
     检查当前时刻与采集数据是否满足推送条件（支持多条规则同时生效）：
     1. force=True：手动触发或强制模式，直接放行。
     2. 多规则评估（支持多规则并行生效，满足任意已启用的规则即触发）：
+       - 'delayed': 发现滞后公开/隐匿现身公告，立即强推
        - 'focus': 命中重点项目、重点业主（无门槛立即推）或通用预警词（达金额门槛立即推），不受最低标讯数门槛限制
        - 'batch_time': 到达每日指定批次时段集中归集推送
        - 'conditional' 或 PUSH_CONDITIONAL_INCREMENTAL: 条件发送（仅自上次发送后有新增内容时发送）
@@ -694,6 +844,9 @@ def check_push_condition(force: bool = False, total_count: int = 0, focus_count:
 
     if force:
         return True, "手动/强制触发"
+
+    if delayed_count > 0:
+        return True, f"命中滞后公开预警规则：发现 {delayed_count} 条被官方滞后公开/隐匿现身公告，触发即时强推"
 
     # 获取当前启用的全部推送规则清单
     active_rules = list(getattr(config, "PUSH_TRIGGER_RULES", []))

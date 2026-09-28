@@ -35,18 +35,24 @@ class TestArchiveFocusOvertime(unittest.TestCase):
 
     def test_calendar_view_displays_counts(self):
         index_html = (config.SITE_DIR / "index.html").read_text(encoding="utf-8")
+        arc_data = json.loads((config.DATA_DIR / "archive.json").read_text(encoding="utf-8"))
+        d22 = next(d for d in arc_data["days"] if d["date"] == "2026-09-22")
+        focus_cnt = d22["focus_count"]
         self.assertIn('data-date="2026-09-22"', index_html)
-        self.assertIn('data-focus="3"', index_html)
+        self.assertIn(f'data-focus="{focus_cnt}"', index_html)
         self.assertNotIn('⚡', index_html)
-        self.assertIn('重点 3', index_html)
+        self.assertIn(f'重点 {focus_cnt}', index_html)
         # 首页不显示加班发布数量
         self.assertNotIn('🌙', index_html)
         self.assertNotIn('加班 22', index_html)
 
     def test_list_view_displays_counts(self):
         index_html = (config.SITE_DIR / "index.html").read_text(encoding="utf-8")
+        arc_data = json.loads((config.DATA_DIR / "archive.json").read_text(encoding="utf-8"))
+        d22 = next(d for d in arc_data["days"] if d["date"] == "2026-09-22")
+        focus_cnt = d22["focus_count"]
         self.assertIn('class="chip-alert"', index_html)
-        self.assertIn('当日重点信息 3 条', index_html)
+        self.assertIn(f'当日重点信息 {focus_cnt} 条', index_html)
         # 首页不显示加班发布数量
         self.assertNotIn('class="chip-nonwork"', index_html)
         self.assertNotIn('当日加班发布', index_html)

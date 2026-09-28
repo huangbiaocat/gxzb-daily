@@ -184,11 +184,204 @@ def get_git_info():
         )
         if res.returncode == 0:
             commit = res.stdout.strip()
-            app_ver = getattr(config, "APP_VERSION", "v0.3.3")
+            app_ver = getattr(config, "APP_VERSION", "v0.3.4")
             return {"commit": commit, "version": f"{app_ver} (#{commit})"}
     except Exception:
         pass
-    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.3.3")}
+    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.3.4")}
+
+def check_app_upgrade():
+    """
+    检查当前本地版本与 GitHub 远程版本，获取差异提交列表与更新内容说明。
+    """
+    local_version = getattr(config, "APP_VERSION", "v0.3.4")
+    local_info = {
+        "version": local_version,
+        "commit": "",
+        "date": "",
+        "message": "",
+        "is_git": False
+    }
+    remote_info = {
+        "version": local_version,
+        "commit": "",
+        "date": "",
+        "message": ""
+    }
+    commits = []
+    has_update = False
+    behind_count = 0
+    connected = False
+
+    # 1. 本地 Git 版本与提交信息
+    try:
+        res = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=str(ROOT_DIR),
+            capture_output=True,
+            text=True,
+            timeout=4
+        )
+        if res.returncode == 0:
+            local_info["commit"] = res.stdout.strip()
+            local_info["is_git"] = True
+            log_res = subprocess.run(
+                ["git", "log", "-1", "--pretty=format:%ad\t%s", "--date=short"],
+                cwd=str(ROOT_DIR),
+                capture_output=True,
+                text=True,
+                timeout=4
+            )
+            if log_res.returncode == 0 and "\t" in log_res.stdout:
+                parts = log_res.stdout.strip().split("\t", 1)
+                local_info["date"] = parts[0]
+                local_info["message"] = parts[1]
+    except Exception:
+        pass
+
+    # 2. 探测远程 origin/main 分支
+    if local_info["is_git"]:
+        try:
+            f_res = subprocess.run(
+                ["git", "fetch", "origin", "main", "--quiet"],
+                cwd=str(ROOT_DIR),
+                capture_output=True,
+                text=True,
+                timeout=6
+            )
+            if f_res.returncode == 0:
+                connected = True
+                r_commit_res = subprocess.run(
+                    ["git", "rev-parse", "--short", "origin/main"],
+                    cwd=str(ROOT_DIR),
+                    capture_output=True,
+                    text=True,
+                    timeout=3
+                )
+                if r_commit_res.returncode == 0:
+                    remote_info["commit"] = r_commit_res.stdout.strip()
+
+                r_log_res = subprocess.run(
+                    ["git", "log", "-1", "origin/main", "--pretty=format:%ad\t%s", "--date=short"],
+                    cwd=str(ROOT_DIR),
+                    capture_output=True,
+                    text=True,
+                    timeout=3
+                )
+                if r_log_res.returncode == 0 and "\t" in r_log_res.stdout:
+                    parts = r_log_res.stdout.strip().split("\t", 1)
+                    remote_info["date"] = parts[0]
+                    remote_info["message"] = parts[1]
+
+                # 尝试从 origin/main:config.py 获取远程 APP_VERSION
+                try:
+                    c_res = subprocess.run(
+                        ["git", "show", "origin/main:config.py"],
+                        cwd=str(ROOT_DIR),
+                        capture_output=True,
+                        text=True,
+                        timeout=3
+                    )
+                    if c_res.returncode == 0:
+                        m = re.search(r'APP_VERSION\s*=\s*["\']([^"\']+)["\']', c_res.stdout)
+                        if m:
+                            remote_info["version"] = m.group(1)
+                except Exception:
+                    pass
+
+                cnt_res = subprocess.run(
+                    ["git", "rev-list", "HEAD..origin/main", "--count"],
+                    cwd=str(ROOT_DIR),
+                    capture_output=True,
+                    text=True,
+                    timeout=3
+                )
+                if cnt_res.returncode == 0:
+                    behind_count = int(cnt_res.stdout.strip() or "0")
+
+                if behind_count > 0:
+                    has_update = True
+                    diff_res = subprocess.run(
+                        ["git", "log", "HEAD..origin/main", "--pretty=format:%h\t%an\t%ad\t%s", "--date=short"],
+                        cwd=str(ROOT_DIR),
+                        capture_output=True,
+                        text=True,
+                        timeout=4
+                    )
+                    if diff_res.returncode == 0 and diff_res.stdout.strip():
+                        for line in diff_res.stdout.strip().split("\n"):
+                            p = line.split("\t")
+                            if len(p) >= 4:
+                                commits.append({"hash": p[0], "author": p[1], "date": p[2], "message": p[3]})
+                else:
+                    recent_res = subprocess.run(
+                        ["git", "log", "-5", "--pretty=format:%h\t%an\t%ad\t%s", "--date=short"],
+                        cwd=str(ROOT_DIR),
+                        capture_output=True,
+                        text=True,
+                        timeout=4
+                    )
+                    if recent_res.returncode == 0 and recent_res.stdout.strip():
+                        for line in recent_res.stdout.strip().split("\n"):
+                            p = line.split("\t")
+                            if len(p) >= 4:
+                                commits.append({"hash": p[0], "author": p[1], "date": p[2], "message": p[3]})
+        except Exception:
+            pass
+
+    # 3. 若 git fetch 未成功（网络或非 git 模式），使用 GitHub API 备用方案
+    if not connected:
+        import urllib.request
+        try:
+            req = urllib.request.Request(
+                "https://api.github.com/repos/huangbiaocat/gxzb-daily/commits?per_page=6",
+                headers={"User-Agent": "GXZB-Updater/1.0", "Accept": "application/vnd.github.v3+json"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                if resp.status == 200:
+                    gh_data = json.loads(resp.read().decode("utf-8"))
+                    if isinstance(gh_data, list) and len(gh_data) > 0:
+                        connected = True
+                        top = gh_data[0]
+                        remote_info["commit"] = top.get("sha", "")[:7]
+                        remote_info["message"] = top.get("commit", {}).get("message", "").split("\n")[0]
+                        remote_info["date"] = top.get("commit", {}).get("author", {}).get("date", "")[:10]
+                        
+                        if local_info["commit"] and remote_info["commit"] != local_info["commit"]:
+                            has_update = True
+                        
+                        commits = []
+                        for item in gh_data:
+                            commits.append({
+                                "hash": item.get("sha", "")[:7],
+                                "author": item.get("commit", {}).get("author", {}).get("name", ""),
+                                "date": item.get("commit", {}).get("author", {}).get("date", "")[:10],
+                                "message": item.get("commit", {}).get("message", "").split("\n")[0]
+                            })
+        except Exception:
+            pass
+
+    # 生成状态提示语
+    if connected:
+        if has_update:
+            msg = f"检测到 GitHub 远程仓库有 {behind_count or len(commits)} 个新版本提交，建议升级。"
+        else:
+            msg = "本地代码已与 GitHub 远程仓库完全一致，当前无需升级。"
+    else:
+        remote_info["commit"] = "未知"
+        remote_info["message"] = "无法连接 GitHub 检查最新提交（网络超时或未联网）"
+        msg = "无法连接 GitHub 检查最新版本（网络超时或未联网）。如需同步，可尝试强制拉取。"
+
+    return {
+        "ok": True,
+        "connected": connected,
+        "has_update": has_update,
+        "behind_count": behind_count,
+        "current_version": local_info,
+        "remote_version": remote_info,
+        "commits": commits,
+        "message": msg
+    }
 
 def get_scheduled_task_status():
     """检测 Windows 计划任务 ZtbCollector_Sync 的运行/就绪/启用状态"""
@@ -382,10 +575,18 @@ def get_system_status():
         "monitor_end_time": getattr(config, "MONITOR_END_TIME", "20:00"),
         "monitor_interval": getattr(config, "MONITOR_INTERVAL_MINUTES", 10),
         "yesterday_final": yesterday_final_info,
+        "focus_stats": {
+            "projects_count": len(getattr(config, "FOCUS_PROJECTS", [])),
+            "owners_count": len(getattr(config, "FOCUS_OWNERS", [])),
+            "master_exists": (ROOT_DIR / "config" / "focus_rules_master.json").exists()
+        },
         "vps": {
             "host": getattr(config, "VPS_HOST", "217.142.149.2"),
             "auto_upload": getattr(config, "AUTO_UPLOAD_VPS", False),
-            "path": getattr(config, "VPS_PATH", "/opt/1panel/apps/openresty/openresty/www/sites/ztb/index/"),
+            "path": getattr(config, "VPS_PATH", "/opt/1panel/www/tender_site/"),
+            "last_sync_time": (json.loads((ROOT_DIR / "data" / "last_vps_sync.json").read_text(encoding="utf-8")).get("last_sync_time", "") if (ROOT_DIR / "data" / "last_vps_sync.json").exists() else ""),
+            "last_sync_status": (json.loads((ROOT_DIR / "data" / "last_vps_sync.json").read_text(encoding="utf-8")).get("status", "") if (ROOT_DIR / "data" / "last_vps_sync.json").exists() else ""),
+            "last_sync_method": (json.loads((ROOT_DIR / "data" / "last_vps_sync.json").read_text(encoding="utf-8")).get("method", "") if (ROOT_DIR / "data" / "last_vps_sync.json").exists() else "")
         },
         "wechat": {
             "configured": bool(getattr(config, "WECHAT_APPID", "") and getattr(config, "WECHAT_APPSECRET", "")),
@@ -413,19 +614,16 @@ def read_config_env():
                 continue
             if "=" in line:
                 k, v = line.split("=", 1)
-                val = v.strip()
-                if any(ord(ch) > 127 for ch in val):
-                    try:
-                        val = val.encode("gbk").decode("utf-8")
-                    except Exception:
-                        pass
-                raw_env[k.strip()] = val
+                raw_env[k.strip()] = v.strip()
 
     res = {
         "FOCUS_KEYWORDS": getattr(config, "FOCUS_KEYWORDS", []),
         "FOCUS_KEYWORDS_STR": ",".join(getattr(config, "FOCUS_KEYWORDS", [])) if getattr(config, "FOCUS_KEYWORDS", None) else "",
         "FOCUS_PROJECTS": "\n".join(getattr(config, "FOCUS_PROJECTS", [])) if getattr(config, "FOCUS_PROJECTS", None) else "",
         "FOCUS_OWNERS": "\n".join(getattr(config, "FOCUS_OWNERS", [])) if getattr(config, "FOCUS_OWNERS", None) else "",
+        "FOCUS_PROJECTS_COUNT": len(getattr(config, "FOCUS_PROJECTS", [])),
+        "FOCUS_OWNERS_COUNT": len(getattr(config, "FOCUS_OWNERS", [])),
+        "RULES_MASTER_AVAILABLE": (ROOT_DIR / "config" / "focus_rules_master.json").exists(),
         "FOCUS_PROJECT_TYPES": "\n".join(getattr(config, "FOCUS_PROJECT_TYPES", [])) if getattr(config, "FOCUS_PROJECT_TYPES", None) else "",
         "FOCUS_MIN_AMOUNT": getattr(config, "FOCUS_MIN_AMOUNT_RAW", ""),
         "AUTO_UPLOAD_VPS": "true" if getattr(config, "AUTO_UPLOAD_VPS", False) else "false",
@@ -463,6 +661,84 @@ def read_config_env():
     }
     return res
 
+def list_config_snapshots():
+    backup_dir = ROOT_DIR / "data" / "backup" / "config"
+    snapshots = []
+    if backup_dir.exists():
+        for f in sorted(backup_dir.glob("env_*.env"), reverse=True):
+            snapshots.append({
+                "filename": f.name,
+                "time": f.stat().st_mtime,
+                "time_str": datetime.fromtimestamp(f.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                "size": f.stat().st_size
+            })
+    return snapshots
+
+def restore_config_snapshot(filename):
+    backup_dir = ROOT_DIR / "data" / "backup" / "config"
+    target = backup_dir / filename
+    if not target.exists() or not target.is_file():
+        raise FileNotFoundError(f"快照文件不存在: {filename}")
+    env_file = ROOT_DIR / ".env"
+    shutil.copy2(target, env_file)
+    rule_snap = backup_dir / filename.replace("env_", "rules_").replace(".env", ".json")
+    if rule_snap.exists():
+        shutil.copy2(rule_snap, ROOT_DIR / "data" / "focus_rules.json")
+    
+    if config:
+        import importlib
+        if hasattr(config, "_ENV"):
+            config._ENV = config.load_env_file()
+        importlib.reload(config)
+    return True
+
+def restore_master_focus_rules():
+    master_path = ROOT_DIR / "config" / "focus_rules_master.json"
+    if not master_path.exists():
+        raise FileNotFoundError("未找到规则母库文件 config/focus_rules_master.json")
+    master_data = json.loads(master_path.read_text(encoding="utf-8"))
+    
+    rules_path = ROOT_DIR / "data" / "focus_rules.json"
+    rules_path.parent.mkdir(parents=True, exist_ok=True)
+    rules_path.write_text(json.dumps(master_data, ensure_ascii=False, indent=2), encoding="utf-8")
+    
+    prjs = [p["name"] for p in master_data.get("projects", []) if isinstance(p, dict) and p.get("name")]
+    owns = [o["name"] for o in master_data.get("owners", []) if isinstance(o, dict) and o.get("name")]
+    
+    # 读取现有 env
+    env_file = ROOT_DIR / ".env"
+    env_text = env_file.read_text(encoding="utf-8") if env_file.exists() else ""
+    p_val = ",".join(prjs)
+    o_val = ",".join(owns)
+    if "FOCUS_PROJECTS=" in env_text:
+        env_text = re.sub(r"^FOCUS_PROJECTS=.*$", f"FOCUS_PROJECTS={p_val}", env_text, flags=re.MULTILINE)
+    else:
+        env_text += f"\nFOCUS_PROJECTS={p_val}\n"
+    if "FOCUS_OWNERS=" in env_text:
+        env_text = re.sub(r"^FOCUS_OWNERS=.*$", f"FOCUS_OWNERS={o_val}", env_text, flags=re.MULTILINE)
+    else:
+        env_text += f"\nFOCUS_OWNERS={o_val}\n"
+    
+    backup_dir = ROOT_DIR / "data" / "backup" / "config"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if env_file.exists():
+        shutil.copy2(env_file, backup_dir / f"env_{ts}.env")
+        shutil.copy2(env_file, ROOT_DIR / ".env.bak")
+    env_file.write_text(env_text, encoding="utf-8")
+    
+    if config:
+        import importlib
+        if hasattr(config, "_ENV"):
+            config._ENV = config.load_env_file()
+        importlib.reload(config)
+        
+    return {
+        "project_count": len(prjs),
+        "owner_count": len(owns),
+        "message": f"已成功从规则母库恢复 {len(prjs)} 项重点工程与 {len(owns)} 家重点业主！"
+    }
+
 def save_config_env(data):
     """保存配置项到 .env 文件并重新载入 config"""
     env_file = ROOT_DIR / ".env"
@@ -478,13 +754,91 @@ def save_config_env(data):
                 content_str = raw_b.decode("utf-8", errors="replace")
         lines = [l + "\n" for l in content_str.splitlines()]
 
+    # 1. 自动快照备份：修改前自动归档当前 .env 和 rules
+    backup_dir = ROOT_DIR / "data" / "backup" / "config"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if env_file.exists():
+        shutil.copy2(env_file, backup_dir / f"env_{ts}.env")
+        shutil.copy2(env_file, ROOT_DIR / ".env.bak")
+
+    # 解析重点项目与重点业主，支持换行、中英文逗号
+    raw_p = data.get("FOCUS_PROJECTS", "").replace("\r\n", "\n").replace("，", ",")
+    if "\n" in raw_p:
+        p_list = [p.strip() for p in raw_p.split("\n") if p.strip()]
+    else:
+        p_list = [p.strip() for p in raw_p.split(",") if p.strip()]
+
+    raw_o = data.get("FOCUS_OWNERS", "").replace("\r\n", "\n").replace("，", ",")
+    if "\n" in raw_o:
+        o_list = [o.strip() for o in raw_o.split("\n") if o.strip()]
+    else:
+        o_list = [o.strip() for o in raw_o.split(",") if o.strip()]
+
+    # 防意外骤减熔断拦截保护
+    curr_prjs = getattr(config, "FOCUS_PROJECTS", []) if config else []
+    if len(curr_prjs) >= 10 and len(p_list) < 5 and not data.get("confirm_shrink"):
+        raise ValueError(f"安全熔断拦截：当前已有 {len(curr_prjs)} 项重点项目，提交的新项目仅 {len(p_list)} 项，疑似表单误清空。如确认缩减，请勾选确认缩减。")
+
+    # 同步维护持久化底库 data/focus_rules.json
+    rules_path = ROOT_DIR / "data" / "focus_rules.json"
+    master_path = ROOT_DIR / "config" / "focus_rules_master.json"
+    base_meta = {}
+    if rules_path.exists():
+        try:
+            base_meta = json.loads(rules_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    elif master_path.exists():
+        try:
+            base_meta = json.loads(master_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    existing_prj_map = {p["name"]: p for p in base_meta.get("projects", []) if isinstance(p, dict) and "name" in p}
+    new_projects_meta = []
+    for p_name in p_list:
+        if p_name in existing_prj_map:
+            new_projects_meta.append(existing_prj_map[p_name])
+        else:
+            new_projects_meta.append({
+                "name": p_name,
+                "aliases": [p_name],
+                "category": "自定义重点",
+                "priority": "P1",
+                "dept": "用户配置"
+            })
+
+    existing_own_map = {o["name"]: o for o in base_meta.get("owners", []) if isinstance(o, dict) and "name" in o}
+    new_owners_meta = []
+    for o_name in o_list:
+        if o_name in existing_own_map:
+            new_owners_meta.append(existing_own_map[o_name])
+        else:
+            new_owners_meta.append({
+                "name": o_name,
+                "aliases": [o_name],
+                "category": "自定义业主",
+                "priority": "P1"
+            })
+
+    base_meta["projects"] = new_projects_meta
+    base_meta["owners"] = new_owners_meta
+    base_meta["project_count"] = len(new_projects_meta)
+    base_meta["owner_count"] = len(new_owners_meta)
+    base_meta["updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    rules_path.parent.mkdir(parents=True, exist_ok=True)
+    rules_path.write_text(json.dumps(base_meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    shutil.copy2(rules_path, backup_dir / f"rules_{ts}.json")
+
     keys_written = set()
     new_lines = []
     
     mapping = {
         "FOCUS_KEYWORDS": data.get("FOCUS_KEYWORDS_STR", "").strip(),
-        "FOCUS_PROJECTS": ",".join([p.strip() for p in data.get("FOCUS_PROJECTS", "").replace("\r\n", "\n").replace("，", ",").split("\n") if p.strip()]) if "\n" in data.get("FOCUS_PROJECTS", "") else data.get("FOCUS_PROJECTS", "").strip(),
-        "FOCUS_OWNERS": ",".join([p.strip() for p in data.get("FOCUS_OWNERS", "").replace("\r\n", "\n").replace("，", ",").split("\n") if p.strip()]) if "\n" in data.get("FOCUS_OWNERS", "") else data.get("FOCUS_OWNERS", "").strip(),
+        "FOCUS_PROJECTS": ",".join(p_list),
+        "FOCUS_OWNERS": ",".join(o_list),
         "FOCUS_PROJECT_TYPES": ",".join([p.strip() for p in data.get("FOCUS_PROJECT_TYPES", "").replace("\r\n", "\n").replace("，", ",").split("\n") if p.strip()]) if "\n" in data.get("FOCUS_PROJECT_TYPES", "") else data.get("FOCUS_PROJECT_TYPES", "").strip(),
         "FOCUS_MIN_AMOUNT": str(data.get("FOCUS_MIN_AMOUNT", "")).strip(),
         "AUTO_UPLOAD_VPS": data.get("AUTO_UPLOAD_VPS", "true").strip().lower(),
@@ -615,12 +969,20 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             self.send_json(get_system_status())
             return
 
+        if path == "/api/check_upgrade":
+            self.send_json(check_app_upgrade())
+            return
+
         if path == "/api/task_state":
             self.send_json(PROC_MGR.get_state())
             return
 
         if path == "/api/config":
             self.send_json(read_config_env())
+            return
+
+        if path == "/api/config_snapshots":
+            self.send_json({"ok": True, "snapshots": list_config_snapshots()})
             return
 
         if path == "/api/baseline_status":
@@ -1027,6 +1389,34 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                 self.send_json({"ok": False, "msg": f"测试执行异常: {str(e)}"})
             return
 
+        if path == "/api/tunnel_status":
+            try:
+                from scripts.tunnel_guardian import get_network_info, find_tunnel_processes
+                net_info = get_network_info()
+                procs = find_tunnel_processes()
+                self.send_json({
+                    "ok": True,
+                    "running_processes": len(procs),
+                    "details": [{"pid": p[0], "cmd": p[1]} for p in procs],
+                    "network": net_info
+                })
+            except Exception as e:
+                self.send_json({"ok": False, "msg": f"获取隧道状态失败: {str(e)}"})
+            return
+
+        if path == "/api/fix_tunnel":
+            try:
+                from scripts.tunnel_guardian import ensure_tunnel_health
+                status = ensure_tunnel_health(auto_fix=True)
+                self.send_json({
+                    "ok": True,
+                    "msg": f"隧道自愈修复已完成！活跃状态: {status.get('tunnel_alive')}, 发现并清理进程数: {status.get('running_ssh_processes')}",
+                    "status": status
+                })
+            except Exception as e:
+                self.send_json({"ok": False, "msg": f"隧道修复失败: {str(e)}"})
+            return
+
         if path == "/api/test_wechat":
             cmd = [py_exe, "-u", "-c", "import sys; sys.path.insert(0, '.'); from scripts.notify_wechat import test_push; sys.exit(0 if test_push() else 1)"]
             ok, msg = PROC_MGR.start_task("测试微信服务号推送", cmd)
@@ -1095,6 +1485,23 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                 self.send_json({"ok": True, "msg": "配置已成功保存并重新加载"})
             except Exception as exc:
                 self.send_json({"ok": False, "msg": f"保存失败: {str(exc)}"}, status=500)
+            return
+
+        if path == "/api/restore_master_rules":
+            try:
+                res = restore_master_focus_rules()
+                self.send_json({"ok": True, "msg": res["message"], "data": res})
+            except Exception as exc:
+                self.send_json({"ok": False, "msg": f"恢复失败: {str(exc)}"}, status=500)
+            return
+
+        if path == "/api/restore_snapshot":
+            try:
+                snap_name = post_data.get("filename", "")
+                restore_config_snapshot(snap_name)
+                self.send_json({"ok": True, "msg": f"已成功从快照 {snap_name} 恢复配置！"})
+            except Exception as exc:
+                self.send_json({"ok": False, "msg": f"恢复快照失败: {str(exc)}"}, status=500)
             return
 
         self.send_error(404, "Not Found")

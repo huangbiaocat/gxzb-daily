@@ -43,7 +43,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.3.3</span>
+                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.3.4</span>
                     </div>
                     <p class="text-xs text-slate-500">Tender Data Control & Settings Center</p>
                 </div>
@@ -87,22 +87,36 @@
                     <span class="hidden sm:inline">删除日期内容</span>
                 </button>
 
+                <!-- 实时监控动态动效指示器（监控中雷达顺时针旋转+脉冲扩散，未监控时完全静止定格） -->
+                <div id="live-monitor-radar-pill" class="hidden sm:flex items-center space-x-2 px-2.5 py-1 rounded-full border transition-all duration-300 shadow-xs bg-emerald-50 border-emerald-200 text-emerald-800" title="程序实时监控状态：监控中字符动态旋转，暂停时定格静止">
+                    <div id="radar-char-top-box" class="w-5 h-5 rounded-md bg-slate-900 border border-emerald-500/60 flex items-center justify-center shrink-0 shadow-inner">
+                        <span id="radar-char-top" class="font-mono text-xs font-bold text-emerald-400 select-none">◜</span>
+                    </div>
+                    <div class="flex flex-col text-left pr-0.5">
+                        <div class="flex items-center space-x-1">
+                            <span id="radar-live-text" class="text-[11px] font-bold text-emerald-800 leading-tight">正在监控中</span>
+                            <span id="radar-live-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        </div>
+                        <span id="radar-live-sub" class="text-[9px] font-mono text-emerald-600 leading-tight">全区雷达扫描</span>
+                    </div>
+                </div>
+
                 <!-- 快捷监控启停开关 -->
                 <button id="btn-top-monitor" onclick="toggleMonitor()" class="text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center space-x-1.5 shadow-xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" title="快捷开启或暂停计划任务后台轮询采集">
                     <span id="top-monitor-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span id="top-monitor-text">监控中</span>
                 </button>
 
-                <!-- 展厅模式 / 打开大屏 -->
-                <button onclick="openExhibitionScreen()" class="text-xs font-semibold px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition flex items-center space-x-1.5 shadow-xs" title="在独立展厅大屏窗口打开实时大屏">
+                <!-- 打开线上网站 -->
+                <button onclick="openOnlineWebsite()" class="text-xs font-semibold px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition flex items-center space-x-1.5 shadow-xs" title="在浏览器新标签页打开线上网站">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                     </svg>
-                    <span>展厅大屏</span>
+                    <span>打开线上网站</span>
                 </button>
 
                 <!-- 同步升级 -->
-                <button onclick="triggerTask('upgrade')" id="btn-top-upgrade" class="text-xs font-semibold px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition flex items-center space-x-1.5 shadow-xs" title="从 GitHub 拉取最新版本并同步到本机">
+                <button onclick="openUpgradeModal()" id="btn-top-upgrade" class="text-xs font-semibold px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition flex items-center space-x-1.5 shadow-xs" title="检查并从 GitHub 同步升级新版本">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                     </svg>
@@ -161,6 +175,30 @@
                             </button>
                         </div>
 
+                        <!-- 规则母库守护状态与安全恢复工具条 -->
+                        <div class="bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-slate-50 border border-blue-200/90 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs">
+                            <div class="flex items-center space-x-2.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                                <div>
+                                    <div class="font-bold text-slate-800 flex items-center space-x-2">
+                                        <span>规则主库持久化防丢保护已激活</span>
+                                        <span class="text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-1.5 py-0.5 rounded">安全熔断生效中</span>
+                                    </div>
+                                    <div class="text-slate-500 text-[11px] mt-0.5">本地内置全量 95 项重点工程与 58 家重点业主底库；系统每次保存均自动创建版本快照，杜绝意外清空。</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2 shrink-0">
+                                <button type="button" onclick="restoreMasterRules()" class="px-3 py-1.5 bg-white hover:bg-blue-50 text-blue-700 border border-blue-300 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-xs" title="若重点名单意外被清空或被误改，点击可立即从内置规则母库全量还原">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                    <span>一键恢复规则母库 (95工程+58业主)</span>
+                                </button>
+                                <button type="button" onclick="openConfigSnapshotsModal()" class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 shadow-xs" title="查看并回滚保存配置时自动生成的备份快照">
+                                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span>历史配置快照</span>
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- 独立触发规则：1 重点跟踪项目 与 2 重点跟踪业主 -->
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
                             <!-- 1 重点跟踪项目 -->
@@ -168,7 +206,8 @@
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                                         <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[11px] font-black">1</span>
-                                        重点跟踪项目清单 (FOCUS_PROJECTS)
+                                        <span>重点跟踪项目清单 (FOCUS_PROJECTS)</span>
+                                        <span id="badge-projects-count" class="text-[10px] font-mono font-bold bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full ml-1">--</span>
                                     </label>
                                     <span class="text-[10px] text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded font-medium">独立规则·命中即重点</span>
                                 </div>
@@ -186,7 +225,8 @@
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                                         <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-black">2</span>
-                                        重点跟踪业主名单 (FOCUS_OWNERS)
+                                        <span>重点跟踪业主名单 (FOCUS_OWNERS)</span>
+                                        <span id="badge-owners-count" class="text-[10px] font-mono font-bold bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-full ml-1">--</span>
                                     </label>
                                     <span class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded font-medium">独立规则·命中即重点</span>
                                 </div>
@@ -668,13 +708,19 @@
                     <div class="text-xs text-slate-500 mt-1">最近期号: <span id="stat-last-day" class="font-medium text-slate-700">--</span></div>
                 </div>
 
-                <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-                    <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">云端同步 VPS</div>
-                    <div class="mt-2 flex items-baseline justify-between">
-                        <span id="stat-vps-status" class="text-base font-semibold text-slate-700">未配置</span>
-                        <span id="stat-vps-badge" class="px-2 py-0.5 rounded text-xs">--</span>
+                <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">云端同步 VPS</div>
+                        <div class="mt-2 flex items-baseline justify-between">
+                            <span id="stat-vps-status" class="text-base font-semibold text-slate-700">未配置</span>
+                            <span id="stat-vps-badge" class="px-2 py-0.5 rounded text-xs">--</span>
+                        </div>
+                        <div id="stat-vps-desc" class="text-xs text-slate-500 mt-1 truncate">--</div>
                     </div>
-                    <div id="stat-vps-desc" class="text-xs text-slate-500 mt-1">--</div>
+                    <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <span class="text-slate-400 font-medium">最后同步时间:</span>
+                        <span id="stat-vps-time" class="font-mono text-slate-600 font-medium text-[11px]">暂无记录</span>
+                    </div>
                 </div>
 
                 <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
@@ -706,10 +752,8 @@
             <div class="bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 border border-blue-100/80 rounded-xl p-4 space-y-3 text-xs">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
+                    <div id="banner-radar-box" class="w-8 h-8 rounded-lg bg-slate-900 border border-emerald-500/50 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden" title="定时监控雷达：监控中字符动态扫描，暂停时静止">
+                        <span id="banner-radar-char" class="font-mono text-sm font-bold text-emerald-400 select-none">◜</span>
                     </div>
                     <div>
                         <div class="font-bold text-slate-800 flex items-center space-x-2">
@@ -730,12 +774,6 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
                         </svg>
                         <span id="banner-monitor-btn-text">开始监控</span>
-                    </button>
-                    <button onclick="openExhibitionScreen()" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg text-indigo-700 font-semibold shadow-xs transition text-xs flex items-center space-x-1">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                        </svg>
-                        <span>展厅大屏</span>
                     </button>
                     <button onclick="switchTab('env')" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium shadow-xs transition text-xs">
                         周期设置 &rarr;
@@ -862,7 +900,7 @@
                                 </div>
                                 <span class="text-[10px] text-rose-500 mt-0.5">单日/批量删除</span>
                             </button>
-                            <button onclick="triggerTask('upgrade')" id="btn-dashboard-upgrade" class="btn-action flex flex-col items-center justify-center p-3 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200/80 text-emerald-800 transition col-span-2 sm:col-span-2">
+                            <button onclick="openUpgradeModal()" id="btn-dashboard-upgrade" class="btn-action flex flex-col items-center justify-center p-3 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200/80 text-emerald-800 transition col-span-2 sm:col-span-2">
                                 <div class="flex items-center space-x-1.5">
                                     <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
@@ -1023,7 +1061,7 @@
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.3.3</span>
+        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.3.4</span>
         · <span class="text-slate-400">已接入: 广西公共资源交易平台 · 崇左阳光采购服务平台</span>
     </footer>
 
@@ -1076,32 +1114,108 @@
             countdownTimer = setInterval(updateCountdownDisplay, 1000);
         }
 
+        let onlineSiteUrl = "https://ztb.139771.xyz";
+
+        // 字符组成的雷达动态扫描样式（6方位顺时针扫动弧，点暂停监控时定格）
+        const RADAR_CHARS = ['◜', '◠', '◝', '◞', '◡', '◟'];
+        let radarCharIdx = 0;
+        let radarAnimTimer = null;
+
+        function startRadarAnim() {
+            if (radarAnimTimer) return;
+            const topChar = document.getElementById("radar-char-top");
+            const bannerChar = document.getElementById("banner-radar-char");
+            if (topChar) topChar.className = "font-mono text-xs font-bold text-emerald-400 select-none";
+            if (bannerChar) bannerChar.className = "font-mono text-sm font-bold text-emerald-400 select-none";
+
+            radarAnimTimer = setInterval(() => {
+                radarCharIdx = (radarCharIdx + 1) % RADAR_CHARS.length;
+                const char = RADAR_CHARS[radarCharIdx];
+                const tc = document.getElementById("radar-char-top");
+                const bc = document.getElementById("banner-radar-char");
+                if (tc) tc.textContent = char;
+                if (bc) bc.textContent = char;
+            }, 140);
+        }
+
+        function stopRadarAnim() {
+            if (radarAnimTimer) {
+                clearInterval(radarAnimTimer);
+                radarAnimTimer = null;
+            }
+            const topChar = document.getElementById("radar-char-top");
+            const bannerChar = document.getElementById("banner-radar-char");
+            if (topChar) {
+                topChar.textContent = "◦";
+                topChar.className = "font-mono text-xs font-bold text-slate-400 select-none";
+            }
+            if (bannerChar) {
+                bannerChar.textContent = "◦";
+                bannerChar.className = "font-mono text-sm font-bold text-slate-500 select-none";
+            }
+        }
+
         function updateMonitorUI(monitor) {
             const topText = document.getElementById("top-monitor-text");
             const topDot = document.getElementById("top-monitor-dot");
             const topBtn = document.getElementById("btn-top-monitor");
             const bannerBtn = document.getElementById("btn-banner-monitor-toggle");
             const bannerBtnText = document.getElementById("banner-monitor-btn-text");
+            const radarPill = document.getElementById("live-monitor-radar-pill");
+            const radarLiveText = document.getElementById("radar-live-text");
+            const radarLiveSub = document.getElementById("radar-live-sub");
+            const radarLiveDot = document.getElementById("radar-live-dot");
+            const radarTopBox = document.getElementById("radar-char-top-box");
+            const bannerRadarBox = document.getElementById("banner-radar-box");
 
             if (!monitor || !monitor.exists) {
+                stopRadarAnim();
                 if (topText) topText.textContent = "未配置任务";
                 if (topDot) topDot.className = "w-2 h-2 rounded-full bg-slate-400";
+                if (radarPill) {
+                    radarPill.className = "hidden sm:flex items-center space-x-2 px-2.5 py-1 rounded-full border transition-all duration-300 shadow-xs bg-slate-100 border-slate-200 text-slate-500";
+                }
+                if (radarTopBox) radarTopBox.className = "w-5 h-5 rounded-md bg-slate-800 border border-slate-600/50 flex items-center justify-center shrink-0 shadow-inner";
+                if (radarLiveText) radarLiveText.textContent = "未配置任务";
+                if (radarLiveSub) radarLiveSub.textContent = "监控待机";
+                if (radarLiveDot) radarLiveDot.className = "w-1.5 h-1.5 rounded-full bg-slate-400";
+                if (bannerRadarBox) bannerRadarBox.className = "w-8 h-8 rounded-lg bg-slate-800 border border-slate-600/40 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden";
                 return;
             }
 
             currentMonitorEnabled = monitor.enabled;
             if (monitor.enabled) {
+                startRadarAnim();
                 if (topText) topText.textContent = monitor.state || "监控中";
                 if (topDot) topDot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
                 if (topBtn) topBtn.className = "text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center space-x-1.5 shadow-xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100";
                 if (bannerBtn) bannerBtn.className = "px-3 py-1.5 font-semibold rounded-lg shadow-xs transition text-xs flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-600 text-white";
                 if (bannerBtnText) bannerBtnText.textContent = "暂停监控";
+
+                if (radarPill) {
+                    radarPill.className = "hidden sm:flex items-center space-x-2 px-2.5 py-1 rounded-full border transition-all duration-300 shadow-xs bg-emerald-50 border-emerald-200 text-emerald-800";
+                }
+                if (radarTopBox) radarTopBox.className = "w-5 h-5 rounded-md bg-slate-900 border border-emerald-500/60 flex items-center justify-center shrink-0 shadow-inner";
+                if (radarLiveText) radarLiveText.textContent = "正在监控中";
+                if (radarLiveSub) radarLiveSub.textContent = "全区雷达扫描";
+                if (radarLiveDot) radarLiveDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse";
+                if (bannerRadarBox) bannerRadarBox.className = "w-8 h-8 rounded-lg bg-slate-900 border border-emerald-500/50 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden";
             } else {
+                stopRadarAnim();
                 if (topText) topText.textContent = "已暂停监控";
                 if (topDot) topDot.className = "w-2 h-2 rounded-full bg-amber-400";
                 if (topBtn) topBtn.className = "text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center space-x-1.5 shadow-xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100";
                 if (bannerBtn) bannerBtn.className = "px-3 py-1.5 font-semibold rounded-lg shadow-xs transition text-xs flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white";
                 if (bannerBtnText) bannerBtnText.textContent = "开启监控";
+
+                if (radarPill) {
+                    radarPill.className = "hidden sm:flex items-center space-x-2 px-2.5 py-1 rounded-full border transition-all duration-300 shadow-xs bg-slate-100 border-slate-200 text-slate-500";
+                }
+                if (radarTopBox) radarTopBox.className = "w-5 h-5 rounded-md bg-slate-800 border border-slate-600/50 flex items-center justify-center shrink-0 shadow-inner";
+                if (radarLiveText) radarLiveText.textContent = "监控已暂停";
+                if (radarLiveSub) radarLiveSub.textContent = "雷达扫描待机";
+                if (radarLiveDot) radarLiveDot.className = "w-1.5 h-1.5 rounded-full bg-slate-400";
+                if (bannerRadarBox) bannerRadarBox.className = "w-8 h-8 rounded-lg bg-slate-800 border border-slate-600/40 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden";
             }
         }
 
@@ -1109,6 +1223,13 @@
             const nextAction = currentMonitorEnabled ? "disable" : "enable";
             const confirmTip = currentMonitorEnabled ? "确定要暂停自动化计划任务监控吗？" : "确定开启后台自动化计划任务监控吗？";
             if (!confirm(confirmTip)) return;
+
+            // 立即停止或开启雷达字符动画，确保点暂停监控时即刻定格
+            if (currentMonitorEnabled) {
+                stopRadarAnim();
+            } else {
+                startRadarAnim();
+            }
 
             try {
                 const res = await fetch("/api/monitor_control", {
@@ -1121,24 +1242,15 @@
                 fetchStatus();
             } catch (err) {
                 alert("请求失败: " + err);
+                fetchStatus();
             }
         }
 
-        async function openExhibitionScreen() {
-            try {
-                const res = await fetch("/api/open_screen", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({})
-                });
-                const data = await res.json();
-                if (!data.ok) {
-                    window.open("/preview/", "_blank");
-                }
-            } catch (err) {
-                window.open("/preview/", "_blank");
-            }
+        function openOnlineWebsite() {
+            const url = onlineSiteUrl || "https://ztb.139771.xyz";
+            window.open(url, "_blank");
         }
+        const openExhibitionScreen = openOnlineWebsite;
 
 
         function switchTab(tabId) {
@@ -1186,6 +1298,9 @@
                 const res = await fetch("/api/status");
                 const data = await res.json();
 
+                if (data.SITE_BASE_URL) {
+                    onlineSiteUrl = data.SITE_BASE_URL;
+                }
                 if (data.app_version) {
                     const badge = document.getElementById("app-version-badge");
                     if (badge) badge.textContent = data.app_version;
@@ -1210,6 +1325,7 @@
                 const vpsStatus = document.getElementById("stat-vps-status");
                 const vpsBadge = document.getElementById("stat-vps-badge");
                 const vpsDesc = document.getElementById("stat-vps-desc");
+                const vpsTime = document.getElementById("stat-vps-time");
                 if (data.vps && data.vps.auto_upload) {
                     vpsStatus.textContent = data.vps.host || "已开启";
                     vpsBadge.textContent = "自动同步";
@@ -1220,6 +1336,15 @@
                     vpsBadge.textContent = "仅本地";
                     vpsBadge.className = "px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600";
                     vpsDesc.textContent = data.vps && data.vps.host ? `主机: ${data.vps.host}` : "未配置目标 VPS";
+                }
+                if (vpsTime) {
+                    if (data.vps && data.vps.last_sync_time) {
+                        vpsTime.textContent = data.vps.last_sync_time;
+                        vpsTime.className = "font-mono font-medium text-emerald-600 text-[11px]";
+                    } else {
+                        vpsTime.textContent = "暂无同步记录";
+                        vpsTime.className = "font-mono text-slate-400 text-[11px]";
+                    }
                 }
 
                 const wxStatus = document.getElementById("stat-wechat-status");
@@ -1387,6 +1512,9 @@
                 setVal("cfg-env-push-min-count", minCount);
 
                 setVal("cfg-site-base-url", data.SITE_BASE_URL || "");
+                if (data.SITE_BASE_URL) {
+                    onlineSiteUrl = data.SITE_BASE_URL;
+                }
                 setVal("cfg-vps-auto", String(data.AUTO_UPLOAD_VPS).toLowerCase() === "true" ? "true" : "false");
                 setVal("cfg-vps-host", data.VPS_HOST || "");
                 setVal("cfg-vps-port", data.VPS_PORT || "22");
@@ -1424,6 +1552,8 @@
                 setVal("cfg-backscan-days", data.BACKSCAN_DAYS || 30);
                 setVal("cfg-backscan-min-delay", data.BACKSCAN_MIN_DELAY || 2);
                 
+                updateRulesCountDisplay();
+
                 const winElem = document.getElementById("dash-monitor-window");
                 if (winElem) winElem.textContent = `${data.MONITOR_START_TIME || "08:00"} - ${data.MONITOR_END_TIME || "20:00"}`;
                 const ivElem = document.getElementById("dash-monitor-interval");
@@ -1526,6 +1656,24 @@
                     fetchConfig();
                     fetchStatus();
                 } else {
+                    if (ret.msg && ret.msg.includes("安全熔断拦截")) {
+                        if (confirm(ret.msg + "\n\n是否仍然确认强制缩减并保存？")) {
+                            payload.confirm_shrink = true;
+                            const retryRes = await fetch("/api/save_config", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(payload)
+                            });
+                            const retryRet = await retryRes.json();
+                            if (retryRet.ok) {
+                                showTip("✅ " + (retryRet.msg || "配置强制保存成功并自动备份！"), "text-xs text-emerald-600 font-semibold");
+                                setTimeout(() => { showTip("", ""); }, 4000);
+                                fetchConfig();
+                                fetchStatus();
+                                return;
+                            }
+                        }
+                    }
                     showTip("❌ " + (ret.msg || "保存失败"), "text-xs text-red-600 font-semibold");
                 }
             } catch (err) {
@@ -1619,7 +1767,7 @@
 
         async function triggerTask(action) {
             if (action === "upgrade") {
-                return triggerUpgrade();
+                return openUpgradeModal();
             }
             const endpoints = {
                 "daily": "/api/run_daily",
@@ -1684,127 +1832,300 @@
             }, duration);
         }
 
+        function escapeHtml(str) {
+            if (!str) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // 打开升级检查弹窗并自动检查版本
+        function openUpgradeModal() {
+            const modal = document.getElementById("upgrade-modal");
+            if (!modal) return;
+            modal.classList.remove("hidden");
+            fetchUpgradeCheck();
+        }
+
+        // 兼容旧调用入口
         async function triggerUpgrade() {
-            const btnTop = document.getElementById("btn-top-upgrade");
-            const btnDash = document.getElementById("btn-dashboard-upgrade");
+            openUpgradeModal();
+        }
 
-            const originalTopHtml = btnTop ? btnTop.innerHTML : "";
-            const originalDashHtml = btnDash ? btnDash.innerHTML : "";
+        function closeUpgradeModal() {
+            const modal = document.getElementById("upgrade-modal");
+            if (modal) modal.classList.add("hidden");
+        }
 
-            function setUpgradeLoading(loading) {
-                if (btnTop) {
-                    btnTop.disabled = loading;
-                    if (loading) {
-                        btnTop.classList.add("opacity-75", "cursor-not-allowed");
-                        btnTop.innerHTML = `
-                            <svg class="w-3.5 h-3.5 text-emerald-600 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span class="hidden sm:inline">检查更新中...</span>
-                        `;
-                    } else {
-                        btnTop.classList.remove("opacity-75", "cursor-not-allowed");
-                        btnTop.innerHTML = originalTopHtml;
-                    }
+        // 查询升级检查状态
+        async function fetchUpgradeCheck() {
+            const loadingView = document.getElementById("upgrade-view-loading");
+            const resultView = document.getElementById("upgrade-view-result");
+            const runningView = document.getElementById("upgrade-view-running");
+            const finishedView = document.getElementById("upgrade-view-finished");
+            const recheckSpin = document.getElementById("icon-upgrade-recheck-spin");
+
+            if (loadingView) loadingView.classList.remove("hidden");
+            if (resultView) resultView.classList.add("hidden");
+            if (runningView) runningView.classList.add("hidden");
+            if (finishedView) finishedView.classList.add("hidden");
+            if (recheckSpin) recheckSpin.classList.add("animate-spin");
+
+            try {
+                const res = await fetch("/api/check_upgrade");
+                const data = await res.json();
+                renderUpgradeCheckResult(data);
+            } catch (err) {
+                renderUpgradeCheckResult({
+                    ok: false,
+                    connected: false,
+                    has_update: false,
+                    behind_count: 0,
+                    current_version: { version: "未知", commit: "", date: "", message: "" },
+                    remote_version: { version: "未知", commit: "", date: "", message: "" },
+                    commits: [],
+                    message: "与后台服务通信失败: " + err.message
+                });
+            } finally {
+                if (recheckSpin) recheckSpin.classList.remove("animate-spin");
+            }
+        }
+
+        // 渲染版本对比与升级判定
+        function renderUpgradeCheckResult(data) {
+            const loadingView = document.getElementById("upgrade-view-loading");
+            const resultView = document.getElementById("upgrade-view-result");
+            if (loadingView) loadingView.classList.add("hidden");
+            if (resultView) resultView.classList.remove("hidden");
+
+            const cur = data.current_version || {};
+            const rem = data.remote_version || {};
+
+            // 1. 本地版本信息
+            const localVerEl = document.getElementById("upgrade-local-ver");
+            const localCommitEl = document.getElementById("upgrade-local-commit");
+            const localDateEl = document.getElementById("upgrade-local-date");
+            const localMsgEl = document.getElementById("upgrade-local-msg");
+
+            if (localVerEl) localVerEl.textContent = cur.version || "v0.3.4";
+            if (localCommitEl) localCommitEl.textContent = cur.commit ? "#" + cur.commit : "#未知";
+            if (localDateEl) localDateEl.textContent = cur.date || "--";
+            if (localMsgEl) localMsgEl.textContent = cur.message || "当前版本未包含详细提交描述";
+
+            // 2. 远程版本信息
+            const remoteVerEl = document.getElementById("upgrade-remote-ver");
+            const remoteCommitEl = document.getElementById("upgrade-remote-commit");
+            const remoteDateEl = document.getElementById("upgrade-remote-date");
+            const remoteMsgEl = document.getElementById("upgrade-remote-msg");
+
+            if (remoteVerEl) remoteVerEl.textContent = rem.version || cur.version || "v0.3.4";
+            if (remoteCommitEl) remoteCommitEl.textContent = rem.commit ? "#" + rem.commit : "#未知";
+            if (remoteDateEl) remoteDateEl.textContent = rem.date || "--";
+            if (remoteMsgEl) remoteMsgEl.textContent = rem.message || (data.connected ? "最新版本" : "未能连接 GitHub 获取最新提交");
+
+            // 3. 判定横幅 (判断是否需要升级)
+            const banner = document.getElementById("upgrade-verdict-banner");
+            const iconContainer = document.getElementById("upgrade-verdict-icon-container");
+            const titleEl = document.getElementById("upgrade-verdict-title");
+            const descEl = document.getElementById("upgrade-verdict-desc");
+            const changelogTitle = document.getElementById("upgrade-changelog-title");
+
+            const btnConfirm = document.getElementById("btn-upgrade-confirm");
+            const btnCancel = document.getElementById("btn-upgrade-cancel");
+            const btnForce = document.getElementById("btn-upgrade-force");
+
+            if (data.has_update) {
+                // 需要升级
+                if (banner) banner.className = "p-3.5 rounded-xl border border-indigo-200 bg-indigo-50/80 text-indigo-950 flex items-start space-x-3 transition";
+                if (iconContainer) {
+                    iconContainer.innerHTML = `
+                        <div class="p-1.5 bg-indigo-600 text-white rounded-lg shadow-xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                    `;
                 }
-                if (btnDash) {
-                    btnDash.disabled = loading;
-                    if (loading) {
-                        btnDash.classList.add("opacity-75", "cursor-not-allowed");
-                    } else {
-                        btnDash.classList.remove("opacity-75", "cursor-not-allowed");
-                    }
+                const behindText = data.behind_count ? `（落后 ${data.behind_count} 个提交）` : "";
+                if (titleEl) titleEl.textContent = `检测到新版本可用！${behindText}`;
+                if (descEl) descEl.textContent = "GitHub 远程仓库包含更新代码与功能优化，建议升级以获取最新改进。";
+                if (changelogTitle) changelogTitle.textContent = "待更新内容清单（本次升级将包含）";
+
+                if (btnConfirm) {
+                    btnConfirm.style.display = "inline-flex";
+                    btnConfirm.innerHTML = `
+                        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        立即升级
+                    `;
                 }
+                if (btnCancel) btnCancel.textContent = "暂不升级";
+                if (btnForce) btnForce.classList.add("hidden");
+
+            } else if (!data.has_update && data.connected) {
+                // 已是最新版本
+                if (banner) banner.className = "p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/80 text-emerald-950 flex items-start space-x-3 transition";
+                if (iconContainer) {
+                    iconContainer.innerHTML = `
+                        <div class="p-1.5 bg-emerald-600 text-white rounded-lg shadow-xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                    `;
+                }
+                if (titleEl) titleEl.textContent = "当前已是最新版本，无需升级";
+                if (descEl) descEl.textContent = "本地程序代码与 GitHub 远程 main 分支保持完全一致，各组件均处于最新稳定状态。";
+                if (changelogTitle) changelogTitle.textContent = "当前版本更新记录（最近提交）";
+
+                if (btnConfirm) btnConfirm.style.display = "none";
+                if (btnCancel) btnCancel.textContent = "完成并关闭";
+                if (btnForce) btnForce.classList.remove("hidden");
+
+            } else {
+                // 连接异常或超时
+                if (banner) banner.className = "p-3.5 rounded-xl border border-amber-200 bg-amber-50/80 text-amber-950 flex items-start space-x-3 transition";
+                if (iconContainer) {
+                    iconContainer.innerHTML = `
+                        <div class="p-1.5 bg-amber-600 text-white rounded-lg shadow-xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        </div>
+                    `;
+                }
+                if (titleEl) titleEl.textContent = "连接 GitHub 检查超时或失败";
+                if (descEl) descEl.textContent = data.message || "未能成功查询 GitHub 远程仓库最新提交（可能因网络防火墙或未联网）。当前仍可尝试直接拉取。";
+                if (changelogTitle) changelogTitle.textContent = "当前版本历史记录";
+
+                if (btnConfirm) {
+                    btnConfirm.style.display = "inline-flex";
+                    btnConfirm.innerHTML = `
+                        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        强制拉取升级
+                    `;
+                }
+                if (btnCancel) btnCancel.textContent = "关闭";
+                if (btnForce) btnForce.classList.add("hidden");
             }
 
-            setUpgradeLoading(true);
-            showToast("正在连接 GitHub 检查最新版本代码并同步...", "info", 3500);
+            // 4. 渲染更新内容清单 (Commits list)
+            const countEl = document.getElementById("upgrade-commits-count");
+            const container = document.getElementById("upgrade-commits-container");
+            const commits = data.commits || [];
 
-            const logEl = document.getElementById("log-container");
+            if (countEl) countEl.textContent = `共 ${commits.length} 项`;
+            if (container) {
+                if (commits.length === 0) {
+                    container.innerHTML = `
+                        <div class="py-8 text-center text-xs text-slate-400">
+                            暂无更多提交变更内容记录说明
+                        </div>
+                    `;
+                } else {
+                    let html = "";
+                    commits.forEach((c) => {
+                        html += `
+                            <div class="p-2.5 bg-white rounded-lg border border-slate-200/80 shadow-2xs hover:border-indigo-200 transition">
+                                <div class="flex items-center justify-between text-[11px] mb-1">
+                                    <span class="font-mono font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">#${escapeHtml(c.hash)}</span>
+                                    <div class="flex items-center space-x-1.5 text-slate-400 text-[10px]">
+                                        <span class="text-slate-600 font-medium">${escapeHtml(c.author || '')}</span>
+                                        <span>·</span>
+                                        <span>${escapeHtml(c.date || '')}</span>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-slate-800 font-medium leading-relaxed">${escapeHtml(c.message || '')}</div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                }
+            }
+        }
+
+        // 开始执行升级
+        async function startExecuteUpgrade(force = false) {
+            const resultView = document.getElementById("upgrade-view-result");
+            const runningView = document.getElementById("upgrade-view-running");
+            const finishedView = document.getElementById("upgrade-view-finished");
+            const logEl = document.getElementById("upgrade-modal-log");
+
+            if (resultView) resultView.classList.add("hidden");
+            if (runningView) runningView.classList.remove("hidden");
+            if (finishedView) finishedView.classList.add("hidden");
+
             if (logEl) {
-                logEl.textContent = "[System] 正在连接 GitHub 远程仓库检查更新...\n";
+                logEl.textContent = "[Upgrade] 正在向服务发起系统同步升级任务...\n";
             }
 
             try {
                 const res = await fetch("/api/run_upgrade", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({})
+                    headers: { "Content-Type": "application/json" }
                 });
                 const data = await res.json();
                 if (!data.ok) {
-                    setUpgradeLoading(false);
-                    showUpgradeModal({
-                        type: "warning",
-                        title: "无法发起升级检查",
-                        badgeText: "任务冲突",
-                        message: data.msg || "已有任务正在执行中，请稍候再试。"
-                    });
+                    renderUpgradeFinished(false, data.msg || "无法启动升级进程");
                     return;
                 }
 
-                // 开始轮询日志并等待任务完成
-                startPollingLog((finalState) => {
-                    setUpgradeLoading(false);
-                    fetchStatus(); // 刷新状态与 Git 信息
-
-                    const logText = (finalState && (finalState.logs || finalState.log)) ? (finalState.logs || finalState.log) : "";
-                    const exitCode = finalState ? finalState.exit_code : null;
-
-                    // 解析 Commit 信息
-                    let commitInfo = "";
-                    const commitMatch = logText.match(/Commit:\s*([a-f0-9]+)(\s*\((.*?)\))?/i);
-                    if (commitMatch) {
-                        commitInfo = `Commit: ${commitMatch[1]}` + (commitMatch[3] ? ` (${commitMatch[3]})` : "");
-                    }
-
+                // 启动轮询监视升级过程
+                startPollingLog((taskState) => {
+                    const exitCode = taskState.exit_code;
                     if (exitCode === 0) {
-                        if (logText.includes("本地代码已经是最新版本") || logText.includes("当前已是最新版本")) {
-                            showUpgradeModal({
-                                type: "latest",
-                                title: "当前已是最新版本",
-                                badgeText: "无需更新",
-                                message: "检测完成！本地代码已与 GitHub 远程仓库 (main 分支) 保持完全一致，当前无需升级。",
-                                commit: commitInfo
-                            });
-                        } else if (logText.includes("升级成功") || logText.includes("恭喜！代码同步升级成功完成") || logText.includes("文件热替换完成")) {
-                            showUpgradeModal({
-                                type: "upgraded",
-                                title: "系统升级成功！",
-                                badgeText: "已更新到最新",
-                                message: "恭喜！已成功从 GitHub 拉取最新代码并完成系统升级更新。本地数据与配置文件均已妥善保留。",
-                                commit: commitInfo,
-                                showReload: true
-                            });
-                        } else {
-                            showUpgradeModal({
-                                type: "info",
-                                title: "同步升级执行完成",
-                                badgeText: "完成",
-                                message: "升级流程执行完毕，详细执行过程请参阅下方调度日志。",
-                                commit: commitInfo
-                            });
-                        }
+                        renderUpgradeFinished(true, "代码同步完成，核心组件已完成热重载并进入就绪状态。");
                     } else {
-                        showUpgradeModal({
-                            type: "error",
-                            title: "同步升级遇到问题",
-                            badgeText: "升级失败",
-                            message: "未能成功同步最新代码。可能原因：国内网络直连 GitHub 访问超时或 Git 本地存在未提交冲突。\n若多次重试受阻，可在项目根目录双击运行【scripts/sync_from_server.bat】使用专线云镜像秒级升级。",
-                            commit: commitInfo
-                        });
+                        renderUpgradeFinished(false, `升级脚本执行退出，返回状态码: ${exitCode}。详细输出请查看控制台日志。`);
                     }
                 });
 
             } catch (err) {
-                setUpgradeLoading(false);
-                showUpgradeModal({
-                    type: "error",
-                    title: "网络请求异常",
-                    badgeText: "请求失败",
-                    message: "与管理后台服务的网络通信失败: " + err.message
-                });
+                renderUpgradeFinished(false, "升级发起网络异常: " + err.message);
+            }
+        }
+
+        // 渲染升级完成/失败状态
+        function renderUpgradeFinished(isSuccess, message) {
+            const runningView = document.getElementById("upgrade-view-running");
+            const finishedView = document.getElementById("upgrade-view-finished");
+            if (runningView) runningView.classList.add("hidden");
+            if (finishedView) finishedView.classList.remove("hidden");
+
+            const banner = document.getElementById("upgrade-finished-banner");
+            const icon = document.getElementById("upgrade-finished-icon");
+            const title = document.getElementById("upgrade-finished-title");
+            const desc = document.getElementById("upgrade-finished-desc");
+            const reloadBtn = document.getElementById("upgrade-finished-reload-btn");
+
+            if (isSuccess) {
+                if (banner) banner.className = "p-4 rounded-xl border border-emerald-200 bg-emerald-50/80 flex items-start space-x-3";
+                if (icon) {
+                    icon.innerHTML = `
+                        <div class="p-2 bg-emerald-600 text-white rounded-xl shadow-xs">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                    `;
+                }
+                if (title) {
+                    title.textContent = "系统升级成功！";
+                    title.className = "text-sm font-bold text-emerald-950";
+                }
+                if (desc) desc.textContent = message || "系统已更新到最新版本，建议点击下方按钮刷新管理控制台。";
+                if (reloadBtn) reloadBtn.classList.remove("hidden");
+                showToast("系统升级成功！", "success", 4000);
+            } else {
+                if (banner) banner.className = "p-4 rounded-xl border border-red-200 bg-red-50/80 flex items-start space-x-3";
+                if (icon) {
+                    icon.innerHTML = `
+                        <div class="p-2 bg-red-600 text-white rounded-xl shadow-xs">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </div>
+                    `;
+                }
+                if (title) {
+                    title.textContent = "升级执行遇到问题";
+                    title.className = "text-sm font-bold text-red-950";
+                }
+                if (desc) desc.textContent = message || "同步未能成功完成，可能由于网络环境或本地存在冲突。可在项目根目录运行 scripts/sync_from_server.bat 使用镜像加速升级。";
+                if (reloadBtn) reloadBtn.classList.add("hidden");
+                showToast("升级未完成，请查看日志", "error", 4000);
             }
         }
 
@@ -1844,82 +2165,20 @@
 
                     if (logs) {
                         const logEl = document.getElementById("log-container");
-                        logEl.textContent = logs;
-                        logEl.scrollTop = logEl.scrollHeight;
+                        if (logEl) {
+                            logEl.textContent = logs;
+                            logEl.scrollTop = logEl.scrollHeight;
+                        }
+                        const modalLog = document.getElementById("upgrade-modal-log");
+                        if (modalLog) {
+                            modalLog.textContent = logs;
+                            modalLog.scrollTop = modalLog.scrollHeight;
+                        }
                     }
                 } catch (err) {
                     console.error("轮询日志出错", err);
                 }
             }, 800);
-        }
-
-        function showUpgradeModal(opts) {
-            const modal = document.getElementById("upgrade-modal");
-            if (!modal) return;
-
-            const iconSuccess = document.getElementById("upgrade-modal-icon-success");
-            const iconInfo = document.getElementById("upgrade-modal-icon-info");
-            const iconError = document.getElementById("upgrade-modal-icon-error");
-            const iconContainer = document.getElementById("upgrade-modal-icon-container");
-            const titleEl = document.getElementById("upgrade-modal-title");
-            const badgeEl = document.getElementById("upgrade-modal-badge");
-            const msgEl = document.getElementById("upgrade-modal-message");
-            const commitBox = document.getElementById("upgrade-modal-commit-box");
-            const commitEl = document.getElementById("upgrade-modal-commit");
-            const timeEl = document.getElementById("upgrade-modal-time");
-            const reloadBtn = document.getElementById("upgrade-modal-reload-btn");
-
-            // 隐藏所有图标
-            iconSuccess.classList.add("hidden");
-            iconInfo.classList.add("hidden");
-            iconError.classList.add("hidden");
-
-            if (opts.type === "upgraded") {
-                iconSuccess.classList.remove("hidden");
-                iconContainer.className = "p-2.5 rounded-xl bg-emerald-50 text-emerald-600";
-                badgeEl.className = "inline-block mt-0.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800";
-            } else if (opts.type === "latest") {
-                iconSuccess.classList.remove("hidden");
-                iconContainer.className = "p-2.5 rounded-xl bg-blue-50 text-blue-600";
-                badgeEl.className = "inline-block mt-0.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-100 text-blue-800";
-            } else if (opts.type === "warning") {
-                iconInfo.classList.remove("hidden");
-                iconContainer.className = "p-2.5 rounded-xl bg-amber-50 text-amber-600";
-                badgeEl.className = "inline-block mt-0.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800";
-            } else if (opts.type === "error") {
-                iconError.classList.remove("hidden");
-                iconContainer.className = "p-2.5 rounded-xl bg-red-50 text-red-600";
-                badgeEl.className = "inline-block mt-0.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800";
-            } else {
-                iconInfo.classList.remove("hidden");
-                iconContainer.className = "p-2.5 rounded-xl bg-slate-100 text-slate-600";
-                badgeEl.className = "inline-block mt-0.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-800";
-            }
-
-            titleEl.textContent = opts.title || "同步升级提示";
-            badgeEl.textContent = opts.badgeText || "提示";
-            msgEl.textContent = opts.message || "";
-
-            if (opts.commit) {
-                commitBox.classList.remove("hidden");
-                commitEl.textContent = opts.commit;
-                timeEl.textContent = new Date().toLocaleTimeString();
-            } else {
-                commitBox.classList.add("hidden");
-            }
-
-            if (opts.showReload) {
-                reloadBtn.classList.remove("hidden");
-            } else {
-                reloadBtn.classList.add("hidden");
-            }
-
-            modal.classList.remove("hidden");
-        }
-
-        function closeUpgradeModal() {
-            const modal = document.getElementById("upgrade-modal");
-            if (modal) modal.classList.add("hidden");
         }
 
         // ==============================================
@@ -2439,6 +2698,93 @@
             syncPair("cfg-push-min-count", "cfg-env-push-min-count", false);
         }
 
+        function updateRulesCountDisplay() {
+            const pEl = document.getElementById("cfg-focus-projects");
+            const oEl = document.getElementById("cfg-focus-owners");
+            const pBadge = document.getElementById("badge-projects-count");
+            const oBadge = document.getElementById("badge-owners-count");
+
+            if (pEl && pBadge) {
+                const count = pEl.value.split("\n").map(s => s.trim()).filter(Boolean).length;
+                pBadge.textContent = `${count} 项`;
+            }
+            if (oEl && oBadge) {
+                const count = oEl.value.split("\n").map(s => s.trim()).filter(Boolean).length;
+                oBadge.textContent = `${count} 家`;
+            }
+        }
+
+        async function restoreMasterRules() {
+            if (!confirm("确定要从主规则库恢复全量重点名单吗？\n\n将立即载入 95 项重点工程与 58 家重点业主，并自动创建安全快照备份。")) {
+                return;
+            }
+            try {
+                const res = await fetch("/api/restore_master_rules", { method: "POST" });
+                const json = await res.json();
+                if (json.ok) {
+                    alert(json.msg || "已成功从主规则库恢复！");
+                    await fetchConfig();
+                    await fetchStatus();
+                } else {
+                    alert("恢复失败: " + (json.msg || "未知错误"));
+                }
+            } catch (e) {
+                alert("请求失败: " + e.message);
+            }
+        }
+
+        async function openConfigSnapshotsModal() {
+            const modal = document.getElementById("modal-config-snapshots");
+            const listEl = document.getElementById("snapshots-list");
+            if (modal) modal.classList.remove("hidden");
+            if (listEl) listEl.innerHTML = '<div class="text-slate-400 text-center py-4">正在读取配置快照...</div>';
+
+            try {
+                const res = await fetch("/api/config_snapshots");
+                const data = await res.json();
+                if (data.ok && data.snapshots && data.snapshots.length > 0) {
+                    listEl.innerHTML = data.snapshots.map(s => `
+                        <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-lg hover:bg-blue-50/50 transition">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-slate-800 text-xs">${s.filename}</span>
+                                <span class="text-[10px] text-slate-500">${s.time_str} (${(s.size / 1024).toFixed(1)} KB)</span>
+                            </div>
+                            <button onclick="restoreSnapshot('${s.filename}')" class="px-2.5 py-1 text-xs bg-white text-blue-700 border border-blue-300 rounded hover:bg-blue-100 font-semibold transition">还原此版本</button>
+                        </div>
+                    `).join("");
+                } else {
+                    listEl.innerHTML = '<div class="text-slate-400 text-center py-4">暂无历史备份快照（系统将在每次修改保存配置时自动生成）</div>';
+                }
+            } catch (err) {
+                if (listEl) listEl.innerHTML = `<div class="text-rose-500 text-center py-4">读取快照失败: ${err.message}</div>`;
+            }
+        }
+
+        function closeConfigSnapshotsModal() {
+            const modal = document.getElementById("modal-config-snapshots");
+            if (modal) modal.classList.add("hidden");
+        }
+
+        async function restoreSnapshot(filename) {
+            if (!confirm(`确定要将配置还原到快照版本 [${filename}] 吗？\n当前配置将被该快照内容覆盖并自动重新加载。`)) {
+                return;
+            }
+            try {
+                const res = await fetch("/api/restore_snapshot", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ filename })
+                });
+                const data = await res.json();
+                alert(data.msg || (data.ok ? "还原成功" : "还原失败"));
+                closeConfigSnapshotsModal();
+                await fetchConfig();
+                await fetchStatus();
+            } catch (e) {
+                alert("还原请求失败: " + e.message);
+            }
+        }
+
         // 初始化载入
         window.addEventListener("DOMContentLoaded", () => {
             const savedTab = localStorage.getItem("active_tab") || "business";
@@ -2446,6 +2792,11 @@
             initPushConfigSync();
             fetchConfig();
             fetchStatus();
+            
+            const pEl = document.getElementById("cfg-focus-projects");
+            const oEl = document.getElementById("cfg-focus-owners");
+            if (pEl) pEl.addEventListener("input", updateRulesCountDisplay);
+            if (oEl) oEl.addEventListener("input", updateRulesCountDisplay);
         });
     </script>
 
@@ -2610,52 +2961,164 @@
     <!-- 全局轻量 Toast 提示容器 -->
     <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
-    <!-- 在线升级状态提示弹窗 (Upgrade Result Modal) -->
+    <!-- 系统版本对比与在线升级弹窗 (Upgrade Modal) -->
     <div id="upgrade-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
-            <div class="flex items-center space-x-3 pb-3 border-b border-slate-100">
-                <div id="upgrade-modal-icon-container" class="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
-                    <!-- 动态图标 -->
-                    <svg id="upgrade-modal-icon-success" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <svg id="upgrade-modal-icon-info" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <svg id="upgrade-modal-icon-error" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                    </svg>
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xl w-full p-6 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[92vh] overflow-hidden">
+            <!-- 头部 -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 flex-shrink-0">
+                <div class="flex items-center space-x-3">
+                    <div id="upgrade-modal-top-icon" class="p-2.5 rounded-xl bg-indigo-50 text-indigo-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">系统版本与在线升级</h3>
+                        <p class="text-[11px] text-slate-500">检测本地与 GitHub 远程代码差异，支持一键差量热更新</p>
+                    </div>
                 </div>
-                <div class="flex-1">
-                    <h3 id="upgrade-modal-title" class="text-base font-bold text-slate-900">同步升级检查结果</h3>
-                    <div id="upgrade-modal-badge" class="inline-block mt-0.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">已是最新版本</div>
-                </div>
-                <button onclick="closeUpgradeModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+                <button onclick="closeUpgradeModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
 
-            <div class="mt-4 space-y-3">
-                <p id="upgrade-modal-message" class="text-xs text-slate-600 leading-relaxed">
-                    <!-- 动态消息 -->
-                </p>
+            <!-- 状态 1: 正在检查版本 -->
+            <div id="upgrade-view-loading" class="py-12 flex flex-col items-center justify-center text-center space-y-3">
+                <div class="relative w-12 h-12 flex items-center justify-center">
+                    <div class="w-12 h-12 rounded-full border-3 border-indigo-100 border-t-indigo-600 animate-spin"></div>
+                    <svg class="w-5 h-5 text-indigo-600 absolute" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </div>
+                <h4 class="text-sm font-semibold text-slate-800">正在连接 GitHub 远程仓库...</h4>
+                <p class="text-xs text-slate-500">正在对比本地 Git 分支与 origin/main 提交记录差异</p>
+            </div>
 
-                <div id="upgrade-modal-commit-box" class="bg-slate-50 rounded-xl p-3 border border-slate-100 font-mono text-[11px] text-slate-600 break-all space-y-1">
-                    <div class="flex items-center justify-between text-slate-400 text-[10px]">
-                        <span>GIT 版本信息</span>
-                        <span id="upgrade-modal-time">--</span>
+            <!-- 状态 2: 检查结果与版本对比视图 -->
+            <div id="upgrade-view-result" class="hidden flex-1 overflow-y-auto space-y-4 pt-4 pr-1">
+                <!-- 两栏版本对比卡片 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- 当前本机版本 -->
+                    <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-200/80">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-500 flex items-center">
+                                <svg class="w-3.5 h-3.5 mr-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                当前本机版本
+                            </span>
+                            <span id="upgrade-local-ver" class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-200 text-slate-700">v0.3.4</span>
+                        </div>
+                        <div class="flex items-center space-x-2 text-xs">
+                            <span id="upgrade-local-commit" class="font-mono text-[11px] font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200">#--</span>
+                            <span id="upgrade-local-date" class="text-[11px] text-slate-400">--</span>
+                        </div>
+                        <p id="upgrade-local-msg" class="text-[11px] text-slate-600 mt-2 line-clamp-2 leading-snug">--</p>
                     </div>
-                    <div id="upgrade-modal-commit" class="text-slate-800 font-semibold">Commit: --</div>
+
+                    <!-- GitHub 远程版本 -->
+                    <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-200/80">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-500 flex items-center">
+                                <svg class="w-3.5 h-3.5 mr-1 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                                GitHub 远程版本
+                            </span>
+                            <span id="upgrade-remote-ver" class="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-100 text-indigo-700">v0.3.4</span>
+                        </div>
+                        <div class="flex items-center space-x-2 text-xs">
+                            <span id="upgrade-remote-commit" class="font-mono text-[11px] font-bold text-indigo-800 bg-white px-1.5 py-0.5 rounded border border-indigo-200">#--</span>
+                            <span id="upgrade-remote-date" class="text-[11px] text-slate-400">--</span>
+                        </div>
+                        <p id="upgrade-remote-msg" class="text-[11px] text-slate-600 mt-2 line-clamp-2 leading-snug">--</p>
+                    </div>
+                </div>
+
+                <!-- 判定结论横幅 -->
+                <div id="upgrade-verdict-banner" class="p-3.5 rounded-xl border flex items-start space-x-3 transition">
+                    <div id="upgrade-verdict-icon-container" class="mt-0.5 flex-shrink-0">
+                        <!-- 动态图标 -->
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div id="upgrade-verdict-title" class="text-xs font-bold">--</div>
+                        <div id="upgrade-verdict-desc" class="text-[11px] mt-0.5 leading-relaxed">--</div>
+                    </div>
+                </div>
+
+                <!-- 更新内容展示区 (Changelog Section) -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                            </svg>
+                            <span id="upgrade-changelog-title" class="text-xs font-bold text-slate-700">更新内容记录</span>
+                        </div>
+                        <span id="upgrade-commits-count" class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">共 0 项</span>
+                    </div>
+
+                    <div id="upgrade-commits-container" class="max-h-48 overflow-y-auto space-y-2 rounded-xl border border-slate-200/80 bg-slate-50/50 p-2.5 text-slate-700">
+                        <!-- 动态生成的 Commit 列表 -->
+                    </div>
+                </div>
+
+                <!-- 操作按钮栏 -->
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <button type="button" onclick="fetchUpgradeCheck()" id="btn-upgrade-recheck" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                        <svg id="icon-upgrade-recheck-spin" class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        重新检查
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" onclick="startExecuteUpgrade(true)" id="btn-upgrade-force" class="hidden px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition">
+                            强制同步
+                        </button>
+                        <button type="button" onclick="closeUpgradeModal()" id="btn-upgrade-cancel" class="px-4 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                            关闭
+                        </button>
+                        <button type="button" onclick="startExecuteUpgrade(false)" id="btn-upgrade-confirm" class="inline-flex items-center px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition">
+                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            立即升级
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div class="pt-4 mt-4 border-t border-slate-100 flex justify-end space-x-2">
-                <button id="upgrade-modal-reload-btn" type="button" onclick="location.reload()" class="hidden px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-xs transition">
-                    刷新页面
-                </button>
-                <button type="button" onclick="closeUpgradeModal()" class="px-4 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition">
-                    知道了
-                </button>
+            <!-- 状态 3: 执行升级中视图 -->
+            <div id="upgrade-view-running" class="hidden flex-1 overflow-y-auto space-y-3 pt-4">
+                <div class="flex items-center space-x-3 p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
+                    <div class="w-5 h-5 rounded-full border-2 border-indigo-300 border-t-indigo-600 animate-spin flex-shrink-0"></div>
+                    <div>
+                        <div class="text-xs font-bold text-indigo-900">正在从 GitHub 同步升级...</div>
+                        <div class="text-[11px] text-indigo-600">正在拉取最新代码并热加载组件，请勿刷新或关闭窗口</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 rounded-xl p-3 border border-slate-800 shadow-inner">
+                    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[10px] text-slate-400 font-mono">
+                        <span>UPGRADE LOG CONSOLE</span>
+                        <span class="flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span>LIVE</span>
+                    </div>
+                    <pre id="upgrade-modal-log" class="font-mono text-[11px] text-slate-200 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto break-all">正在初始化升级任务...</pre>
+                </div>
+            </div>
+
+            <!-- 状态 4: 升级完成/失败视图 -->
+            <div id="upgrade-view-finished" class="hidden flex-1 overflow-y-auto space-y-4 pt-4">
+                <div id="upgrade-finished-banner" class="p-4 rounded-xl border flex items-start space-x-3">
+                    <div id="upgrade-finished-icon" class="mt-0.5 flex-shrink-0">
+                        <!-- 动态图标 -->
+                    </div>
+                    <div class="flex-1">
+                        <h4 id="upgrade-finished-title" class="text-sm font-bold">升级执行完成</h4>
+                        <p id="upgrade-finished-desc" class="text-xs mt-1 leading-relaxed text-slate-600">--</p>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+                    <button type="button" onclick="closeUpgradeModal()" class="px-4 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                        关闭
+                    </button>
+                    <button id="upgrade-finished-reload-btn" type="button" onclick="location.reload()" class="px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition">
+                        刷新控制台
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -2740,6 +3203,37 @@
                     <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm transition">确认彻底删除</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 配置快照备份历史弹窗 (Config Snapshots Modal)    -->
+    <!-- ============================================== -->
+    <div id="modal-config-snapshots" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-200">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div class="flex items-center space-x-2">
+                    <div class="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">配置安全备份快照</h3>
+                        <div class="text-[11px] text-slate-500">每次修改配置前自动归档，可一键快速回滚</div>
+                    </div>
+                </div>
+                <button onclick="closeConfigSnapshotsModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-3">
+                <div class="text-xs text-slate-600">系统历史配置备份文件：</div>
+                <div id="snapshots-list" class="max-h-72 overflow-y-auto space-y-2 pr-1">
+                    <div class="text-slate-400 text-center py-6 text-xs">加载中...</div>
+                </div>
+            </div>
+            <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button onclick="closeConfigSnapshotsModal()" class="px-4 py-1.5 text-xs text-slate-600 hover:bg-slate-200 rounded-lg font-medium transition">关闭</button>
+            </div>
         </div>
     </div>
 

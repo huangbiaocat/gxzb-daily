@@ -33,7 +33,7 @@ class TestDailyPageFocusCard(unittest.TestCase):
         # 检查重点信息指标卡 HTML 结构
         self.assertIn('class="stat-box stage-focus clickable" data-stage="__focus__" title="点击筛选 重点信息"', content)
         self.assertIn('<div class="sb-label">重点信息</div>', content)
-        self.assertIn('id="stat-focus">3<span class="sb-unit">条</span>', content)
+        self.assertIn('id="stat-focus">4<span class="sb-unit">条</span>', content)
 
         # 检查交互联动与计数脚本
         self.assertIn("targetStage === '__focus__'", content)

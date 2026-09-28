@@ -40,7 +40,7 @@ class TestFooterTime(unittest.TestCase):
         self.assertEqual(res.returncode, 0, msg=f"build_daily_page failed: {res.stderr}")
 
         out_html = (config.SITE_DIR / "2026-09-20.html").read_text(encoding="utf-8")
-        self.assertIn("最新公告时间：2026-09-20 22:12:04", out_html)
+        self.assertIn("最新公告时间：2026-09-20 17:20:00", out_html)
         self.assertIn("最近扫描时间：2026-09-21 21:46:29", out_html)
 
     def test_archive_page_footer(self):

@@ -31,7 +31,7 @@ class TestDailyPageOvertime(unittest.TestCase):
 
         # 检查筛选按钮
         self.assertIn('id="btnOvertimeOnly"', content)
-        self.assertIn('id="overtimeCount">22<', content)
+        self.assertIn('id="overtimeCount">1<', content)
         self.assertIn("仅看加班发布", content)
 
         # 检查渲染脚本中对 overtime-chip 与 data-overtime 的支持

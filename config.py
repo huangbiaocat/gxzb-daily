@@ -7,6 +7,7 @@
 - 凭证类信息（如后续接入推送、同步的密钥）只允许放 .env，仓库内只提供 .env.example。
 - 配置只在进程启动时读取一次，定时任务（cron / launchd）无需额外参数即可运行。
 """
+import json
 import os
 import re
 import sys
@@ -21,7 +22,7 @@ else:
 ROOT_DIR = REPO_ROOT
 
 # ------------------------------------------------------------------ 统一版本
-APP_VERSION = "v0.3.3"
+APP_VERSION = "v0.3.4"
 
 # ------------------------------------------------------------------ .env 解析
 def load_env_file(path=None):
@@ -202,8 +203,99 @@ BADGE_CLASS_MAP = {
 }
 # 重点预警关键词：标题命中即标记，纯规则判断，不依赖人工
 FOCUS_KEYWORDS = [k.strip() for k in get("FOCUS_KEYWORDS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
-FOCUS_PROJECTS = [k.strip() for k in get("FOCUS_PROJECTS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
-FOCUS_OWNERS = [k.strip() for k in get("FOCUS_OWNERS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
+
+def _load_focus_rules_safe():
+    """
+    安全双轨加载与防丢失机制：
+    1. 从 .env 读取配置项。
+    2. 若条目过少（< 5 项，极可能是 .env 遭误清空、版本重置为默认 demo 或被意外截断），
+       自动从持久化底库 data/focus_rules.json 或主规则库 config/focus_rules_master.json 兜底加载。
+    3. 杜绝重点工程与业主清单再次发生丢失。
+    """
+    raw_p = [k.strip() for k in get("FOCUS_PROJECTS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
+    raw_o = [k.strip() for k in get("FOCUS_OWNERS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
+
+    need_p_fallback = len(raw_p) < 5
+    need_o_fallback = len(raw_o) < 5
+
+    if need_p_fallback or need_o_fallback:
+        fallback_candidates = [
+            REPO_ROOT / "data" / "focus_rules.json",
+            REPO_ROOT / "config" / "focus_rules_master.json",
+        ]
+        fallback_data = None
+        for pth in fallback_candidates:
+            if pth.exists():
+                try:
+                    parsed = json.loads(pth.read_text(encoding="utf-8"))
+                    if parsed and ("projects" in parsed or "rules" in parsed):
+                        fallback_data = parsed
+                        break
+                except Exception:
+                    pass
+
+        if fallback_data:
+            if need_p_fallback:
+                rule_items = fallback_data.get("projects") or fallback_data.get("rules") or []
+                loaded_p = []
+                for itm in rule_items:
+                    name = (itm.get("name") or itm.get("target_name") or "") if isinstance(itm, dict) else str(itm)
+                    name = name.strip()
+                    if name and name not in loaded_p:
+                        loaded_p.append(name)
+                for p in raw_p:
+                    if p not in loaded_p:
+                        loaded_p.append(p)
+                raw_p = loaded_p
+
+            if need_o_fallback:
+                owner_items = fallback_data.get("owners") or fallback_data.get("owner_rules") or []
+                loaded_o = []
+                for itm in owner_items:
+                    name = (itm.get("name") or itm.get("owner_name") or "") if isinstance(itm, dict) else str(itm)
+                    name = name.strip()
+                    if name and name not in loaded_o:
+                        loaded_o.append(name)
+                for o in raw_o:
+                    if o not in loaded_o:
+                        loaded_o.append(o)
+                raw_o = loaded_o
+
+        # 自动同步持久化到 data/focus_rules.json 并自愈回写 .env
+        try:
+            focus_json_path = REPO_ROOT / "data" / "focus_rules.json"
+            if not focus_json_path.exists():
+                focus_json_path.parent.mkdir(parents=True, exist_ok=True)
+                master_pth = REPO_ROOT / "config" / "focus_rules_master.json"
+                if master_pth.exists():
+                    focus_json_path.write_text(master_pth.read_text(encoding="utf-8"), encoding="utf-8")
+            
+            env_pth = REPO_ROOT / ".env"
+            if env_pth.exists():
+                env_content = env_pth.read_text(encoding="utf-8")
+                updated_env = False
+                if need_p_fallback and loaded_p:
+                    p_val = ",".join(raw_p)
+                    if "FOCUS_PROJECTS=" in env_content:
+                        env_content = re.sub(r"^FOCUS_PROJECTS=.*$", f"FOCUS_PROJECTS={p_val}", env_content, flags=re.MULTILINE)
+                    else:
+                        env_content += f"\nFOCUS_PROJECTS={p_val}\n"
+                    updated_env = True
+                if need_o_fallback and loaded_o:
+                    o_val = ",".join(raw_o)
+                    if "FOCUS_OWNERS=" in env_content:
+                        env_content = re.sub(r"^FOCUS_OWNERS=.*$", f"FOCUS_OWNERS={o_val}", env_content, flags=re.MULTILINE)
+                    else:
+                        env_content += f"\nFOCUS_OWNERS={o_val}\n"
+                    updated_env = True
+                if updated_env:
+                    env_pth.write_text(env_content, encoding="utf-8")
+        except Exception:
+            pass
+
+    return raw_p, raw_o
+
+FOCUS_PROJECTS, FOCUS_OWNERS = _load_focus_rules_safe()
 FOCUS_PROJECT_TYPES = [k.strip() for k in get("FOCUS_PROJECT_TYPES", "").replace("\n", ",").split(",") if k.strip()]
 FOCUS_MIN_AMOUNT_RAW = get("FOCUS_MIN_AMOUNT", "").strip()
 

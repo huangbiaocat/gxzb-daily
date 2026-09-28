@@ -56,27 +56,37 @@ def rebuild_archive_json():
                 valid_pubs = [r.get("pub_time") for r in rows if r.get("pub_time")]
                 latest_pub = max(valid_pubs) if valid_pubs else ""
                 final_file = config.STATE_DIR / f"final-{day}.json"
-                is_final = final_file.exists()
+                is_past = (day < config.today())
+                is_final = final_file.exists() or is_past
                 finalized_at = ""
                 if is_final:
+                    if not final_file.exists() and is_past:
+                        try:
+                            final_file.parent.mkdir(parents=True, exist_ok=True)
+                            fin_data = {
+                                "date": day,
+                                "is_final": True,
+                                "finalized_at": config.now_stamp(),
+                                "total_items": len(rows),
+                                "sealed_reason": "past_date_auto_sealed"
+                            }
+                            final_file.write_text(json.dumps(fin_data, ensure_ascii=False, indent=2), encoding="utf-8")
+                        except Exception:
+                            pass
                     try:
-                        fin_data = json.loads(final_file.read_text(encoding="utf-8"))
-                        finalized_at = fin_data.get("finalized_at", "")
+                        if final_file.exists():
+                            fin_data = json.loads(final_file.read_text(encoding="utf-8"))
+                            finalized_at = fin_data.get("finalized_at", "")
                     except Exception:
                         pass
                 focus_count = sum(1 for r in rows if r.get("is_focus"))
                 overtime_count = sum(
                     1 for r in rows
-                    if r.get("is_overtime") or (r.get("is_overtime") is None and is_overtime_publication(r.get("pub_time", ""))[0])
+                    if is_overtime_publication(r.get("pub_time", ""))[0]
                 )
+                # 滞后公开数：严格统计发布日期归属于当天的公告中，被判定为滞后公开的条目数
+                # 不再叠加 today_del（那是当天回扫捕获的历史前期公告，已回填至前期各自日期的 json 中）
                 delayed_count = sum(1 for r in rows if r.get("is_delayed"))
-                today_del_file = config.get_delayed_today_path(day)
-                if today_del_file.is_file():
-                    try:
-                        today_del = json.loads(today_del_file.read_text(encoding="utf-8"))
-                        delayed_count += len(today_del)
-                    except Exception:
-                        pass
                 entry = {
                     "date": day,
                     "file": f"{day}.html",
@@ -776,7 +786,7 @@ _FIELDS = {
     "base_script": base_script,
     "site": html.escape(arc.get("site", "广西全区招投标数据监控中心")),
     "subtitle": html.escape(arc.get("subtitle", "广西公共资源交易 · 工程建设类公告每日归档")),
-    "app_version": getattr(config, "APP_VERSION", "v0.3.3"),
+    "app_version": getattr(config, "APP_VERSION", "v0.3.4"),
     "day_count": comma(day_count),
     "total_all": comma(total_all),
     "total_focus": comma(arc.get("total_focus", sum(d.get("focus_count", 0) for d in days))),

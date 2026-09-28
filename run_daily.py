@@ -213,9 +213,22 @@ def refresh_archive(day):
     valid_pubs = [r.get("pub_time") for r in rows if r.get("pub_time")]
     latest_pub = max(valid_pubs) if valid_pubs else ""
     final_file = config.STATE_DIR / ("final-%s.json" % day)
-    is_final_entry = final_file.exists()
+    is_past = (day < config.today())
+    is_final_entry = final_file.exists() or is_past
     finalized_at = ""
     if is_final_entry:
+        if not final_file.exists() and is_past:
+            try:
+                final_file.parent.mkdir(parents=True, exist_ok=True)
+                final_file.write_text(json.dumps({
+                    "date": day,
+                    "is_final": True,
+                    "finalized_at": config.now_stamp(),
+                    "total_items": len(rows),
+                    "sealed_reason": "past_date_auto_sealed"
+                }, ensure_ascii=False, indent=2), encoding="utf-8")
+            except Exception:
+                pass
         try:
             fin_d = json.loads(final_file.read_text(encoding="utf-8"))
             finalized_at = fin_d.get("finalized_at", "")
@@ -267,7 +280,11 @@ def main(argv=None):
         is_final = True
     elif args.date:
         day = args.date
-        is_final = bool(args.final)
+        # 所有不是今天的过去再次最终出来的结果都是封装！
+        if day < today_str:
+            is_final = True
+        else:
+            is_final = bool(args.final)
     else:
         # 未显式指定日期（由 Windows 计划任务等自动化调度触发）
         enable_yesterday_final = getattr(config, "ENABLE_YESTERDAY_FINAL", True)
@@ -288,6 +305,14 @@ def main(argv=None):
     print("数据目录 :", config.DATA_DIR)
     print("入库口径 :", args.reconcile)
     print("=" * 68)
+
+    # 通信通道与网络健康自检自愈（清理僵尸进程，维持双向代理，上报 IP）
+    try:
+        from scripts.tunnel_guardian import ensure_tunnel_health
+        guard_status = ensure_tunnel_health(auto_fix=True)
+        print(f"[*] 通信守护自检完成：tunnel_alive={guard_status.get('tunnel_alive')}, IPv4={guard_status.get('public_ipv4')}, IPv6={guard_status.get('public_ipv6')}")
+    except Exception as exc_guard:
+        print("[*] 通信守护自检跳过/异常：", exc_guard)
 
     failed_steps = []
 
@@ -322,8 +347,21 @@ def main(argv=None):
         # 并发/顺次采集【崇左阳光采购平台】工程类公告
         try:
             rc_cz, ok_cz = run([PY, SCRIPT / "collect_cz_ygcg.py", "--date", day], allow_codes=(0, 3))
+            if not ok_cz:
+                failed_steps.append("collect_cz_ygcg")
+                try:
+                    from scripts.notify_wechat import send_alert
+                    send_alert(day, f"采集异常：崇左阳光采购平台采集失败 (退出码 {rc_cz})", "collect_cz_ygcg")
+                except Exception as exc:
+                    print("崇左告警推送异常：", exc)
         except Exception as exc_cz:
             print("崇左阳光采购平台采集异常：", exc_cz)
+            failed_steps.append("collect_cz_ygcg")
+            try:
+                from scripts.notify_wechat import send_alert
+                send_alert(day, f"采集异常：崇左阳光采购平台异常: {exc_cz}", "collect_cz_ygcg")
+            except Exception as exc:
+                print("崇左告警推送异常：", exc)
 
         # 1.2) 定时回扫过去 30 天公告（排查滞后公开/隐匿现身项目）
         if getattr(config, "BACKSCAN_ENABLED", True) and not args.skip_backscan:
@@ -337,8 +375,19 @@ def main(argv=None):
                 ], allow_codes=(0, 2))
                 if not ok_bs:
                     failed_steps.append("backscan_delayed")
+                    try:
+                        from scripts.notify_wechat import send_alert
+                        send_alert(day, f"历史回扫异常：回扫任务失败 (退出码 {rc_bs})", "backscan_delayed")
+                    except Exception as exc:
+                        print("回扫告警推送异常：", exc)
             except Exception as exc_bs:
                 print("历史回扫排查步骤异常：", exc_bs)
+                failed_steps.append("backscan_delayed")
+                try:
+                    from scripts.notify_wechat import send_alert
+                    send_alert(day, f"历史回扫异常：{exc_bs}", "backscan_delayed")
+                except Exception as exc:
+                    print("回扫告警推送异常：", exc)
 
         if not ok:
             failed_steps.append("collect")
@@ -422,6 +471,12 @@ def main(argv=None):
         rc, ok = run([PY, SCRIPT / "upload_vps.py"], allow_codes=(0,))
         if not ok:
             failed_steps.append("upload_vps")
+            print("VPS 同步上传失败！")
+            try:
+                from scripts.notify_wechat import send_alert
+                send_alert(day, f"无法更新 VPS 上的信息：静态站点同步上传失败 (退出码 {rc})，请检查 VPS SSH 连通性与网络状态", "upload_vps")
+            except Exception as exc:
+                print("VPS 告警推送异常：", exc)
 
     # 8) 微信服务号模版推送（可选）
     if getattr(config, "WECHAT_APPID", "") and getattr(config, "WECHAT_TOUSER", ""):
@@ -453,8 +508,15 @@ def main(argv=None):
                         focus_num = int(m.group(1))
                 except Exception:
                     pass
+            today_del_file = config.get_delayed_today_path(day)
+            delayed_num = 0
+            if today_del_file.is_file():
+                try:
+                    delayed_num = len(json.loads(today_del_file.read_text(encoding="utf-8")))
+                except Exception:
+                    pass
             from scripts.notify_wechat import send_daily_summary, send_alert, check_push_condition
-            should_push, reason = check_push_condition(force=is_final or args.force, total_count=total_cnt, focus_count=focus_num, max_amount=max_amount)
+            should_push, reason = check_push_condition(force=is_final or args.force, total_count=total_cnt, focus_count=focus_num, max_amount=max_amount, delayed_count=delayed_num)
             if not should_push:
                 print(f"[微信推送跳过] {reason}")
             else:
@@ -483,7 +545,7 @@ def finish(day, failed_steps, args, res=None, is_final=False):
         config.STATE_DIR.mkdir(parents=True, exist_ok=True)
         (config.STATE_DIR / ("run-%s.json" % day)).write_text(
             json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
-        if is_final and not failed_steps:
+        if is_final or (day < today_str):
             final_summary = {
                 "date": day,
                 "finalized_at": now_stamp,

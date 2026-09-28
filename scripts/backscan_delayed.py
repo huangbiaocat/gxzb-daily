@@ -13,12 +13,14 @@
 import argparse
 import json
 import os
+import subprocess
 import sys
 from datetime import datetime, timedelta, date
 from pathlib import Path
 
 # 项目根目录导入
 ROOT = Path(__file__).resolve().parent.parent
+REPO = ROOT
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -332,6 +334,12 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
             print(f"     官方标称: {it.get('pub_time')} | 首次捕获: {today}")
             print(f"     链接: {it.get('link') or it.get('detail_url')}")
         print("=" * 60 + "\n")
+        if not dry_run:
+            try:
+                from scripts.notify_wechat import send_delayed_notice_alert
+                send_delayed_notice_alert(delayed_notices, today=today)
+            except Exception as exc:
+                print(f"[历史回扫] 滞后公开即时提醒发送异常: {exc}")
     else:
         print("  ✓ 未发现新增滞后公开条目，历史数据完整度正常。")
         
@@ -358,6 +366,7 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
     
     # 8. 同步回补到历史日期的 daily/<pub_date>.json
     if sync_history and new_by_pub_date:
+        rebuilt_dates = []
         for p_date, items in new_by_pub_date.items():
             daily_file = config.DAILY_DIR / f"{p_date}.json"
             existing_items = []
@@ -391,6 +400,24 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
                         is_locked=1,
                     )
                 print(f"  已回补 {added_cnt} 条新公告到历史归档: {daily_file.name}")
+                # 所有不是今天的过去再次最终出来的结果都是封装！
+                if p_date < today:
+                    print(f"  ⚡ 历史日期 [{p_date}] 捕获滞后补录，正在重新封装生成终版页面...")
+                    daily_page_script = REPO / "scripts" / "build_daily_page.py"
+                    if daily_page_script.exists():
+                        try:
+                            subprocess.run([sys.executable, str(daily_page_script), "--date", p_date, "--final", "--no-vps"], check=False)
+                            rebuilt_dates.append(p_date)
+                        except Exception as exc:
+                            print(f"  ⚠️ 重新封装 [{p_date}] 页面失败: {exc}")
+        if rebuilt_dates:
+            archive_script = REPO / "scripts" / "build_archive_page.py"
+            if archive_script.exists():
+                try:
+                    subprocess.run([sys.executable, str(archive_script), "--no-vps"], check=False)
+                    print("  ✓ 已重新生成历史归档总览页面 (archive.html)")
+                except Exception as exc:
+                    print(f"  ⚠️ 重新生成历史归档总览失败: {exc}")
                 
     return {
         "today": today,

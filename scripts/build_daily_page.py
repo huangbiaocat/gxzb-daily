@@ -327,7 +327,8 @@ latest_pub = max(valid_times) if valid_times else "暂无"
 #    - 若为已终版封存的归档页面且未重新加 --final 跑，则保留封存时写入的 finalized_at；
 #    - 否则（日常定时扫描即使无新数据、或执行 --final 终版封装时），均记录当前时间 config.now_stamp()
 final_state_file = config.STATE_DIR / ("final-%s.json" % DAY)
-is_final_page = bool(getattr(ARGS, "final", False) or final_state_file.exists())
+is_past_day = (DAY < config.today())
+is_final_page = bool(getattr(ARGS, "final", False) or final_state_file.exists() or is_past_day)
 scan_time = getattr(ARGS, "scan_time", "").strip()
 if not scan_time and is_final_page and not getattr(ARGS, "final", False) and final_state_file.exists():
     try:
@@ -1431,20 +1432,52 @@ document.getElementById('btnReset').addEventListener('click', function () {
     showFilterToast('已重置所有筛选条件');
 });
 
+function resetFiltersExcept(except) {
+    if (except !== 'stage' && stageFilter) stageFilter.value = '';
+    if (except !== 'source' && sourceFilter) sourceFilter.value = '';
+    if (except !== 'city' && cityFilter) cityFilter.value = '';
+    if (except !== 'cat' && industryFilter) industryFilter.value = '';
+    if (except !== 'keyword' && searchInput) searchInput.value = '';
+    if (except !== 'focus') {
+        focusOnly = false;
+        if (btnFocus) btnFocus.classList.remove('active');
+    }
+    if (except !== 'overtime') {
+        overtimeOnly = false;
+        if (btnOvertime) btnOvertime.classList.remove('active');
+    }
+    if (except !== 'delayed') {
+        delayedOnly = false;
+        if (btnDelayed) btnDelayed.classList.remove('active');
+    }
+}
+
 /* 统计卡点击联动筛选与平滑滚动 */
 document.querySelectorAll('.stat-box.clickable').forEach(function(box) {
     box.addEventListener('click', function() {
         var targetStage = this.getAttribute('data-stage');
         if (targetStage === '__focus__') {
-            focusOnly = !focusOnly;
-            btnFocus.classList.toggle('active', focusOnly);
-            showFilterToast(focusOnly ? '已筛选重点信息' : '已取消重点信息筛选');
-        } else if (stageFilter.value === targetStage) {
-            stageFilter.value = '';
-            showFilterToast('已取消环节筛选');
+            var wasActive = (focusOnly && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !overtimeOnly && !delayedOnly && !searchInput.value);
+            resetFiltersExcept('focus');
+            if (wasActive) {
+                focusOnly = false;
+                btnFocus.classList.remove('active');
+                showFilterToast('已取消重点标讯筛选');
+            } else {
+                focusOnly = true;
+                btnFocus.classList.add('active');
+                showFilterToast('已切换至重点标讯筛选');
+            }
         } else {
-            stageFilter.value = targetStage;
-            showFilterToast('已按环节筛选：' + targetStage);
+            var wasActive = (stageFilter.value === targetStage && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !focusOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
+            resetFiltersExcept('stage');
+            if (wasActive) {
+                stageFilter.value = '';
+                showFilterToast('已取消环节筛选');
+            } else {
+                stageFilter.value = targetStage;
+                showFilterToast('已按环节筛选：' + targetStage);
+            }
         }
         apply();
         var filterEl = document.querySelector('.filter-section.daily');
@@ -1454,7 +1487,7 @@ document.querySelectorAll('.stat-box.clickable').forEach(function(box) {
     });
 });
 
-/* 点击页面内各种胶囊直接触发维度筛选 */
+/* 点击页面内各种胶囊直接触发单维度聚焦筛选（点击即为此胶囊筛选，不叠加历史胶囊） */
 container.addEventListener('click', function(e) {
     // 1. 业务环节胶囊 (中标公示、中标公告等)
     var typeHead = e.target.closest('.type-head');
@@ -1467,7 +1500,9 @@ container.addEventListener('click', function(e) {
             targetStage = tb ? tb.getAttribute('data-type') : '';
         }
         if (targetStage) {
-            if (stageFilter.value === targetStage) {
+            var wasActive = (stageFilter.value === targetStage && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !focusOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
+            resetFiltersExcept('stage');
+            if (wasActive) {
                 stageFilter.value = '';
                 showFilterToast('已取消环节筛选');
             } else {
@@ -1487,7 +1522,9 @@ container.addEventListener('click', function(e) {
         e.stopPropagation();
         var targetSource = sourceTag.getAttribute('data-filter-source') || sourceTag.textContent.trim();
         if (targetSource && sourceFilter) {
-            if (sourceFilter.value === targetSource) {
+            var wasActive = (sourceFilter.value === targetSource && !stageFilter.value && !cityFilter.value && !industryFilter.value && !focusOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
+            resetFiltersExcept('source');
+            if (wasActive) {
                 sourceFilter.value = '';
                 showFilterToast('已恢复全部平台信源');
             } else {
@@ -1512,7 +1549,9 @@ container.addEventListener('click', function(e) {
             targetCity = mapToCityFilter(rawCity);
         }
         if (targetCity) {
-            if (cityFilter.value === targetCity) {
+            var wasActive = (cityFilter.value === targetCity && !stageFilter.value && !sourceFilter.value && !industryFilter.value && !focusOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
+            resetFiltersExcept('city');
+            if (wasActive) {
                 cityFilter.value = '';
                 showFilterToast('已恢复全部地市');
             } else {
@@ -1533,7 +1572,9 @@ container.addEventListener('click', function(e) {
         var catBlock = catEl.closest('.cat-block');
         var targetCat = catEl.getAttribute('data-filter-cat') || (catBlock ? catBlock.getAttribute('data-cat') : '');
         if (targetCat) {
-            if (industryFilter.value === targetCat) {
+            var wasActive = (industryFilter.value === targetCat && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !focusOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
+            resetFiltersExcept('cat');
+            if (wasActive) {
                 industryFilter.value = '';
                 showFilterToast('已恢复全部工程大类');
             } else {
@@ -1551,9 +1592,17 @@ container.addEventListener('click', function(e) {
     if (focusChip) {
         e.preventDefault();
         e.stopPropagation();
-        focusOnly = !focusOnly;
-        btnFocus.classList.toggle('active', focusOnly);
-        showFilterToast(focusOnly ? '已筛选重点预警标讯' : '已取消重点标讯筛选');
+        var wasActive = (focusOnly && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !overtimeOnly && !delayedOnly && !searchInput.value);
+        resetFiltersExcept('focus');
+        if (wasActive) {
+            focusOnly = false;
+            btnFocus.classList.remove('active');
+            showFilterToast('已取消重点标讯筛选');
+        } else {
+            focusOnly = true;
+            btnFocus.classList.add('active');
+            showFilterToast('已筛选重点预警标讯');
+        }
         apply();
         checkScrollAfterFilter();
         return;
@@ -1564,9 +1613,17 @@ container.addEventListener('click', function(e) {
     if (otChip) {
         e.preventDefault();
         e.stopPropagation();
-        overtimeOnly = !overtimeOnly;
-        if (btnOvertime) btnOvertime.classList.toggle('active', overtimeOnly);
-        showFilterToast(overtimeOnly ? '已筛选加班发布标讯' : '已取消加班发布筛选');
+        var wasActive = (overtimeOnly && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !focusOnly && !delayedOnly && !searchInput.value);
+        resetFiltersExcept('overtime');
+        if (wasActive) {
+            overtimeOnly = false;
+            if (btnOvertime) btnOvertime.classList.remove('active');
+            showFilterToast('已取消加班发布筛选');
+        } else {
+            overtimeOnly = true;
+            if (btnOvertime) btnOvertime.classList.add('active');
+            showFilterToast('已筛选加班发布标讯');
+        }
         apply();
         checkScrollAfterFilter();
         return;
@@ -1577,9 +1634,17 @@ container.addEventListener('click', function(e) {
     if (delChip) {
         e.preventDefault();
         e.stopPropagation();
-        delayedOnly = !delayedOnly;
-        if (btnDelayed) btnDelayed.classList.toggle('active', delayedOnly);
-        showFilterToast(delayedOnly ? '已筛选滞后公开标讯' : '已取消滞后公开筛选');
+        var wasActive = (delayedOnly && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !focusOnly && !overtimeOnly && !searchInput.value);
+        resetFiltersExcept('delayed');
+        if (wasActive) {
+            delayedOnly = false;
+            if (btnDelayed) btnDelayed.classList.remove('active');
+            showFilterToast('已取消滞后公开筛选');
+        } else {
+            delayedOnly = true;
+            if (btnDelayed) btnDelayed.classList.add('active');
+            showFilterToast('已筛选滞后公开标讯');
+        }
         apply();
         checkScrollAfterFilter();
         return;
@@ -1614,7 +1679,7 @@ html = html.replace("__DAILY_CSS__", DAILY_CSS.strip())
 html = html.replace("__LATEST_PUB__", latest_pub)
 html = html.replace("__SCAN_TIME__", scan_time)
 html = html.replace("__LATEST__", latest_pub)
-html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.3.3"))
+html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.3.4"))
 html = html.replace("__DATE__", DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))
 html = html.replace("__NEXT_URL__", neighbor_url(1))
@@ -1695,7 +1760,8 @@ html, n = re.subn(r'(id="delayedCount">)0(<)', lambda m: m.group(1) + str(delaye
 assert n == 1, "delayedCount"
 html = html.replace("当前筛选匹配 <strong>0</strong>", "当前筛选匹配 <strong>%d</strong>" % total_n, 1)
 
-is_final_page = bool(getattr(ARGS, "final", False) or (config.STATE_DIR / ("final-%s.json" % DAY)).exists())
+is_past_day = (DAY < config.today())
+is_final_page = bool(getattr(ARGS, "final", False) or (config.STATE_DIR / ("final-%s.json" % DAY)).exists() or is_past_day)
 if is_final_page:
     html = html.replace(
         '<div class="hero-badge">',
@@ -1709,6 +1775,18 @@ if is_final_page:
         '<h2 class="hero-title">广西全区招投标公告日报（%s）</h2>' % DAY,
         '<h2 class="hero-title">广西全区招投标公告日报（%s）<span class="final-tag-chip"><svg fill="none" stroke="currentColor" stroke-width="2.5" height="12" viewBox="0 0 24 24" width="12" style="display:inline-block"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> 终版</span></h2>' % DAY
     )
+    # 所有不是今天的过去再次最终出来的结果都是封装：确保存证状态写盘
+    final_file = config.STATE_DIR / ("final-%s.json" % DAY)
+    if not final_file.exists():
+        final_file.parent.mkdir(parents=True, exist_ok=True)
+        final_data = {
+            "date": DAY,
+            "is_final": True,
+            "finalized_at": stamp,
+            "total_items": total_n,
+            "sealed_reason": "past_date_auto_sealed" if is_past_day else "manual_final"
+        }
+        final_file.write_text(json.dumps(final_data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 # ------------------------------------------------------------------ 5. 备份旧产物并写盘
 if OUT.exists():

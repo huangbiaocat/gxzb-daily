@@ -40,6 +40,8 @@ FILES_TO_PACK = [
     "scripts/install_tasks.bat",
     "scripts/upload_vps.py",
     "scripts/notify_wechat.py",
+    "scripts/tunnel_guardian.py",
+    "scripts/ensure_tunnel.bat",
     "scripts/sync_from_server.bat",
     "scripts/sync_from_server.ps1",
     "scripts/sync_and_run.bat",
@@ -55,6 +57,7 @@ FILES_TO_PACK = [
     "scripts/reapply_rules.py",
     "scripts/batch_scan.py",
     "scripts/upgrade_app.py",
+    "config/focus_rules_master.json",
 ]
 
 def main():
