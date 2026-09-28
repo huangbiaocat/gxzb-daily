@@ -184,17 +184,17 @@ def get_git_info():
         )
         if res.returncode == 0:
             commit = res.stdout.strip()
-            app_ver = getattr(config, "APP_VERSION", "v0.3.4")
+            app_ver = getattr(config, "APP_VERSION", "v0.3.5")
             return {"commit": commit, "version": f"{app_ver} (#{commit})"}
     except Exception:
         pass
-    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.3.4")}
+    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.3.5")}
 
 def check_app_upgrade():
     """
     检查当前本地版本与 GitHub 远程版本，获取差异提交列表与更新内容说明。
     """
-    local_version = getattr(config, "APP_VERSION", "v0.3.4")
+    local_version = getattr(config, "APP_VERSION", "v0.3.5")
     local_info = {
         "version": local_version,
         "commit": "",
@@ -1102,6 +1102,90 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             self.send_json({"ok": True, "total": total_count, "runs": runs})
             return
 
+        if path == "/api/search":
+            # 全盘检索历史所有公告数据，按发布时间倒序排列
+            query = parse_qs(parsed.query)
+            q = (query.get("q", [""])[0]).strip().lower()
+            region = (query.get("region", [""])[0]).strip()
+            stage = (query.get("stage", [""])[0]).strip()
+            industry = (query.get("industry", [""])[0]).strip()
+            delayed_only = query.get("delayed_only", ["0"])[0] in ("1", "true", "True")
+            overtime_only = query.get("overtime_only", ["0"])[0] in ("1", "true", "True")
+            project_only = query.get("project_only", ["0"])[0] in ("1", "true", "True")
+            owner_only = query.get("owner_only", ["0"])[0] in ("1", "true", "True")
+            limit = min(int(query.get("limit", ["100"])[0]), 1000)
+            offset = max(int(query.get("offset", ["0"])[0]), 0)
+
+            idx_file = Path(config.DATA_DIR) / "search_index.json"
+            if not idx_file.is_file():
+                try:
+                    from scripts.build_search_index import generate_search_index
+                    generate_search_index()
+                except Exception:
+                    pass
+
+            items = []
+            if idx_file.is_file():
+                try:
+                    items = json.loads(idx_file.read_text(encoding="utf-8"))
+                except Exception:
+                    items = []
+
+            filtered = []
+            for it in items:
+                if q:
+                    t = (it.get("title") or "").lower()
+                    a = (it.get("areaname") or "").lower()
+                    s = (it.get("stage") or "").lower()
+                    i = (it.get("industry") or "").lower()
+                    if q not in t and q not in a and q not in s and q not in i:
+                        continue
+                if delayed_only and not it.get("is_delayed"):
+                    continue
+                if overtime_only and not it.get("is_overtime"):
+                    continue
+                if project_only and "重点项目" not in (it.get("focus_tags") or []):
+                    continue
+                if owner_only and "重点业主" not in (it.get("focus_tags") or []):
+                    continue
+                if region and region not in (it.get("areaname") or ""):
+                    continue
+                if stage and stage not in (it.get("stage") or ""):
+                    continue
+                if industry and industry not in (it.get("industry") or ""):
+                    continue
+                filtered.append(it)
+
+            # 严格时间倒序
+            filtered.sort(key=lambda r: str(r.get("pub_time") or r.get("date") or ""), reverse=True)
+            total = len(filtered)
+            page_items = filtered[offset:offset+limit]
+
+            self.send_json({"ok": True, "total": total, "items": page_items})
+            return
+
+        if path == "/api/delayed_list":
+            # 查询当前所有标记为滞后的公告条目
+            try:
+                from scripts.scan_record_db import get_scan_record_db
+                db = get_scan_record_db()
+                with db._connection() as conn:
+                    conn.row_factory = sqlite3.Row
+                    cur = conn.cursor()
+                    cur.execute("""
+                        SELECT infoid, title, pub_time, pub_date, first_scan_time, first_scan_date,
+                               delay_days, delay_hours, delay_label, is_delayed, is_baseline,
+                               center, link, evidence_text, notes
+                        FROM scan_records
+                        WHERE is_delayed = 1
+                        ORDER BY pub_time DESC
+                    """)
+                    records = [dict(r) for r in cur.fetchall()]
+                self.send_json({"ok": True, "total": len(records), "records": records})
+            except Exception as e:
+                self.send_json({"ok": False, "error": str(e), "records": []})
+            return
+
         # 预览静态 dist / preview 中的展示大屏与日报文件
         is_preview = path == "/preview" or path.startswith("/preview/")
         is_dist = path == "/dist" or path.startswith("/dist/")
@@ -1252,6 +1336,23 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "scan_record_db.py"), "--rebuild-baseline"]
             ok, msg = PROC_MGR.start_task("同步与校准底边扫描数据库基线", cmd)
             self.send_json({"ok": ok, "msg": msg})
+            return
+
+        if path == "/api/unmark_delayed":
+            # 人工纠错：撤销滞后公开标记，并永久划入底边原始基线
+            infoid = post_data.get("infoid", "").strip()
+            date_val = post_data.get("date", "").strip()
+            notes = post_data.get("notes", "").strip() or "人工纠错划入原始对比数据"
+            if not infoid:
+                self.send_json({"ok": False, "msg": "未提供有效公告 infoid！"})
+                return
+
+            try:
+                from scripts.unmark_delayed import unmark_notice
+                res = unmark_notice(infoid, date=date_val, notes=notes, rebuild_page=True)
+                self.send_json({"ok": res.get("ok", False), "msg": res.get("message", "操作完成"), "data": res})
+            except Exception as e:
+                self.send_json({"ok": False, "msg": f"解除滞后标记失败: {str(e)}"})
             return
 
         if path == "/api/delete_date":

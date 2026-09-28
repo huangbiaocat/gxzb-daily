@@ -9,6 +9,7 @@
 """
 import json
 import os
+import re
 from datetime import datetime, date
 from pathlib import Path
 
@@ -31,6 +32,23 @@ def parse_date_str(val):
     return None
 
 
+def parse_datetime_str(val):
+    """安全将字符串或 datetime/date 对象转为 datetime 对象。"""
+    if not val:
+        return None
+    if isinstance(val, datetime):
+        return val
+    if isinstance(val, date):
+        return datetime.combine(val, datetime.min.time())
+    s = str(val).strip()
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s[:19], fmt)
+        except ValueError:
+            pass
+    return None
+
+
 def calc_delay_days(pub_time, first_seen_date=None):
     """计算首次发现日期与官方发布日期的间隔天数。
     
@@ -48,23 +66,68 @@ def calc_delay_days(pub_time, first_seen_date=None):
     return max(0, diff)
 
 
+def calc_delay_info(pub_time, first_seen_time=None, first_seen_date=None):
+    """自适应计算官方发布时间与首次扫描捕获时间的间隔。
+    
+    规则（用户明确要求）：
+    - 超过天的就显示天（如「滞后 2天」），
+    - 超过小时不足天的就显示小时（如「滞后 5小时」）。
+    - 统一颜色与展示徽章。
+    
+    Returns:
+        dict: {
+            "delay_days": int,
+            "delay_hours": int,
+            "delay_label": str,  # "滞后 2天" 或 "滞后 5小时"
+            "is_delayed": bool
+        }
+    """
+    p_dt = parse_datetime_str(pub_time)
+    s_d = parse_date_str(first_seen_date)
+    s_dt = parse_datetime_str(first_seen_time)
+    if s_dt and s_d and s_dt.date() != s_d:
+        s_dt = datetime.combine(s_d, s_dt.time())
+    elif not s_dt:
+        s_d = s_d or parse_date_str(config.today())
+        s_dt = datetime.combine(s_d, datetime.now().time()) if s_d else datetime.now()
+    
+    if not p_dt or not s_dt:
+        return {"delay_days": 0, "delay_hours": 0, "delay_label": "", "is_delayed": False}
+    
+    raw_date_diff = (s_dt.date() - p_dt.date()).days if hasattr(p_dt, 'date') and hasattr(s_dt, 'date') else 0
+    diff_sec = max(0, int((s_dt - p_dt).total_seconds()))
+    delay_hours = diff_sec // 3600
+    delay_days = max(0, raw_date_diff)
+    
+    if delay_days >= 1:
+        delay_label = f"滞后 {delay_days}天"
+    elif delay_hours >= 1:
+        delay_label = f"滞后 {delay_hours}小时"
+    else:
+        delay_label = ""
+    
+    return {"delay_days": delay_days, "delay_hours": delay_hours, "delay_label": delay_label, "is_delayed": delay_hours >= 1}
+
+
 def is_delayed_notice(pub_time, first_seen_date=None, min_delay_days=None):
     """判断是否属于滞后公开公告（默认 delay_days >= 2）。"""
     thresh = config.BACKSCAN_MIN_DELAY if min_delay_days is None else int(min_delay_days)
     return calc_delay_days(pub_time, first_seen_date) >= thresh
 
 
-def annotate_delayed_item(item, first_seen_date=None, min_delay_days=None, force_delayed=None):
+def annotate_delayed_item(item, first_seen_date=None, first_seen_time=None, min_delay_days=None, force_delayed=None):
     """对公告字典注入滞后公开标记与重点关注元数据（原地修改并返回）。
     
     规则（按重点处理）：
     1. item["is_delayed"] = 1
     2. item["delay_days"] = delay_days
-    3. item["first_seen_date"] = first_seen_date
-    4. item["delayed_reason"] = 详细文本描述
-    5. item["is_focus"] = 1
-    6. item["focus_tags"] 包含 "滞后公开"
-    7. item["focus_reason"] 包含滞后公开说明
+    3. item["delay_hours"] = delay_hours
+    4. item["delay_label"] = delay_label ("滞后 X天" 或 "滞后 X小时")
+    5. item["first_seen_date"] = first_seen_date
+    6. item["delayed_reason"] = 详细文本描述
+    7. item["is_focus"] = 1
+    8. item["focus_tags"] 包含 "滞后公开"
+    9. item["focus_reason"] 包含滞后公开说明
     """
     if not isinstance(item, dict):
         return item
@@ -72,7 +135,20 @@ def annotate_delayed_item(item, first_seen_date=None, min_delay_days=None, force
     pub_time = item.get("pub_time") or item.get("infodatepx") or item.get("date") or ""
     s_date = parse_date_str(first_seen_date) or parse_date_str(config.today())
     s_date_str = s_date.strftime("%Y-%m-%d") if s_date else config.today()
-    delay_days = calc_delay_days(pub_time, s_date)
+    if first_seen_time:
+        p_fst = parse_datetime_str(first_seen_time)
+        if p_fst and s_date and p_fst.date() != s_date:
+            s_time_str = f"{s_date_str} {p_fst.strftime('%H:%M:%S')}"
+        else:
+            s_time_str = str(first_seen_time)
+    else:
+        s_time_str = str(item.get("first_seen_time") or f"{s_date_str} 18:00:00")
+    
+    delay_info = calc_delay_info(pub_time, first_seen_time=s_time_str, first_seen_date=s_date_str)
+    delay_days = delay_info["delay_days"]
+    delay_hours = delay_info["delay_hours"]
+    delay_label = delay_info["delay_label"]
+    
     thresh = config.BACKSCAN_MIN_DELAY if min_delay_days is None else int(min_delay_days)
     
     pub_date_str = str(parse_date_str(pub_time) or pub_time[:10])
@@ -81,16 +157,30 @@ def annotate_delayed_item(item, first_seen_date=None, min_delay_days=None, force
         is_delayed = bool(force_delayed)
     else:
         is_delayed = delay_days >= thresh
+        if not is_delayed and delay_hours >= 1 and thresh <= 0:
+            is_delayed = True
 
     if is_delayed:
         item["is_delayed"] = 1
         item["delay_days"] = delay_days
+        item["delay_hours"] = delay_hours
+        item["delay_label"] = delay_label
         item["delayed_type"] = "滞后公开"
         item["first_seen_date"] = s_date_str
-        reason = (
-            f"【存证判定】官方标称发布于 {pub_date_str}，"
-            f"本系统于 {s_date_str} 首次扫描捕获，确证滞后公开 {delay_days} 天。"
-        )
+        item["first_seen_time"] = s_time_str
+        disp_time = pub_time or pub_date_str
+        if delay_days >= 1:
+            reason = (
+                f"【存证判定】官方标称发布于 {pub_date_str}，"
+                f"本系统于 {s_date_str} 首次扫描捕获，确证滞后公开 {delay_days} 天。"
+            )
+            f_reason_str = f"滞后 {delay_days} 天公开现身 (官方日期 {pub_date_str} -> 首次捕获 {s_date_str})"
+        else:
+            reason = (
+                f"【存证判定】官方标称发布于 {disp_time}，"
+                f"本系统于 {s_time_str[:16]} 首次扫描捕获，确证{delay_label or '滞后公开'}。"
+            )
+            f_reason_str = f"{delay_label or '滞后公开'}现身 (官方时间 {disp_time} -> 首次捕获 {s_time_str[:16]})"
         item["delayed_reason"] = reason
         
         # 用户明确要求：按重点处理
@@ -106,13 +196,14 @@ def annotate_delayed_item(item, first_seen_date=None, min_delay_days=None, force
         f_reasons = item.get("focus_reason")
         if not isinstance(f_reasons, list):
             f_reasons = [f_reasons] if f_reasons else []
-        f_reason_str = f"滞后 {delay_days} 天公开现身 (官方日期 {pub_date_str} -> 首次捕获 {s_date_str})"
         if f_reason_str not in f_reasons:
             f_reasons.append(f_reason_str)
         item["focus_reason"] = f_reasons
     else:
         item["is_delayed"] = 0
         item["delay_days"] = delay_days
+        item["delay_hours"] = delay_hours
+        item["delay_label"] = ""
         item["first_seen_date"] = s_date_str
     
     return item
@@ -124,19 +215,25 @@ def clean_false_delayed_notices(item):
         return item
     item["is_delayed"] = 0
     item["delay_days"] = 0
+    item["delay_hours"] = 0
+    item.pop("delay_label", None)
     item.pop("delayed_reason", None)
     item.pop("delayed_type", None)
     item.pop("first_seen_date", None)
+    item.pop("first_seen_time", None)
     tags = item.get("focus_tags")
     if isinstance(tags, list):
         item["focus_tags"] = [t for t in tags if t not in ("滞后补录", "滞后公开")]
     reasons = item.get("focus_reason")
     if isinstance(reasons, list):
-        item["focus_reason"] = [r for r in reasons if not str(r).startswith("滞后公开")]
+        item["focus_reason"] = [r for r in reasons if not str(r).startswith("滞后") and "滞后" not in str(r)]
     if not item.get("focus_tags"):
         item["is_focus"] = 0
         item["focus_reason"] = []
     return item
+
+
+unmark_delayed_item = clean_false_delayed_notices
 
 
 # ------------------------------------------------------------------ 首次发现注册表管理
@@ -241,8 +338,11 @@ def record_notice_seen(infoid, pub_time, seen_date=None, registry=None, min_dela
         return False, rec.get("delay_days", 0), bool(rec.get("is_delayed")), rec
     
     # 通过 ScanRecordDB 底边存证库判定是否真正滞后
-    is_del = False
-    delay = calc_delay_days(pub_time, s_date)
+    delay_info = calc_delay_info(pub_time, first_seen_time=f"{s_date_str} 18:00:00", first_seen_date=s_date_str)
+    delay = delay_info["delay_days"]
+    delay_hours = delay_info["delay_hours"]
+    delay_label = delay_info["delay_label"]
+    is_del = delay >= thresh
     try:
         db = get_scan_record_db()
         db_res = db.record_scan(
@@ -252,9 +352,12 @@ def record_notice_seen(infoid, pub_time, seen_date=None, registry=None, min_dela
             scan_time=f"{s_date_str} 18:00:00",
             scan_source="registry_sync",
             min_delay_days=thresh,
+            is_baseline=False if is_del else True,
         )
         is_del = bool(db_res.get("is_delayed", False))
         delay = int(db_res.get("delay_days", delay))
+        delay_hours = int(db_res.get("delay_hours", delay_hours))
+        delay_label = str(db_res.get("delay_label", delay_label))
     except Exception:
         pass
 
@@ -268,6 +371,8 @@ def record_notice_seen(infoid, pub_time, seen_date=None, registry=None, min_dela
         "first_seen_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "is_delayed": 1 if is_del else 0,
         "delay_days": delay,
+        "delay_hours": delay_hours,
+        "delay_label": delay_label,
     }
     registry[infoid] = rec
     return True, delay, is_del, rec

@@ -25,19 +25,20 @@ class TestDailyPageFocusCard(unittest.TestCase):
         self.assertTrue(html_path.exists())
         content = html_path.read_text(encoding="utf-8")
 
-        # 检查 7 列栅格样式与重点卡片样式
-        self.assertIn(".stats-grid.cols-7", content)
-        self.assertIn(".stat-box.stage-focus", content)
-        self.assertIn(".stat-box.stage-focus .sb-label { color: #dc2626 !important; }", content)
+        # 检查 8 列栅格样式与重点卡片样式
+        self.assertIn(".stats-grid.cols-8", content)
+        self.assertIn(".stat-box.stage-focus-project", content)
+        self.assertIn(".stat-box.stage-focus-owner", content)
 
-        # 检查重点信息指标卡 HTML 结构
-        self.assertIn('class="stat-box stage-focus clickable" data-stage="__focus__" title="点击筛选 重点信息"', content)
-        self.assertIn('<div class="sb-label">重点信息</div>', content)
-        self.assertIn('id="stat-focus">4<span class="sb-unit">条</span>', content)
+        # 检查重点项目与重点业主指标卡 HTML 结构
+        self.assertIn('class="stat-box stage-focus-project clickable" data-stage="__focus_project__" title="点击筛选 重点项目"', content)
+        self.assertIn('class="stat-box stage-focus-owner clickable" data-stage="__focus_owner__" title="点击筛选 重点业主"', content)
+        self.assertIn('id="stat-focus-project"', content)
+        self.assertIn('id="stat-focus-owner"', content)
 
-        # 检查交互联动与计数脚本
-        self.assertIn("targetStage === '__focus__'", content)
-        self.assertIn("statFocusEl", content)
+        # 检查交互联动
+        self.assertIn("targetStage === '__focus_project__'", content)
+        self.assertIn("targetStage === '__focus_owner__'", content)
 
 
 if __name__ == "__main__":

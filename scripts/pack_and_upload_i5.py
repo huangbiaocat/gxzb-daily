@@ -20,10 +20,13 @@ FILES_TO_PACK = [
     "scripts/collect_cz_ygcg.py",
     "scripts/build_daily_page.py",
     "scripts/build_archive_page.py",
+    "scripts/build_search_index.py",
+    "scripts/build_search_page.py",
     "scripts/build_exe.py",
     "scripts/build_exe.bat",
     "scripts/overtime_helper.py",
     "scripts/delayed_helper.py",
+    "scripts/unmark_delayed.py",
     "scripts/scan_record_db.py",
     "scripts/backscan_delayed.py",
     "scripts/diff_missing.py",
@@ -82,7 +85,7 @@ def main():
         print(f"[Warn] 读取 Git 版本信息失败: {e}")
 
     v_info = {
-        "version": getattr(config, "APP_VERSION", "v0.3.4"),
+        "version": getattr(config, "APP_VERSION", "v0.3.5"),
         "commit": commit,
         "date": date,
         "message": message,

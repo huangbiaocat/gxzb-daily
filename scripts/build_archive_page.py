@@ -603,6 +603,10 @@ PAGE = """<!DOCTYPE html>
 </div>
 </a>
 <div class="header-actions">
+<a class="btn-latest" href="./search.html" style="background: #ffffff; color: var(--primary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); margin-right: 8px;">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
+<span>全盘检索</span>
+</a>
 <a class="btn-latest" href="./{latest_date}.html" data-latest-date="{latest_date}" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
 <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
 <span class="btn-latest-text">{latest_btn_text}</span>
@@ -786,7 +790,7 @@ _FIELDS = {
     "base_script": base_script,
     "site": html.escape(arc.get("site", "广西全区招投标数据监控中心")),
     "subtitle": html.escape(arc.get("subtitle", "广西公共资源交易 · 工程建设类公告每日归档")),
-    "app_version": getattr(config, "APP_VERSION", "v0.3.4"),
+    "app_version": getattr(config, "APP_VERSION", "v0.3.5"),
     "day_count": comma(day_count),
     "total_all": comma(total_all),
     "total_focus": comma(arc.get("total_focus", sum(d.get("focus_count", 0) for d in days))),

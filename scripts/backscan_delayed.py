@@ -288,11 +288,12 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
         # 该源已有锁定底边基线！核查确为底边快照外新显现的条目
         delay_days = calc_delay_days(pub_time, today)
         is_delayed = delay_days >= min_delay
+        now_str = f"{today} {datetime.now().strftime('%H:%M:%S')}"
         
         if is_delayed:
             item["is_delayed"] = 1
             item["delay_days"] = delay_days
-            annotate_delayed_item(item, today, min_delay, force_delayed=True)
+            annotate_delayed_item(item, first_seen_date=today, first_seen_time=now_str, min_delay_days=min_delay, force_delayed=True)
             delayed_notices.append(item)
         else:
             item["is_delayed"] = 0
@@ -302,7 +303,6 @@ def scan_delayed_notices(today_str, days=30, min_delay=2, dry_run=False, sync_hi
             
         # 记录到首次扫描存证数据库与注册表
         if not dry_run:
-            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             scan_db.record_scan(
                 infoid=infoid,
                 title=item.get("title") or "",

@@ -244,8 +244,15 @@ for it in items:
     if rec and rec.get("is_delayed"):
         it["is_delayed"] = 1
         it["delay_days"] = rec.get("delay_days", 0)
+        it["delay_hours"] = rec.get("delay_hours", 0)
+        it["delay_label"] = rec.get("delay_label") or (
+            f"滞后 {it['delay_days']}天" if it["delay_days"] >= 1 else (
+                f"滞后 {it['delay_hours']}小时" if it["delay_hours"] >= 1 else "滞后公开"
+            )
+        )
         it["delayed_type"] = "滞后公开"
         it["first_seen_date"] = rec.get("first_scan_date")
+        it["first_seen_time"] = rec.get("first_scan_time")
         it["delayed_reason"] = rec.get("evidence_text")
         it["is_focus"] = 1
         tags = it.setdefault("focus_tags", [])
@@ -254,14 +261,17 @@ for it in items:
             tags.append("滞后公开")
         it["focus_tags"] = tags
         reasons = it.setdefault("focus_reason", [])
-        ev = rec.get("evidence_text") or f"滞后 {it.get('delay_days', 0)} 天公开现身"
+        ev = rec.get("evidence_text") or f"{it['delay_label']}公开现身"
         if ev not in reasons:
             reasons.append(ev)
     elif rec:
         it["is_delayed"] = 0
         it["delay_days"] = 0
+        it["delay_hours"] = 0
+        it.pop("delay_label", None)
         it.pop("delayed_reason", None)
         it.pop("first_seen_date", None)
+        it.pop("first_seen_time", None)
         tags = it.get("focus_tags")
         if isinstance(tags, list):
             it["focus_tags"] = [t for t in tags if t not in ("滞后补录", "滞后公开")]
@@ -294,6 +304,8 @@ log_index = logstore.load_index()
 stage_counter = collections.Counter(it["stage"] for it in items)
 total_n = len(items)
 focus_n = sum(1 for it in items if it.get("is_focus"))
+focus_proj_n = sum(1 for it in items if "重点项目" in (it.get("focus_tags") or []))
+focus_owner_n = sum(1 for it in items if "重点业主" in (it.get("focus_tags") or []))
 # 加载今日回扫捕获的滞后清单（若有）
 today_delayed_file = config.get_delayed_today_path(DAY)
 today_delayed_items = []
@@ -313,7 +325,8 @@ stat_map = {
     "stat-control": stage_counter.get("控制价公示", 0),
     "stat-candidate": stage_counter.get("中标公示", 0),
     "stat-result": stage_counter.get("中标公告", 0),
-    "stat-focus": focus_n,
+    "stat-focus-project": focus_proj_n,
+    "stat-focus-owner": focus_owner_n,
 }
 city_n = len(set(it.get("areaname", "") for it in items))
 cat_n = len(set(it.get("industry", "") for it in items))
@@ -343,35 +356,40 @@ if not scan_time:
 DAILY_CSS = """
         /* ===== 每日明细页定制（建立在 preview 设计系统之上） ===== */
         /* 业务环节与重点信息统计卡：沿用 preview .stat-box，自适应 7 列栅格 */
+        .stats-grid.cols-8 { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 12px; }
         .stats-grid.cols-7 { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; }
         .stats-grid.cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-        .stats-grid.cols-7 .stat-box, .stats-grid.cols-6 .stat-box { padding: 13px 14px; }
-        .stats-grid.cols-7 .stat-box .sb-value, .stats-grid.cols-6 .stat-box .sb-value { font-size: 1.45rem; }
-        .stats-grid.cols-7 .stat-box.clickable, .stats-grid.cols-6 .stat-box.clickable {
+        .stats-grid.cols-8 .stat-box, .stats-grid.cols-7 .stat-box, .stats-grid.cols-6 .stat-box { padding: 13px 12px; }
+        .stats-grid.cols-8 .stat-box .sb-value, .stats-grid.cols-7 .stat-box .sb-value, .stats-grid.cols-6 .stat-box .sb-value { font-size: 1.4rem; }
+        .stats-grid.cols-8 .stat-box.clickable, .stats-grid.cols-7 .stat-box.clickable, .stats-grid.cols-6 .stat-box.clickable {
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             user-select: none;
         }
-        .stats-grid.cols-7 .stat-box.clickable:hover, .stats-grid.cols-6 .stat-box.clickable:hover {
+        .stats-grid.cols-8 .stat-box.clickable:hover, .stats-grid.cols-7 .stat-box.clickable:hover, .stats-grid.cols-6 .stat-box.clickable:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 16px -4px rgba(15, 23, 42, 0.12);
         }
-        .stats-grid.cols-7 .stat-box.clickable.active, .stats-grid.cols-6 .stat-box.clickable.active {
+        .stats-grid.cols-8 .stat-box.clickable.active, .stats-grid.cols-7 .stat-box.clickable.active, .stats-grid.cols-6 .stat-box.clickable.active {
             box-shadow: 0 0 0 2px #0f172a, 0 6px 20px -4px rgba(15, 23, 42, 0.2);
             transform: translateY(-2px);
         }
-        .stats-grid.cols-7 .stat-box.stage-focus.clickable.active {
-            box-shadow: 0 0 0 2px #dc2626, 0 6px 20px -4px rgba(220, 38, 38, 0.25);
+        .stats-grid .stat-box.stage-focus-project.clickable.active {
+            box-shadow: 0 0 0 2px #0284c7, 0 6px 20px -4px rgba(2, 132, 199, 0.28);
+        }
+        .stats-grid .stat-box.stage-focus-owner.clickable.active {
+            box-shadow: 0 0 0 2px #4f46e5, 0 6px 20px -4px rgba(79, 70, 229, 0.28);
         }
         @media (max-width: 1200px) {
+            .stats-grid.cols-8 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
             .stats-grid.cols-7 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
             .stats-grid.cols-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         }
         @media (max-width: 760px) {
-            .stats-grid.cols-7, .stats-grid.cols-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .stats-grid.cols-8, .stats-grid.cols-7, .stats-grid.cols-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 520px) {
-            .stats-grid.cols-7, .stats-grid.cols-6 { grid-template-columns: 1fr; }
+            .stats-grid.cols-8, .stats-grid.cols-7, .stats-grid.cols-6 { grid-template-columns: 1fr; }
         }
 
         /* 页头胶囊导航组 */
@@ -404,7 +422,7 @@ DAILY_CSS = """
         .select-input:focus { background-color: #ffffff; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12); }
         .filter-row.bottom { justify-content: space-between; border-top: 1px solid var(--border-light); padding-top: 12px; }
         .filter-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .btn-focus, .btn-overtime, .btn-delayed, .btn-reset {
+        .btn-focus, .btn-focus-project, .btn-focus-owner, .btn-overtime, .btn-delayed, .btn-reset {
             display: inline-flex;
             align-items: center;
             gap: 6px;
@@ -415,6 +433,30 @@ DAILY_CSS = """
             font-family: inherit;
             cursor: pointer;
             transition: all 0.2s ease;
+        }
+        .btn-focus-project {
+            color: #0369a1;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+        }
+        .btn-focus-project:hover { background: #e0f2fe; color: #0284c7; }
+        .btn-focus-project.active {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.28);
+        }
+        .btn-focus-owner {
+            color: #4338ca;
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+        }
+        .btn-focus-owner:hover { background: #e0e7ff; color: #4f46e5; }
+        .btn-focus-owner.active {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.28);
         }
         .btn-focus { color: var(--danger-text); background: var(--danger-light); border: 1px solid #fecaca; }
         .btn-focus:hover { background: #fee2e2; }
@@ -922,6 +964,10 @@ __DAILY_CSS__
 </div>
 </a>
 <div class="header-actions nav-caps">
+<a class="btn-back" href="./search.html" style="color: #0284c7; border-color: #bae6fd; background: #f0f9ff; font-weight: 700;">
+<svg fill="none" height="15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="15"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
+<span>全盘检索</span>
+</a>
 <a class="btn-back" href="__PREV_URL__">
 <svg fill="none" height="15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="15"><polyline points="15 18 9 12 15 6"></polyline></svg>
 <span>前一日</span>
@@ -948,7 +994,7 @@ __DAILY_CSS__
             </div>
             <h2 class="hero-title">广西全区招投标公告日报（__DATE__）</h2>
             <p class="hero-desc">按 6 大业务环节与工程类别归集当日全区公共资源交易公告，每条公告以官方唯一识别码（infoid）入库，便于溯源与查重，点击标题可跳转至官方公告页面查看原文。支持关键词检索、工程大类 / 地市 / 业务环节筛选与重点预警；无公告更新的类别与类型不在此页展示。</p>
-            <div class="stats-grid cols-7">
+            <div class="stats-grid cols-8">
                 <div class="stat-box stage-plan clickable" data-stage="招标计划" title="点击筛选 招标计划">
                     <div class="sb-label">招标计划</div>
                     <div class="sb-value" id="stat-plan">0<span class="sb-unit">条</span></div>
@@ -973,9 +1019,13 @@ __DAILY_CSS__
                     <div class="sb-label">中标公告</div>
                     <div class="sb-value" id="stat-result">0<span class="sb-unit">条</span></div>
                 </div>
-                <div class="stat-box stage-focus clickable" data-stage="__focus__" title="点击筛选 重点信息">
-                    <div class="sb-label">重点信息</div>
-                    <div class="sb-value" id="stat-focus">0<span class="sb-unit">条</span></div>
+                <div class="stat-box stage-focus-project clickable" data-stage="__focus_project__" title="点击筛选 重点项目">
+                    <div class="sb-label">重点项目</div>
+                    <div class="sb-value" id="stat-focus-project">0<span class="sb-unit">条</span></div>
+                </div>
+                <div class="stat-box stage-focus-owner clickable" data-stage="__focus_owner__" title="点击筛选 重点业主">
+                    <div class="sb-label">重点业主</div>
+                    <div class="sb-value" id="stat-focus-owner">0<span class="sb-unit">条</span></div>
                 </div>
             </div>
         </div>
@@ -986,7 +1036,8 @@ __DAILY_CSS__
         <div class="filter-row top">
             <div class="search-input-wrap">
                 <svg class="search-icon" fill="none" height="16" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
-                <input class="search-input" id="searchInput" placeholder="搜索标题、地市或关键词（如 水库、公路、学校）..." type="text"/>
+                <input class="search-input" id="searchInput" placeholder="全盘检索所有公告（如 水库、公路、学校，回车全盘搜索）..." type="text"/>
+                <button type="button" onclick="var q=(document.getElementById('searchInput').value||'').trim();window.location.href='./search.html'+(q?'?q='+encodeURIComponent(q):'');" title="在全历史数据库中全盘检索" style="border:none;background:#0284c7;color:#fff;border-radius:4px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer;margin-left:6px;white-space:nowrap;">全盘检索</button>
             </div>
             <select class="select-input" id="industryFilter">
                 <option value="">全部工程大类</option>
@@ -1031,9 +1082,11 @@ __DAILY_CSS__
         </div>
         <div class="filter-row bottom">
             <div class="filter-actions">
-                <button class="btn-focus" id="btnFocusOnly" type="button">
-                    <svg fill="none" height="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="13"><path d="M12 3.5 14.6 9.2l6.4.8-4.7 4.3 1.2 6.2L12 17.6 6.5 20.5l1.2-6.2L3 10l6.4-.8z"></path></svg>
-                    仅看重点预警 (<span class="focus-count" id="focusCount">0</span>)
+                <button class="btn-focus-project" id="btnFocusProjectOnly" type="button" title="点击仅筛选命中重点工程/项目的公告">
+                    🎯 仅看重点项目 (<span class="focus-project-count" id="focusProjectCount">0</span>)
+                </button>
+                <button class="btn-focus-owner" id="btnFocusOwnerOnly" type="button" title="点击仅筛选命中重点业主/招标人的公告">
+                    🏢 仅看重点业主 (<span class="focus-owner-count" id="focusOwnerCount">0</span>)
                 </button>
                 <button class="btn-overtime" id="btnOvertimeOnly" type="button" title="点击仅筛选法定节假日、周末或下班后非工作时间发布的公告">
                     <svg fill="none" height="13" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="13"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
@@ -1167,14 +1220,18 @@ const industryFilter = document.getElementById('industryFilter');
 const sourceFilter = document.getElementById('sourceFilter');
 const cityFilter = document.getElementById('cityFilter');
 const stageFilter = document.getElementById('stageFilter');
-const btnFocus = document.getElementById('btnFocusOnly');
-let focusOnly = false;
+const btnFocusProject = document.getElementById('btnFocusProjectOnly');
+let focusProjectOnly = false;
+const btnFocusOwner = document.getElementById('btnFocusOwnerOnly');
+let focusOwnerOnly = false;
 
 function renderNoticeItem(d) {
     var isCz = (d.source === '崇左阳光采购' || (d.link && d.link.indexOf('gxygcg.com') !== -1) || d.areaname === '崇左阳光采购');
     var rawCity = d.areaname || (isCz ? '崇左市' : '崇左市');
     var filterCity = mapToCityFilter(rawCity);
     var cityLabel = esc(shortArea(d.areaname || (isCz ? '崇左阳光采购' : '崇左市')));
+    var isProj = (d.focus_tags && d.focus_tags.indexOf("重点项目") !== -1) ? 1 : 0;
+    var isOwner = (d.focus_tags && d.focus_tags.indexOf("重点业主") !== -1) ? 1 : 0;
 
     var s = '<a class="notice-item"'
           + ' data-title="' + esc(d.title) + '"'
@@ -1183,6 +1240,8 @@ function renderNoticeItem(d) {
           + ' data-city="' + esc(d.areaname || '崇左市') + '"'
           + ' data-stage="' + esc(d.stage || '其他') + '"'
           + ' data-focus="' + (d.is_focus ? 1 : 0) + '"'
+          + ' data-focus-project="' + isProj + '"'
+          + ' data-focus-owner="' + isOwner + '"'
           + ' data-overtime="' + (d.is_overtime ? 1 : 0) + '"'
           + ' data-delayed="' + (d.is_delayed ? 1 : 0) + '"'
           + ' href="' + esc(d.link) + '" rel="noopener noreferrer" target="_blank"'
@@ -1195,7 +1254,7 @@ function renderNoticeItem(d) {
     if (d.is_focus) {
         var tags = d.focus_tags;
         if (!tags || !tags.length) {
-            tags = ["重点预警"];
+            tags = ["重点项目"];
         }
         for (var ti = 0; ti < tags.length; ti++) {
             var tname = tags[ti];
@@ -1203,14 +1262,22 @@ function renderNoticeItem(d) {
                 continue;
             }
             var cls = "focus-chip";
-            if (tname === "滞后公开" || tname === "滞后补录") cls += " focus-chip-delayed";
-            else if (tname === "重点项目") cls += " focus-chip-project";
-            else if (tname === "重点业主") cls += " focus-chip-owner";
+            var filterAttr = 'data-filter-focus="1"';
+            var icon = '';
+            if (tname === "重点项目") {
+                cls += " focus-chip-project";
+                filterAttr = 'data-filter-focus-project="1"';
+                icon = '🎯 ';
+            } else if (tname === "重点业主") {
+                cls += " focus-chip-owner";
+                filterAttr = 'data-filter-focus-owner="1"';
+                icon = '🏢 ';
+            }
             else if (tname === "重点关键词") cls += " focus-chip-keyword";
             else if (tname === "重点类型") cls += " focus-chip-type";
             else cls += " focus-chip-project";
             var rtip = Array.isArray(d.focus_reason) ? d.focus_reason.join("; ") : (d.focus_reason || tname);
-            s += '<span class="' + cls + '" data-filter-focus="1" title="' + esc(rtip) + '（点击筛选重点标讯）">' + esc(tname) + '</span>';
+            s += '<span class="' + cls + '" ' + filterAttr + ' title="' + esc(rtip) + '（点击筛选' + esc(tname) + '）">' + icon + esc(tname) + '</span>';
         }
     }
     if (d.is_overtime) {
@@ -1218,8 +1285,9 @@ function renderNoticeItem(d) {
         s += '<span class="overtime-chip" data-filter-overtime="1" title="' + esc(otTip) + '（点击筛选加班发布）">' + OT_ICON + '加班发布</span>';
     }
     if (d.is_delayed) {
-        var delTip = d.delayed_reason || ('【存证判定】官网标称发布于 ' + (d.pub_time || '') + '，滞后公开 ' + d.delay_days + ' 天');
-        s += '<span class="delayed-chip" data-filter-delayed="1" title="' + esc(delTip) + '（点击筛选滞后公开）">' + DEL_ICON + '滞后公开 · ' + d.delay_days + '天</span>';
+        var dLabel = d.delay_label || (d.delay_days >= 1 ? ('滞后 ' + d.delay_days + '天') : (d.delay_hours >= 1 ? ('滞后 ' + d.delay_hours + '小时') : '滞后公开'));
+        var delTip = d.delayed_reason || ('【存证判定】官网标称发布于 ' + (d.pub_time || '') + '，' + dLabel);
+        s += '<span class="delayed-chip" data-filter-delayed="1" title="' + esc(delTip) + '（点击筛选滞后公开）">' + DEL_ICON + esc(dLabel) + '</span>';
     }
     s += '<span class="notice-time">' + esc(String(d.pub_time || '').substring(5, 16)) + '</span>';
     s += '</a>';
@@ -1305,7 +1373,17 @@ function apply() {
             }
         }
         if (ok && stage && it.getAttribute('data-stage') !== stage) { ok = false; }
-        if (ok && focusOnly && it.getAttribute('data-focus') !== '1') { ok = false; }
+        if (ok) {
+            if (focusProjectOnly && focusOwnerOnly) {
+                if (it.getAttribute('data-focus-project') !== '1' && it.getAttribute('data-focus-owner') !== '1') {
+                    ok = false;
+                }
+            } else if (focusProjectOnly && it.getAttribute('data-focus-project') !== '1') {
+                ok = false;
+            } else if (focusOwnerOnly && it.getAttribute('data-focus-owner') !== '1') {
+                ok = false;
+            }
+        }
         if (ok && overtimeOnly && it.getAttribute('data-overtime') !== '1') { ok = false; }
         if (ok && delayedOnly && it.getAttribute('data-delayed') !== '1') { ok = false; }
         it.hidden = !ok;
@@ -1333,18 +1411,27 @@ function apply() {
         }
     });
 
-    hint.innerHTML = '当前筛选匹配 <strong>' + shown + '</strong> 条标讯';
-    empty.style.display = shown === 0 ? 'block' : 'none';
+    if (q) {
+        hint.innerHTML = '当日匹配 <strong>' + shown + '</strong> 条 · <a href="./search.html?q=' + encodeURIComponent(q) + '" style="color:#0284c7;font-weight:700;text-decoration:underline;margin-left:6px;">🔍 查看全盘历史中所有包含「' + esc(q) + '」的讯息 →</a>';
+    } else {
+        hint.innerHTML = '当前筛选匹配 <strong>' + shown + '</strong> 条标讯';
+    }
+    if (shown === 0) {
+        empty.style.display = 'block';
+        if (q) {
+            empty.innerHTML = '<h3>当日未匹配到包含「' + esc(q) + '」的公告</h3><p style="margin-top:8px;"><a href="./search.html?q=' + encodeURIComponent(q) + '" style="display:inline-block;padding:8px 16px;background:#0284c7;color:#fff;border-radius:6px;text-decoration:none;font-weight:700;">🔍 立即进行全盘检索（搜索全历史所有公告）</a></p>';
+        }
+    } else {
+        empty.style.display = 'none';
+    }
 
     /* 同步高亮业务环节与重点信息统计卡激活状态 */
     document.querySelectorAll('.stat-box.clickable').forEach(function(box) {
         var st = box.getAttribute('data-stage');
-        if (st === '__focus__') {
-            if (focusOnly) {
-                box.classList.add('active');
-            } else {
-                box.classList.remove('active');
-            }
+        if (st === '__focus_project__') {
+            box.classList.toggle('active', focusProjectOnly);
+        } else if (st === '__focus_owner__') {
+            box.classList.toggle('active', focusOwnerOnly);
         } else if (stage && st === stage) {
             box.classList.add('active');
         } else {
@@ -1369,8 +1456,11 @@ function apply() {
         var c = cc.getAttribute('data-filter-cat');
         cc.classList.toggle('active-filter', !!ind && c === ind);
     });
-    document.querySelectorAll('.focus-chip').forEach(function(fc) {
-        fc.classList.toggle('active-filter', focusOnly);
+    document.querySelectorAll('.focus-chip-project').forEach(function(fc) {
+        fc.classList.toggle('active-filter', focusProjectOnly);
+    });
+    document.querySelectorAll('.focus-chip-owner').forEach(function(fc) {
+        fc.classList.toggle('active-filter', focusOwnerOnly);
     });
     document.querySelectorAll('.overtime-chip').forEach(function(oc) {
         oc.classList.toggle('active-filter', overtimeOnly);
@@ -1380,17 +1470,44 @@ function apply() {
     });
 }
 
-searchInput.addEventListener('input', apply);
+    searchInput.addEventListener('input', apply);
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            var val = (searchInput.value || '').trim();
+            if (val) {
+                window.location.href = './search.html?q=' + encodeURIComponent(val);
+            }
+        }
+    });
 industryFilter.addEventListener('change', apply);
 if (sourceFilter) sourceFilter.addEventListener('change', apply);
 cityFilter.addEventListener('change', apply);
 stageFilter.addEventListener('change', apply);
 
-btnFocus.addEventListener('click', function () {
-    focusOnly = !focusOnly;
-    this.classList.toggle('active', focusOnly);
-    apply();
-});
+if (btnFocusProject) {
+    btnFocusProject.addEventListener('click', function () {
+        focusProjectOnly = !focusProjectOnly;
+        this.classList.toggle('active', focusProjectOnly);
+        if (focusProjectOnly && focusOwnerOnly) {
+            focusOwnerOnly = false;
+            if (btnFocusOwner) btnFocusOwner.classList.remove('active');
+        }
+        apply();
+        showFilterToast(focusProjectOnly ? '已筛选：🎯 重点项目' : '已取消重点项目筛选');
+    });
+}
+if (btnFocusOwner) {
+    btnFocusOwner.addEventListener('click', function () {
+        focusOwnerOnly = !focusOwnerOnly;
+        this.classList.toggle('active', focusOwnerOnly);
+        if (focusOwnerOnly && focusProjectOnly) {
+            focusProjectOnly = false;
+            if (btnFocusProject) btnFocusProject.classList.remove('active');
+        }
+        apply();
+        showFilterToast(focusOwnerOnly ? '已筛选：🏢 重点业主' : '已取消重点业主筛选');
+    });
+}
 
 let overtimeOnly = false;
 const btnOvertime = document.getElementById('btnOvertimeOnly');
@@ -1422,8 +1539,10 @@ document.getElementById('btnReset').addEventListener('click', function () {
     if (sourceFilter) sourceFilter.value = '';
     cityFilter.value = '';
     stageFilter.value = '';
-    focusOnly = false;
-    btnFocus.classList.remove('active');
+    focusProjectOnly = false;
+    if (btnFocusProject) btnFocusProject.classList.remove('active');
+    focusOwnerOnly = false;
+    if (btnFocusOwner) btnFocusOwner.classList.remove('active');
     overtimeOnly = false;
     if (btnOvertime) btnOvertime.classList.remove('active');
     delayedOnly = false;
@@ -1438,9 +1557,13 @@ function resetFiltersExcept(except) {
     if (except !== 'city' && cityFilter) cityFilter.value = '';
     if (except !== 'cat' && industryFilter) industryFilter.value = '';
     if (except !== 'keyword' && searchInput) searchInput.value = '';
-    if (except !== 'focus') {
-        focusOnly = false;
-        if (btnFocus) btnFocus.classList.remove('active');
+    if (except !== 'focus_project') {
+        focusProjectOnly = false;
+        if (btnFocusProject) btnFocusProject.classList.remove('active');
+    }
+    if (except !== 'focus_owner') {
+        focusOwnerOnly = false;
+        if (btnFocusOwner) btnFocusOwner.classList.remove('active');
     }
     if (except !== 'overtime') {
         overtimeOnly = false;
@@ -1456,20 +1579,32 @@ function resetFiltersExcept(except) {
 document.querySelectorAll('.stat-box.clickable').forEach(function(box) {
     box.addEventListener('click', function() {
         var targetStage = this.getAttribute('data-stage');
-        if (targetStage === '__focus__') {
-            var wasActive = (focusOnly && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !overtimeOnly && !delayedOnly && !searchInput.value);
-            resetFiltersExcept('focus');
+        if (targetStage === '__focus_project__') {
+            var wasActive = (focusProjectOnly && !focusOwnerOnly && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !overtimeOnly && !delayedOnly && !searchInput.value);
+            resetFiltersExcept('focus_project');
             if (wasActive) {
-                focusOnly = false;
-                btnFocus.classList.remove('active');
-                showFilterToast('已取消重点标讯筛选');
+                focusProjectOnly = false;
+                if (btnFocusProject) btnFocusProject.classList.remove('active');
+                showFilterToast('已取消重点项目筛选');
             } else {
-                focusOnly = true;
-                btnFocus.classList.add('active');
-                showFilterToast('已切换至重点标讯筛选');
+                focusProjectOnly = true;
+                if (btnFocusProject) btnFocusProject.classList.add('active');
+                showFilterToast('已切换至重点项目筛选');
+            }
+        } else if (targetStage === '__focus_owner__') {
+            var wasActive = (focusOwnerOnly && !focusProjectOnly && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !overtimeOnly && !delayedOnly && !searchInput.value);
+            resetFiltersExcept('focus_owner');
+            if (wasActive) {
+                focusOwnerOnly = false;
+                if (btnFocusOwner) btnFocusOwner.classList.remove('active');
+                showFilterToast('已取消重点业主筛选');
+            } else {
+                focusOwnerOnly = true;
+                if (btnFocusOwner) btnFocusOwner.classList.add('active');
+                showFilterToast('已切换至重点业主筛选');
             }
         } else {
-            var wasActive = (stageFilter.value === targetStage && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !focusOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
+            var wasActive = (stageFilter.value === targetStage && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !focusProjectOnly && !focusOwnerOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
             resetFiltersExcept('stage');
             if (wasActive) {
                 stageFilter.value = '';
@@ -1500,7 +1635,7 @@ container.addEventListener('click', function(e) {
             targetStage = tb ? tb.getAttribute('data-type') : '';
         }
         if (targetStage) {
-            var wasActive = (stageFilter.value === targetStage && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !focusOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
+            var wasActive = (stageFilter.value === targetStage && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !focusProjectOnly && !focusOwnerOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
             resetFiltersExcept('stage');
             if (wasActive) {
                 stageFilter.value = '';
@@ -1522,7 +1657,7 @@ container.addEventListener('click', function(e) {
         e.stopPropagation();
         var targetSource = sourceTag.getAttribute('data-filter-source') || sourceTag.textContent.trim();
         if (targetSource && sourceFilter) {
-            var wasActive = (sourceFilter.value === targetSource && !stageFilter.value && !cityFilter.value && !industryFilter.value && !focusOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
+            var wasActive = (sourceFilter.value === targetSource && !stageFilter.value && !cityFilter.value && !industryFilter.value && !focusProjectOnly && !focusOwnerOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
             resetFiltersExcept('source');
             if (wasActive) {
                 sourceFilter.value = '';
@@ -1549,7 +1684,7 @@ container.addEventListener('click', function(e) {
             targetCity = mapToCityFilter(rawCity);
         }
         if (targetCity) {
-            var wasActive = (cityFilter.value === targetCity && !stageFilter.value && !sourceFilter.value && !industryFilter.value && !focusOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
+            var wasActive = (cityFilter.value === targetCity && !stageFilter.value && !sourceFilter.value && !industryFilter.value && !focusProjectOnly && !focusOwnerOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
             resetFiltersExcept('city');
             if (wasActive) {
                 cityFilter.value = '';
@@ -1572,7 +1707,7 @@ container.addEventListener('click', function(e) {
         var catBlock = catEl.closest('.cat-block');
         var targetCat = catEl.getAttribute('data-filter-cat') || (catBlock ? catBlock.getAttribute('data-cat') : '');
         if (targetCat) {
-            var wasActive = (industryFilter.value === targetCat && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !focusOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
+            var wasActive = (industryFilter.value === targetCat && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !focusProjectOnly && !focusOwnerOnly && !overtimeOnly && !delayedOnly && !searchInput.value);
             resetFiltersExcept('cat');
             if (wasActive) {
                 industryFilter.value = '';
@@ -1587,33 +1722,54 @@ container.addEventListener('click', function(e) {
         return;
     }
 
-    // 5. 重点标讯胶囊
-    var focusChip = e.target.closest('.focus-chip');
-    if (focusChip) {
+    // 5. 重点项目胶囊
+    var projChip = e.target.closest('.focus-chip-project');
+    if (projChip) {
         e.preventDefault();
         e.stopPropagation();
-        var wasActive = (focusOnly && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !overtimeOnly && !delayedOnly && !searchInput.value);
-        resetFiltersExcept('focus');
+        var wasActive = (focusProjectOnly && !focusOwnerOnly && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !delayedOnly && !overtimeOnly && !searchInput.value);
+        resetFiltersExcept('focus_project');
         if (wasActive) {
-            focusOnly = false;
-            btnFocus.classList.remove('active');
-            showFilterToast('已取消重点标讯筛选');
+            focusProjectOnly = false;
+            if (btnFocusProject) btnFocusProject.classList.remove('active');
+            showFilterToast('已取消重点项目筛选');
         } else {
-            focusOnly = true;
-            btnFocus.classList.add('active');
-            showFilterToast('已筛选重点预警标讯');
+            focusProjectOnly = true;
+            if (btnFocusProject) btnFocusProject.classList.add('active');
+            showFilterToast('已筛选：🎯 重点项目');
         }
         apply();
         checkScrollAfterFilter();
         return;
     }
 
-    // 6. 加班发布胶囊
+    // 6. 重点业主胶囊
+    var ownerChip = e.target.closest('.focus-chip-owner');
+    if (ownerChip) {
+        e.preventDefault();
+        e.stopPropagation();
+        var wasActive = (focusOwnerOnly && !focusProjectOnly && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !delayedOnly && !overtimeOnly && !searchInput.value);
+        resetFiltersExcept('focus_owner');
+        if (wasActive) {
+            focusOwnerOnly = false;
+            if (btnFocusOwner) btnFocusOwner.classList.remove('active');
+            showFilterToast('已取消重点业主筛选');
+        } else {
+            focusOwnerOnly = true;
+            if (btnFocusOwner) btnFocusOwner.classList.add('active');
+            showFilterToast('已筛选：🏢 重点业主');
+        }
+        apply();
+        checkScrollAfterFilter();
+        return;
+    }
+
+    // 7. 加班发布胶囊
     var otChip = e.target.closest('.overtime-chip');
     if (otChip) {
         e.preventDefault();
         e.stopPropagation();
-        var wasActive = (overtimeOnly && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !focusOnly && !delayedOnly && !searchInput.value);
+        var wasActive = (overtimeOnly && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !focusProjectOnly && !focusOwnerOnly && !delayedOnly && !searchInput.value);
         resetFiltersExcept('overtime');
         if (wasActive) {
             overtimeOnly = false;
@@ -1634,7 +1790,7 @@ container.addEventListener('click', function(e) {
     if (delChip) {
         e.preventDefault();
         e.stopPropagation();
-        var wasActive = (delayedOnly && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !focusOnly && !overtimeOnly && !searchInput.value);
+        var wasActive = (delayedOnly && !stageFilter.value && !sourceFilter.value && !cityFilter.value && !industryFilter.value && !focusProjectOnly && !focusOwnerOnly && !overtimeOnly && !searchInput.value);
         resetFiltersExcept('delayed');
         if (wasActive) {
             delayedOnly = false;
@@ -1651,7 +1807,13 @@ container.addEventListener('click', function(e) {
     }
 });
 
-document.getElementById('focusCount').textContent = RAW_DATA.filter(function (d) { return d.is_focus; }).length;
+var projCnt = RAW_DATA.filter(function (d) { return d.focus_tags && d.focus_tags.indexOf("重点项目") !== -1; }).length;
+var ownerCnt = RAW_DATA.filter(function (d) { return d.focus_tags && d.focus_tags.indexOf("重点业主") !== -1; }).length;
+var elProjCount = document.getElementById('focusProjectCount');
+if (elProjCount) elProjCount.textContent = projCnt;
+var elOwnerCount = document.getElementById('focusOwnerCount');
+if (elOwnerCount) elOwnerCount.textContent = ownerCnt;
+
 const otCountEl = document.getElementById('overtimeCount');
 if (otCountEl) otCountEl.textContent = RAW_DATA.filter(function (d) { return d.is_overtime; }).length;
 const delCountEl = document.getElementById('delayedCount');
@@ -1660,9 +1822,13 @@ if (delCountEl) {
     var extraDelCnt = (typeof DELAYED_DATA !== 'undefined' && Array.isArray(DELAYED_DATA)) ? DELAYED_DATA.length : 0;
     delCountEl.textContent = rawDelCnt + extraDelCnt;
 }
-const statFocusEl = document.getElementById('stat-focus');
-if (statFocusEl && statFocusEl.firstChild) {
-    statFocusEl.firstChild.textContent = RAW_DATA.filter(function (d) { return d.is_focus; }).length;
+var statProjEl = document.getElementById('stat-focus-project');
+if (statProjEl && statProjEl.firstChild) {
+    statProjEl.firstChild.textContent = projCnt;
+}
+var statOwnerEl = document.getElementById('stat-focus-owner');
+if (statOwnerEl && statOwnerEl.firstChild) {
+    statOwnerEl.firstChild.textContent = ownerCnt;
 }
 
 build();
@@ -1679,7 +1845,7 @@ html = html.replace("__DAILY_CSS__", DAILY_CSS.strip())
 html = html.replace("__LATEST_PUB__", latest_pub)
 html = html.replace("__SCAN_TIME__", scan_time)
 html = html.replace("__LATEST__", latest_pub)
-html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.3.4"))
+html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.3.5"))
 html = html.replace("__DATE__", DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))
 html = html.replace("__NEXT_URL__", neighbor_url(1))
@@ -1696,6 +1862,8 @@ if alert_items:
     rows_h = []
     for dit in alert_items:
         d_delay = dit.get("delay_days", 0)
+        d_hours = dit.get("delay_hours", 0)
+        d_label = dit.get("delay_label") or (f"滞后 {d_delay}天" if d_delay >= 1 else (f"滞后 {d_hours}小时" if d_hours >= 1 else "滞后公开"))
         d_title = html_mod.escape(dit.get("title", ""))
         d_link = html_mod.escape(dit.get("link") or dit.get("detail_url") or "#")
         d_pub = html_mod.escape(str(dit.get("pub_time", ""))[:16])
@@ -1705,7 +1873,7 @@ if alert_items:
         rows_h.append(
             f'<a class="delayed-item-row" href="{d_link}" target="_blank" rel="noopener noreferrer">\n'
             f'    <div class="delayed-item-main">\n'
-            f'        <span class="delayed-days-tag" style="border-radius:9999px;padding:2px 8px;">滞后公开 {d_delay} 天</span>\n'
+            f'        <span class="delayed-days-tag" style="border-radius:9999px;padding:2px 8px;">{d_label}</span>\n'
             f'        <span class="delayed-item-title">{d_title}</span>\n'
             f'    </div>\n'
             f'    <div class="delayed-item-meta">\n'
@@ -1763,8 +1931,10 @@ for sid, val in stat_map.items():
     html, n = re.subn(r'(id="%s">)0(<span class="sb-unit")' % sid, lambda m: m.group(1) + str(val) + m.group(2), html)
     assert n == 1, sid
 
-html, n = re.subn(r'(id="focusCount">)0(<)', lambda m: m.group(1) + str(focus_n) + m.group(2), html)
-assert n == 1, "focusCount"
+html, n = re.subn(r'(id="focusProjectCount">)0(<)', lambda m: m.group(1) + str(focus_proj_n) + m.group(2), html)
+assert n == 1, "focusProjectCount"
+html, n = re.subn(r'(id="focusOwnerCount">)0(<)', lambda m: m.group(1) + str(focus_owner_n) + m.group(2), html)
+assert n == 1, "focusOwnerCount"
 overtime_n = sum(1 for it in items if it.get("is_overtime"))
 html, n = re.subn(r'(id="overtimeCount">)0(<)', lambda m: m.group(1) + str(overtime_n) + m.group(2), html)
 assert n == 1, "overtimeCount"
@@ -1788,6 +1958,7 @@ if is_final_page:
         '<h2 class="hero-title">广西全区招投标公告日报（%s）<span class="final-tag-chip"><svg fill="none" stroke="currentColor" stroke-width="2.5" height="12" viewBox="0 0 24 24" width="12" style="display:inline-block"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> 终版</span></h2>' % DAY
     )
     # 所有不是今天的过去再次最终出来的结果都是封装：确保存证状态写盘
+    stamp = config.now_stamp()
     final_file = config.STATE_DIR / ("final-%s.json" % DAY)
     if not final_file.exists():
         final_file.parent.mkdir(parents=True, exist_ok=True)
@@ -1832,8 +2003,8 @@ check("数据条数", len(raw_rows) == total_n, "RAW_DATA=%d 期望=%d" % (len(r
 check("唯一识别码", len({r["infoid"] for r in raw_rows}) == total_n, "infoid 唯一")
 check("官方链接", all(("projectDetails.html?infoid=" in r["link"] or "cz.gxygcg.com" in r["link"]) for r in raw_rows))
 check("无自造编号", ("code-tag" not in out) and ("data-code" not in out) and ("GX%s" % DAY_KEY) not in out)
-check("指标卡", static.count('class="sb-label"') == 7, json.dumps(stat_map, ensure_ascii=False))
-check("筛选控件", static.count('class="select-input"') == 4 and "仅看重点预警" in static and "仅看加班发布" in static and "重置所有筛选" in static)
+check("指标卡", static.count('class="sb-label"') == 8, json.dumps(stat_map, ensure_ascii=False))
+check("筛选控件", static.count('class="select-input"') == 4 and "仅看重点项目" in static and "仅看重点业主" in static and "仅看加班发布" in static and "重置" in static)
 check("静态 div 配平", static.count("<div") == static.count("</div>"))
 check("外部依赖", not any(k in out.lower() for k in ("tailwind", "all.min.css", "saved_resource", "file://")))
 check("运行日志", log_rows == total_n, "%s 行=%d 待重取=%d" % (LOG, log_rows, len(log_pending)))

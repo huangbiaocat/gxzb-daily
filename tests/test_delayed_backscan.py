@@ -20,6 +20,7 @@ from scripts.delayed_helper import (
     bootstrap_registry_from_files,
 )
 from scripts.backscan_delayed import scan_delayed_notices
+from scripts.scan_record_db import ScanRecordDB
 
 
 class TestDelayedBackscan(unittest.TestCase):
@@ -73,8 +74,12 @@ class TestDelayedBackscan(unittest.TestCase):
         self.assertTrue(any("滞后 18 天" in r for r in item["focus_reason"]))
         self.assertIn("滞后公开 18 天", item["delayed_reason"])
 
-    def test_registry_bootstrap_and_record(self):
+    @patch("scripts.delayed_helper.get_scan_record_db")
+    def test_registry_bootstrap_and_record(self, mock_get_db):
         """测试注册表从历史 daily 文件初始化及新条目识别。"""
+        temp_db_path = self.tmp_dir / "test_scan_records.db"
+        test_db = ScanRecordDB(temp_db_path)
+        mock_get_db.return_value = test_db
         reg_file = self.state_dir / "delayed_registry.json"
         
         # 准备基线数据

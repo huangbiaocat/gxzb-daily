@@ -95,6 +95,21 @@ class ScanRecordDB:
                     conn.execute("ALTER TABLE scan_records ADD COLUMN is_baseline INTEGER DEFAULT 1")
                 except Exception:
                     pass
+            if "delay_hours" not in cols:
+                try:
+                    conn.execute("ALTER TABLE scan_records ADD COLUMN delay_hours INTEGER DEFAULT 0")
+                except Exception:
+                    pass
+            if "delay_label" not in cols:
+                try:
+                    conn.execute("ALTER TABLE scan_records ADD COLUMN delay_label TEXT")
+                except Exception:
+                    pass
+            if "notes" not in cols:
+                try:
+                    conn.execute("ALTER TABLE scan_records ADD COLUMN notes TEXT")
+                except Exception:
+                    pass
             try:
                 conn.execute("CREATE INDEX IF NOT EXISTS idx_scan_records_baseline ON scan_records(is_baseline)")
             except Exception:
@@ -328,7 +343,7 @@ class ScanRecordDB:
         # 检查该源在 pub_date 是否已存在锁定底边
         has_base = self.has_baseline(center_source or scan_source, pub_date_str)
 
-        if is_baseline is True or scan_source == "registry_sync" or (is_baseline is None and (delay == 0 or (not scan_source.startswith("backscan") and not has_base))):
+        if is_baseline is True or (is_baseline is not False and (scan_source == "registry_sync" or delay == 0 or (not scan_source.startswith("backscan") and not has_base))):
             # 无历史底边或明确指定为底边数据：纳入底边基线，绝不判定为滞后公开
             actual_is_baseline = 1
             is_del = 0
@@ -369,6 +384,12 @@ class ScanRecordDB:
                 )
 
         now_iso = now_dt.strftime("%Y-%m-%d %H:%M:%S")
+        # 计算 delay_hours 与自适应 delay_label
+        from scripts.delayed_helper import calc_delay_info
+        d_info = calc_delay_info(p_time_str or pub_date_str, first_seen_time=scan_time_str, first_seen_date=scan_date_str)
+        delay_hours = d_info.get("delay_hours", delay * 24)
+        delay_label = d_info.get("delay_label", "")
+
         rec = {
             "infoid": infoid,
             "title": title or "",
@@ -381,9 +402,12 @@ class ScanRecordDB:
             "center": center or "",
             "link": link or "",
             "delay_days": delay if delay > 0 else 0,
+            "delay_hours": delay_hours if delay_hours > 0 else 0,
+            "delay_label": delay_label,
             "is_delayed": is_del,
             "is_baseline": actual_is_baseline,
             "evidence_text": evidence,
+            "notes": "",
             "created_at": now_iso,
             "updated_at": now_iso,
         }
@@ -394,14 +418,14 @@ class ScanRecordDB:
                     infoid, title, pub_time, pub_date,
                     first_scan_time, first_scan_date,
                     scan_source, scan_batch, center, link,
-                    delay_days, is_delayed, is_baseline,
-                    evidence_text, created_at, updated_at
+                    delay_days, delay_hours, delay_label, is_delayed, is_baseline,
+                    evidence_text, notes, created_at, updated_at
                 ) VALUES (
                     :infoid, :title, :pub_time, :pub_date,
                     :first_scan_time, :first_scan_date,
                     :scan_source, :scan_batch, :center, :link,
-                    :delay_days, :is_delayed, :is_baseline,
-                    :evidence_text, :created_at, :updated_at
+                    :delay_days, :delay_hours, :delay_label, :is_delayed, :is_baseline,
+                    :evidence_text, :notes, :created_at, :updated_at
                 )
             """, rec)
 
@@ -409,6 +433,8 @@ class ScanRecordDB:
             "is_new": True,
             "is_delayed": bool(is_del),
             "delay_days": delay if delay > 0 else 0,
+            "delay_hours": delay_hours if delay_hours > 0 else 0,
+            "delay_label": delay_label,
             "is_baseline": bool(actual_is_baseline),
             "evidence_text": evidence,
             "record": rec,
@@ -490,6 +516,61 @@ class ScanRecordDB:
             params.append(scan_date)
         with self._connection() as conn:
             return conn.execute(query, params).fetchone()[0]
+
+    def unmark_delayed(self, infoid: str, notes: str = "人工纠错划入原始对比数据") -> Dict[str, Any]:
+        """人工纠错：解除指定公告的滞后公开标记，并永久划入底边原始基线数据。
+        
+        确保以后任何回扫或对比均视其为基线原始数据，绝不再次误判为滞后。
+        """
+        infoid = str(infoid).strip()
+        if not infoid:
+            return {"ok": False, "error": "infoid 不能为空"}
+
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with self._connection() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM scan_records WHERE infoid = ?", (infoid,))
+            row = cur.fetchone()
+            if not row:
+                return {"ok": False, "error": f"存证库中未找到 infoid={infoid} 的记录"}
+
+            evidence = f"【人工纠错基线】原滞后标记已由操作员人工撤销，判定为原始基线数据并永久锁定存证（{notes}）。"
+            conn.execute("""
+                UPDATE scan_records SET
+                    is_delayed = 0,
+                    delay_days = 0,
+                    delay_hours = 0,
+                    delay_label = '',
+                    is_baseline = 1,
+                    evidence_text = ?,
+                    notes = ?,
+                    updated_at = ?
+                WHERE infoid = ?
+            """, (evidence, notes, now_str, infoid))
+            conn.commit()
+
+        # 同步更新 delayed_registry.json
+        try:
+            from scripts.delayed_helper import load_delayed_registry, save_delayed_registry
+            reg = load_delayed_registry()
+            if infoid in reg:
+                reg[infoid]["is_delayed"] = 0
+                reg[infoid]["delay_days"] = 0
+                reg[infoid]["delay_hours"] = 0
+                reg[infoid]["delay_label"] = ""
+                reg[infoid]["is_baseline"] = 1
+                reg[infoid]["evidence_text"] = evidence
+                save_delayed_registry(reg)
+        except Exception:
+            pass
+
+        return {
+            "ok": True,
+            "infoid": infoid,
+            "is_delayed": 0,
+            "is_baseline": 1,
+            "message": "已成功解除滞后标记，并永久划入底边原始基线数据！",
+        }
 
     def bootstrap_baseline_from_daily(
         self,

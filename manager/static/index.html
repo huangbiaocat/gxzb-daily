@@ -53,7 +53,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">v0.3.4</span>
+                        <span id="app-version-badge" class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">v0.3.5</span>
                         <!-- 实时全区雷达扫描状态指示器（静默常驻，带动态扫描动效，点击直达监控调度） -->
                         <div id="top-radar-indicator" onclick="switchTab('dashboard')" class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-all bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100" title="点击前往监控调度：全区雷达扫描中">
                             <span id="radar-char-top" class="font-mono text-xs font-bold text-emerald-600 select-none">◜</span>
@@ -71,6 +71,13 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
                     </svg>
                     <span>重点跟踪</span>
+                </button>
+                <button id="tab-btn-search" onclick="switchTab('search')" class="tab-btn px-3 py-1.5 text-xs sm:text-sm font-medium flex items-center space-x-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8" stroke-width="2"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"></line>
+                    </svg>
+                    <span>全盘检索与纠错</span>
                 </button>
                 <button id="tab-btn-env" onclick="switchTab('env')" class="tab-btn px-3 py-1.5 text-xs sm:text-sm font-medium flex items-center space-x-1.5">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -739,7 +746,7 @@
                         <span class="text-xs text-slate-500">条底边原始数据</span>
                     </div>
                     <div class="text-xs text-slate-500 mt-1 flex items-center justify-between">
-                        <span>确证滞后: <span id="stat-baseline-delayed" class="font-bold text-emerald-600">0</span> 条</span>
+                        <span>确证滞后: <span id="stat-baseline-delayed" class="font-bold text-emerald-600">0</span> 条 <a href="javascript:void(0)" onclick="openDelayedReview()" class="text-[11px] text-rose-600 hover:text-rose-800 underline font-medium ml-1">查看/纠错</a></span>
                         <span>覆盖 <span id="stat-baseline-dates" class="font-bold text-slate-700">--</span> 天</span>
                     </div>
                 </div>
@@ -1055,10 +1062,100 @@
             </div>
         </div>
 
+        <!-- ============================================== -->
+        <!-- TAB 5: 全盘检索与滞后纠错 (Global Search & Unmark) -->
+        <!-- ============================================== -->
+        <div id="tab-content-search" class="hidden space-y-6">
+            <div class="bg-white rounded-xl shadow-xs border border-slate-200/80 p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                            <svg class="w-5 h-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <circle cx="11" cy="11" r="8" stroke-width="2"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"></line>
+                            </svg>
+                            <span>全盘历史公告检索与纠错中心</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">跨全历史日期、全数据源毫秒级检索，所有结果严格按发布时间倒序排列，支持人工撤销滞后标记划入原始基线</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/60">
+                        <svg class="w-3.5 h-3.5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span>存证库实时联动 · 撤销即时锁定基线</span>
+                    </div>
+                </div>
+
+                <!-- 搜索输入框与快捷筛选 -->
+                <div class="mt-4 space-y-3">
+                    <div class="flex items-center gap-2">
+                        <div class="relative flex-1">
+                            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="2"></circle><line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"></line></svg>
+                            <input type="text" id="mgr-search-q" placeholder="输入公告标题、业主、地市、标段等关键词（回车或即时检索）..." class="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-slate-50 focus:bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500 focus:ring-2 focus:ring-sky-100 transition" oninput="debounceMgrSearch()" onkeydown="if(event.key==='Enter')runMgrSearch()">
+                            <button id="mgr-search-clear" onclick="clearMgrSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs">✕</button>
+                        </div>
+                        <button onclick="runMgrSearch()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 shadow-2xs transition shrink-0 cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="2"></circle><line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"></line></svg>
+                            <span>全盘检索</span>
+                        </button>
+                    </div>
+
+                    <!-- 标签与下拉筛选 -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <button class="mgr-chip active px-3 py-1 text-xs font-semibold rounded-full border border-slate-200 bg-sky-600 text-white transition cursor-pointer" data-filter="all" onclick="setMgrChip(this, 'all')">全部公告</button>
+                            <button class="mgr-chip px-3 py-1 text-xs font-semibold rounded-full border border-slate-200 bg-white text-slate-600 hover:border-sky-400 hover:text-sky-600 transition cursor-pointer" data-filter="project" onclick="setMgrChip(this, 'project')">🎯 重点项目</button>
+                            <button class="mgr-chip px-3 py-1 text-xs font-semibold rounded-full border border-slate-200 bg-white text-slate-600 hover:border-indigo-400 hover:text-indigo-600 transition cursor-pointer" data-filter="owner" onclick="setMgrChip(this, 'owner')">🏢 重点业主</button>
+                            <button class="mgr-chip px-3 py-1 text-xs font-semibold rounded-full border border-slate-200 bg-white text-slate-600 hover:border-amber-400 hover:text-amber-600 transition cursor-pointer" data-filter="delayed" onclick="setMgrChip(this, 'delayed')">⚠️ 仅看滞后公开</button>
+                            <button class="mgr-chip px-3 py-1 text-xs font-semibold rounded-full border border-slate-200 bg-white text-slate-600 hover:border-purple-400 hover:text-purple-600 transition cursor-pointer" data-filter="overtime" onclick="setMgrChip(this, 'overtime')">🌙 仅看加班发布</button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <select id="mgr-region-filter" onchange="runMgrSearch()" class="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium focus:outline-hidden focus:border-sky-500">
+                                <option value="">全部地市 (15个交易中心)</option>
+                                <option value="自治区">自治区本级</option>
+                                <option value="南宁">南宁市</option>
+                                <option value="柳州">柳州市</option>
+                                <option value="桂林">桂林市</option>
+                                <option value="梧州">梧州市</option>
+                                <option value="北海">北海市</option>
+                                <option value="防城港">防城港市</option>
+                                <option value="钦州">钦州市</option>
+                                <option value="贵港">贵港市</option>
+                                <option value="玉林">玉林市</option>
+                                <option value="百色">百色市</option>
+                                <option value="贺州">贺州市</option>
+                                <option value="河池">河池市</option>
+                                <option value="来宾">来宾市</option>
+                                <option value="崇左">崇左市</option>
+                            </select>
+                            <select id="mgr-stage-filter" onchange="runMgrSearch()" class="text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium focus:outline-hidden focus:border-sky-500">
+                                <option value="">全部业务环节</option>
+                                <option value="招标">招标/资审公告</option>
+                                <option value="中标">中标结果/候选人</option>
+                                <option value="答疑">更正/答疑/澄清</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 统计与说明 -->
+                <div class="flex items-center justify-between pt-4 pb-2 border-b border-slate-100 text-xs">
+                    <span id="mgr-search-count" class="font-medium text-slate-600">正在载入全盘数据...</span>
+                    <span class="text-slate-400 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        严格按发布时间倒序排列（最新排最前）
+                    </span>
+                </div>
+
+                <!-- 搜索结果列表 -->
+                <div id="mgr-search-results" class="divide-y divide-slate-100 mt-2">
+                    <div class="py-12 text-center text-slate-400 text-xs">正在执行全盘检索...</div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.3.4</span>
+        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.3.5</span>
         · <span class="text-slate-400">已接入: 广西公共资源交易平台 · 崇左阳光采购服务平台</span>
     </footer>
 
@@ -1233,7 +1330,7 @@
             currentTab = tabId;
             localStorage.setItem("active_tab", tabId);
 
-            const allTabs = ["business", "env", "dashboard", "history"];
+            const allTabs = ["business", "search", "env", "dashboard", "history"];
             allTabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-${t}`);
                 const content = document.getElementById(`tab-content-${t}`);
@@ -1255,6 +1352,212 @@
 
             if (tabId === "history") {
                 fetchRunsHistory(0);
+            } else if (tabId === "search") {
+                runMgrSearch();
+            }
+        }
+
+        // ==============================================
+        // 全盘检索与滞后纠错逻辑 (Global Search & Unmark)
+        // ==============================================
+        let mgrSearchDebounceTimer = null;
+        let currentMgrFilterTag = 'all';
+
+        function debounceMgrSearch() {
+            clearTimeout(mgrSearchDebounceTimer);
+            mgrSearchDebounceTimer = setTimeout(runMgrSearch, 250);
+        }
+
+        function clearMgrSearch() {
+            const qInput = document.getElementById('mgr-search-q');
+            if (qInput) {
+                qInput.value = '';
+                qInput.focus();
+            }
+            runMgrSearch();
+        }
+
+        function setMgrChip(btn, filterTag) {
+            document.querySelectorAll('.mgr-chip').forEach(b => {
+                b.className = 'mgr-chip px-3 py-1 text-xs font-semibold rounded-full border border-slate-200 bg-white text-slate-600 hover:border-slate-300 transition cursor-pointer';
+            });
+            btn.className = 'mgr-chip active px-3 py-1 text-xs font-semibold rounded-full border border-slate-200 bg-sky-600 text-white transition cursor-pointer';
+            currentMgrFilterTag = filterTag;
+            runMgrSearch();
+        }
+
+        function openDelayedReview() {
+            switchTab('search');
+            const delayedChip = document.querySelector('.mgr-chip[data-filter="delayed"]');
+            if (delayedChip) {
+                setMgrChip(delayedChip, 'delayed');
+            }
+        }
+
+        async function runMgrSearch() {
+            const qInput = document.getElementById('mgr-search-q');
+            const clearBtn = document.getElementById('mgr-search-clear');
+            const resultsEl = document.getElementById('mgr-search-results');
+            const countEl = document.getElementById('mgr-search-count');
+            const regSelect = document.getElementById('mgr-region-filter');
+            const stageSelect = document.getElementById('mgr-stage-filter');
+
+            if (!resultsEl) return;
+
+            const q = (qInput ? qInput.value.trim() : '');
+            if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
+            const region = regSelect ? regSelect.value : '';
+            const stage = stageSelect ? stageSelect.value : '';
+            const delayedOnly = currentMgrFilterTag === 'delayed' ? 1 : 0;
+            const overtimeOnly = currentMgrFilterTag === 'overtime' ? 1 : 0;
+            const projectOnly = currentMgrFilterTag === 'project' ? 1 : 0;
+            const ownerOnly = currentMgrFilterTag === 'owner' ? 1 : 0;
+
+            countEl.innerHTML = '<span class="text-sky-600">正在全盘检索中...</span>';
+
+            try {
+                const url = `/api/search?q=${encodeURIComponent(q)}&region=${encodeURIComponent(region)}&stage=${encodeURIComponent(stage)}&delayed_only=${delayedOnly}&overtime_only=${overtimeOnly}&project_only=${projectOnly}&owner_only=${ownerOnly}&limit=200`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (!data.ok) {
+                    resultsEl.innerHTML = `<div class="py-12 text-center text-rose-500 text-xs">检索出错: ${data.msg || '未知错误'}</div>`;
+                    countEl.textContent = '检索失败';
+                    return;
+                }
+
+                const items = data.items || [];
+                const total = data.total || 0;
+                if (q) {
+                    countEl.innerHTML = `共全盘检索到 <strong>${total}</strong> 条包含「<span class="text-sky-700">${escapeHtml(q)}</span>」的讯息（按时间倒序排列）`;
+                } else {
+                    countEl.innerHTML = `全盘历史共收录 <strong>${total}</strong> 条公告（显示前 ${items.length} 条，按发布时间倒序排列）`;
+                }
+
+                if (items.length === 0) {
+                    resultsEl.innerHTML = `
+                        <div class="py-16 text-center text-slate-400">
+                            <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="1.5"></circle><line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="1.5"></line></svg>
+                            <p class="text-sm font-medium text-slate-500">未检索到匹配的招投标公告</p>
+                            <p class="text-xs text-slate-400 mt-1">请尝试更换检索关键词或清空地市/环节筛选条件</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                items.forEach(it => {
+                    const pTime = it.pub_time || `${it.date} 00:00:00`;
+                    let delayHtml = '';
+                    let unmarkBtnHtml = '';
+                    
+                    if (it.is_delayed) {
+                        let dLabel = it.delay_label;
+                        if (!dLabel) {
+                            if (it.delay_days >= 1) dLabel = `滞后 ${it.delay_days}天`;
+                            else if (it.delay_hours >= 1) dLabel = `滞后 ${it.delay_hours}小时`;
+                            else dLabel = '滞后公开';
+                        }
+                        delayHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200/80">⚠️ ${escapeHtml(dLabel)}</span>`;
+                        unmarkBtnHtml = `
+                            <button onclick="unmarkDelayed('${escapeHtml(it.infoid)}', '${escapeHtml(it.date)}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded text-xs font-semibold flex items-center gap-1 transition shadow-2xs cursor-pointer" title="如因网络抖动或漏扫描被误判为滞后，可点击此按钮纠错并永久划入底边原始基线">
+                                <svg class="w-3 h-3 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                <span>撤销滞后标记（划入原始基线）</span>
+                            </button>
+                        `;
+                    }
+
+                    let overtimeHtml = '';
+                    if (it.is_overtime) {
+                        overtimeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200/80">🌙 加班发布</span>`;
+                    }
+
+                    let focusProjHtml = '';
+                    if (it.focus_tags && it.focus_tags.includes('重点项目')) {
+                        focusProjHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200/80">🎯 重点项目</span>`;
+                    }
+                    let focusOwnerHtml = '';
+                    if (it.focus_tags && it.focus_tags.includes('重点业主')) {
+                        focusOwnerHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80">🏢 重点业主</span>`;
+                    }
+
+                    // 高亮关键词
+                    let titleHtml = escapeHtml(it.title || '');
+                    if (q) {
+                        const reg = new RegExp(`(${q.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')})`, 'gi');
+                        titleHtml = titleHtml.replace(reg, '<mark class="bg-amber-200 text-amber-900 rounded px-0.5 font-bold">$1</mark>');
+                    }
+
+                    html += `
+                        <div class="py-3.5 flex flex-col gap-1.5 hover:bg-slate-50/70 px-2 rounded-lg transition" id="item-card-${escapeHtml(it.infoid)}">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <span class="font-mono text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">${escapeHtml(pTime)}</span>
+                                    ${delayHtml}
+                                    ${overtimeHtml}
+                                    ${focusProjHtml}
+                                    ${focusOwnerHtml}
+                                    ${it.areaname ? `<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-200/60">${escapeHtml(it.areaname)}</span>` : ''}
+                                    ${it.stage ? `<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600">${escapeHtml(it.stage)}</span>` : ''}
+                                    ${it.industry ? `<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-50 text-slate-500">${escapeHtml(it.industry)}</span>` : ''}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    ${unmarkBtnHtml}
+                                    <a href="${escapeHtml(it.link || '#')}" target="_blank" rel="noopener noreferrer" class="text-xs text-sky-600 hover:text-sky-800 font-medium flex items-center gap-0.5">
+                                        <span>官方原网 ↗</span>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="text-sm font-medium text-slate-800 hover:text-sky-600">
+                                <a href="${escapeHtml(it.link || '#')}" target="_blank" rel="noopener noreferrer">${titleHtml}</a>
+                            </div>
+                            <div class="flex items-center justify-between text-[11px] text-slate-400">
+                                <span>归档日期: ${escapeHtml(it.date)} · 数据来源: ${escapeHtml(it.source || '广西公共资源交易平台')}</span>
+                                <a href="/${escapeHtml(it.date)}.html#${escapeHtml(it.infoid || '')}" target="_blank" class="text-slate-500 hover:text-sky-600 flex items-center gap-0.5">
+                                    <span>浏览当日日报 →</span>
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                resultsEl.innerHTML = html;
+
+            } catch (err) {
+                resultsEl.innerHTML = `<div class="py-12 text-center text-rose-500 text-xs">请求失败: ${escapeHtml(err.message)}</div>`;
+                countEl.textContent = '请求异常';
+            }
+        }
+
+        async function unmarkDelayed(infoid, dateVal) {
+            if (!confirm(`确定撤销该公告的滞后公开标记吗？\\n\\n说明：\\n1. 系统将把该公告永久划入底边原始基线对比库；\\n2. 每日归档 JSON 与日报中的滞后预警标签将即时清除；\\n3. 未来任何定时回扫均不再将其视作滞后。`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/unmark_delayed', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        infoid: infoid,
+                        date: dateVal,
+                        notes: '操作员在管理后台纠错撤销，划入原始基线'
+                    })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    showToast('✓ 已成功解除滞后标记，并已永久划入原始对比基线！', 'success');
+                    // 刷新检索
+                    runMgrSearch();
+                    // 刷新基线状态徽章
+                    if (typeof fetchBaselineStats === 'function') {
+                        fetchBaselineStats();
+                    }
+                } else {
+                    showToast('撤销失败: ' + (data.msg || '未知错误'), 'error');
+                }
+            } catch (err) {
+                showToast('请求异常: ' + err.message, 'error');
             }
         }
 
@@ -1885,7 +2188,7 @@
             const localDateEl = document.getElementById("upgrade-local-date");
             const localMsgEl = document.getElementById("upgrade-local-msg");
 
-            if (localVerEl) localVerEl.textContent = cur.version || "v0.3.4";
+            if (localVerEl) localVerEl.textContent = cur.version || "v0.3.5";
             if (localCommitEl) {
                 if (cur.commit) {
                     localCommitEl.textContent = "#" + cur.commit;
@@ -1904,7 +2207,7 @@
             const remoteDateEl = document.getElementById("upgrade-remote-date");
             const remoteMsgEl = document.getElementById("upgrade-remote-msg");
 
-            if (remoteVerEl) remoteVerEl.textContent = rem.version || cur.version || "v0.3.4";
+            if (remoteVerEl) remoteVerEl.textContent = rem.version || cur.version || "v0.3.5";
             if (remoteCommitEl) {
                 if (rem.commit && rem.commit !== "未知") {
                     remoteCommitEl.textContent = "#" + rem.commit;
@@ -2994,7 +3297,7 @@
                                 <svg class="w-3.5 h-3.5 mr-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                 当前本机版本
                             </span>
-                            <span id="upgrade-local-ver" class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-200 text-slate-700">v0.3.4</span>
+                            <span id="upgrade-local-ver" class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-200 text-slate-700">v0.3.5</span>
                         </div>
                         <div class="flex items-center space-x-2 text-xs">
                             <span id="upgrade-local-commit" class="font-mono text-[11px] font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200">#--</span>
@@ -3010,7 +3313,7 @@
                                 <svg class="w-3.5 h-3.5 mr-1 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
                                 云端最新发布版本
                             </span>
-                            <span id="upgrade-remote-ver" class="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-100 text-indigo-700">v0.3.4</span>
+                            <span id="upgrade-remote-ver" class="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-100 text-indigo-700">v0.3.5</span>
                         </div>
                         <div class="flex items-center space-x-2 text-xs">
                             <span id="upgrade-remote-commit" class="font-mono text-[11px] font-bold text-indigo-800 bg-white px-1.5 py-0.5 rounded border border-indigo-200">#--</span>
