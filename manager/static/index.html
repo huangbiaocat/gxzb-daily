@@ -19,12 +19,22 @@
         .btn-action:hover {
             transform: translateY(-1px);
         }
-        .btn-action:active {
-            transform: translateY(0);
+       .btn-action:active {
+           transform: translateY(0);
+       }
+        .tab-btn {
+            color: #64748b;
+            border-radius: 0.5rem;
+            transition: all 0.15s ease-in-out;
+        }
+        .tab-btn:hover {
+            color: #0f172a;
+            background-color: rgba(255, 255, 255, 0.7);
         }
         .tab-btn.active {
+            background-color: #ffffff;
             color: #2563eb;
-            border-bottom-color: #2563eb;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.06);
             font-weight: 600;
         }
     </style>
@@ -33,7 +43,7 @@
 
     <!-- 顶部导航栏 -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
             <div class="flex items-center space-x-3">
                 <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -43,96 +53,83 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700 border border-blue-200">v0.3.4</span>
+                        <span id="app-version-badge" class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">v0.3.4</span>
+                        <!-- 实时全区雷达扫描状态指示器（静默常驻，带动态扫描动效，点击直达监控调度） -->
+                        <div id="top-radar-indicator" onclick="switchTab('dashboard')" class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-all bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100" title="点击前往监控调度：全区雷达扫描中">
+                            <span id="radar-char-top" class="font-mono text-xs font-bold text-emerald-600 select-none">◜</span>
+                            <span id="top-radar-text" class="text-[11px] font-medium">雷达监控中</span>
+                        </div>
                     </div>
-                    <p class="text-xs text-slate-500">Tender Data Control & Settings Center</p>
+                    <p class="text-xs text-slate-400 mt-0.5 leading-none">Tender Data Control & Settings Center</p>
                 </div>
             </div>
 
             <!-- Tab 切换导航 -->
-            <div class="flex items-center space-x-1 border-b border-transparent">
-                <button id="tab-btn-business" onclick="switchTab('business')" class="tab-btn active px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-blue-600 flex items-center space-x-1.5 transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <nav class="hidden md:flex items-center p-1 bg-slate-100/90 rounded-xl space-x-1 border border-slate-200/60 shadow-2xs">
+                <button id="tab-btn-business" onclick="switchTab('business')" class="tab-btn active px-3 py-1.5 text-xs sm:text-sm font-medium flex items-center space-x-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
                     </svg>
-                    <span>重点跟踪信息管理</span>
+                    <span>重点跟踪</span>
                 </button>
-                <button id="tab-btn-env" onclick="switchTab('env')" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-blue-600 flex items-center space-x-1.5 transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="tab-btn-env" onclick="switchTab('env')" class="tab-btn px-3 py-1.5 text-xs sm:text-sm font-medium flex items-center space-x-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
                     <span>环境配置</span>
                 </button>
-                <button id="tab-btn-dashboard" onclick="switchTab('dashboard')" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-blue-600 flex items-center space-x-1.5 transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="tab-btn-dashboard" onclick="switchTab('dashboard')" class="tab-btn px-3 py-1.5 text-xs sm:text-sm font-medium flex items-center space-x-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                     </svg>
-                    <span>监控与调度</span>
+                    <span>监控调度</span>
                 </button>
-                <button id="tab-btn-history" onclick="switchTab('history')" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-blue-600 flex items-center space-x-1.5 transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="tab-btn-history" onclick="switchTab('history')" class="tab-btn px-3 py-1.5 text-xs sm:text-sm font-medium flex items-center space-x-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <span>运行日志历史</span>
+                    <span>运行日志</span>
                 </button>
-            </div>
+            </nav>
 
-            <div class="flex items-center space-x-2 sm:space-x-3">
-                <!-- 删除指定日期内容按钮 -->
-                <button onclick="openDeleteDateModal()" class="text-xs font-semibold px-2.5 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg border border-rose-200 transition flex items-center space-x-1 shadow-xs" title="彻底删除指定日期的全部采集数据与日报">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <!-- 右侧操作栏：整齐协调，去除臃肿监控按钮 -->
+            <div class="flex items-center space-x-2 shrink-0">
+                <!-- 清理指定日期内容 -->
+                <button onclick="openDeleteDateModal()" class="text-xs font-medium px-2.5 py-1.5 bg-white text-slate-600 hover:text-rose-600 hover:bg-rose-50/70 rounded-lg border border-slate-200 transition flex items-center space-x-1 shadow-2xs" title="彻底删除指定日期的全部采集数据与日报">
+                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>
-                    <span class="hidden sm:inline">删除日期内容</span>
-                </button>
-
-                <!-- 实时监控动态动效指示器（监控中雷达顺时针旋转+脉冲扩散，未监控时完全静止定格） -->
-                <div id="live-monitor-radar-pill" class="hidden sm:flex items-center space-x-2 px-2.5 py-1 rounded-full border transition-all duration-300 shadow-xs bg-emerald-50 border-emerald-200 text-emerald-800" title="程序实时监控状态：监控中字符动态旋转，暂停时定格静止">
-                    <div id="radar-char-top-box" class="w-5 h-5 rounded-md bg-slate-900 border border-emerald-500/60 flex items-center justify-center shrink-0 shadow-inner">
-                        <span id="radar-char-top" class="font-mono text-xs font-bold text-emerald-400 select-none">◜</span>
-                    </div>
-                    <div class="flex flex-col text-left pr-0.5">
-                        <div class="flex items-center space-x-1">
-                            <span id="radar-live-text" class="text-[11px] font-bold text-emerald-800 leading-tight">正在监控中</span>
-                            <span id="radar-live-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        </div>
-                        <span id="radar-live-sub" class="text-[9px] font-mono text-emerald-600 leading-tight">全区雷达扫描</span>
-                    </div>
-                </div>
-
-                <!-- 快捷监控启停开关 -->
-                <button id="btn-top-monitor" onclick="toggleMonitor()" class="text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center space-x-1.5 shadow-xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" title="快捷开启或暂停计划任务后台轮询采集">
-                    <span id="top-monitor-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span id="top-monitor-text">监控中</span>
+                    <span class="hidden sm:inline">清理日期</span>
                 </button>
 
                 <!-- 打开线上网站 -->
-                <button onclick="openOnlineWebsite()" class="text-xs font-semibold px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition flex items-center space-x-1.5 shadow-xs" title="在浏览器新标签页打开线上网站">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button onclick="openOnlineWebsite()" class="text-xs font-medium px-2.5 py-1.5 bg-white text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/70 rounded-lg border border-slate-200 transition flex items-center space-x-1.5 shadow-2xs" title="在浏览器新标签页打开线上网站">
+                    <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                     </svg>
-                    <span>打开线上网站</span>
+                    <span class="hidden sm:inline">线上网站</span>
                 </button>
 
                 <!-- 同步升级 -->
-                <button onclick="openUpgradeModal()" id="btn-top-upgrade" class="text-xs font-semibold px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition flex items-center space-x-1.5 shadow-xs" title="检查并从 GitHub 同步升级新版本">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button onclick="openUpgradeModal()" id="btn-top-upgrade" class="text-xs font-medium px-2.5 py-1.5 bg-white text-slate-700 hover:text-emerald-700 hover:bg-emerald-50/70 rounded-lg border border-slate-200 transition flex items-center space-x-1.5 shadow-2xs" title="检查并从 GitHub 同步升级新版本">
+                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                     </svg>
-                    <span class="hidden sm:inline">同步升级</span>
+                    <span>同步升级</span>
                 </button>
 
                 <!-- 刷新状态 -->
-                <button id="btn-top-refresh" onclick="refreshAll()" class="p-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition" title="刷新页面状态与配置">
-                    <svg class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="btn-top-refresh" onclick="refreshAll()" class="p-1.5 text-slate-500 hover:text-slate-800 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition shadow-2xs" title="刷新页面状态与配置">
+                    <svg class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
                 </button>
 
-                <a href="/preview/" target="_blank" class="text-xs font-semibold px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg border border-blue-200 transition flex items-center space-x-1" title="在浏览器新标签页打开数据看板">
+                <!-- 打开看板（主行动按钮） -->
+                <a href="/preview/" target="_blank" class="text-xs font-medium px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center space-x-1.5 shadow-xs" title="在浏览器新标签页打开数据看板">
                     <span>打开看板</span>
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-3.5 h-3.5 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                     </svg>
                 </a>
@@ -1125,7 +1122,7 @@
             if (radarAnimTimer) return;
             const topChar = document.getElementById("radar-char-top");
             const bannerChar = document.getElementById("banner-radar-char");
-            if (topChar) topChar.className = "font-mono text-xs font-bold text-emerald-400 select-none";
+            if (topChar) topChar.className = "font-mono text-xs font-bold text-emerald-600 select-none";
             if (bannerChar) bannerChar.className = "font-mono text-sm font-bold text-emerald-400 select-none";
 
             radarAnimTimer = setInterval(() => {
@@ -1156,29 +1153,19 @@
         }
 
         function updateMonitorUI(monitor) {
-            const topText = document.getElementById("top-monitor-text");
-            const topDot = document.getElementById("top-monitor-dot");
-            const topBtn = document.getElementById("btn-top-monitor");
+            const radarIndicator = document.getElementById("top-radar-indicator");
+            const radarText = document.getElementById("top-radar-text");
             const bannerBtn = document.getElementById("btn-banner-monitor-toggle");
             const bannerBtnText = document.getElementById("banner-monitor-btn-text");
-            const radarPill = document.getElementById("live-monitor-radar-pill");
-            const radarLiveText = document.getElementById("radar-live-text");
-            const radarLiveSub = document.getElementById("radar-live-sub");
-            const radarLiveDot = document.getElementById("radar-live-dot");
-            const radarTopBox = document.getElementById("radar-char-top-box");
             const bannerRadarBox = document.getElementById("banner-radar-box");
 
             if (!monitor || !monitor.exists) {
                 stopRadarAnim();
-                if (topText) topText.textContent = "未配置任务";
-                if (topDot) topDot.className = "w-2 h-2 rounded-full bg-slate-400";
-                if (radarPill) {
-                    radarPill.className = "hidden sm:flex items-center space-x-2 px-2.5 py-1 rounded-full border transition-all duration-300 shadow-xs bg-slate-100 border-slate-200 text-slate-500";
+                if (radarIndicator) {
+                    radarIndicator.className = "inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-all bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200";
+                    radarIndicator.title = "点击前往监控设置：未配置任务";
                 }
-                if (radarTopBox) radarTopBox.className = "w-5 h-5 rounded-md bg-slate-800 border border-slate-600/50 flex items-center justify-center shrink-0 shadow-inner";
-                if (radarLiveText) radarLiveText.textContent = "未配置任务";
-                if (radarLiveSub) radarLiveSub.textContent = "监控待机";
-                if (radarLiveDot) radarLiveDot.className = "w-1.5 h-1.5 rounded-full bg-slate-400";
+                if (radarText) radarText.textContent = "监控待机";
                 if (bannerRadarBox) bannerRadarBox.className = "w-8 h-8 rounded-lg bg-slate-800 border border-slate-600/40 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden";
                 return;
             }
@@ -1186,35 +1173,23 @@
             currentMonitorEnabled = monitor.enabled;
             if (monitor.enabled) {
                 startRadarAnim();
-                if (topText) topText.textContent = monitor.state || "监控中";
-                if (topDot) topDot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
-                if (topBtn) topBtn.className = "text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center space-x-1.5 shadow-xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100";
+                if (radarIndicator) {
+                    radarIndicator.className = "inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-all bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100";
+                    radarIndicator.title = "点击前往监控调度：全区雷达扫描中 (正常轮询)";
+                }
+                if (radarText) radarText.textContent = "雷达监控中";
                 if (bannerBtn) bannerBtn.className = "px-3 py-1.5 font-semibold rounded-lg shadow-xs transition text-xs flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-600 text-white";
                 if (bannerBtnText) bannerBtnText.textContent = "暂停监控";
-
-                if (radarPill) {
-                    radarPill.className = "hidden sm:flex items-center space-x-2 px-2.5 py-1 rounded-full border transition-all duration-300 shadow-xs bg-emerald-50 border-emerald-200 text-emerald-800";
-                }
-                if (radarTopBox) radarTopBox.className = "w-5 h-5 rounded-md bg-slate-900 border border-emerald-500/60 flex items-center justify-center shrink-0 shadow-inner";
-                if (radarLiveText) radarLiveText.textContent = "正在监控中";
-                if (radarLiveSub) radarLiveSub.textContent = "全区雷达扫描";
-                if (radarLiveDot) radarLiveDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse";
                 if (bannerRadarBox) bannerRadarBox.className = "w-8 h-8 rounded-lg bg-slate-900 border border-emerald-500/50 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden";
             } else {
                 stopRadarAnim();
-                if (topText) topText.textContent = "已暂停监控";
-                if (topDot) topDot.className = "w-2 h-2 rounded-full bg-amber-400";
-                if (topBtn) topBtn.className = "text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center space-x-1.5 shadow-xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100";
+                if (radarIndicator) {
+                    radarIndicator.className = "inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-all bg-amber-50 text-amber-700 border border-amber-200/80 hover:bg-amber-100";
+                    radarIndicator.title = "点击前往监控调度：监控已暂停";
+                }
+                if (radarText) radarText.textContent = "监控已暂停";
                 if (bannerBtn) bannerBtn.className = "px-3 py-1.5 font-semibold rounded-lg shadow-xs transition text-xs flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white";
                 if (bannerBtnText) bannerBtnText.textContent = "开启监控";
-
-                if (radarPill) {
-                    radarPill.className = "hidden sm:flex items-center space-x-2 px-2.5 py-1 rounded-full border transition-all duration-300 shadow-xs bg-slate-100 border-slate-200 text-slate-500";
-                }
-                if (radarTopBox) radarTopBox.className = "w-5 h-5 rounded-md bg-slate-800 border border-slate-600/50 flex items-center justify-center shrink-0 shadow-inner";
-                if (radarLiveText) radarLiveText.textContent = "监控已暂停";
-                if (radarLiveSub) radarLiveSub.textContent = "雷达扫描待机";
-                if (radarLiveDot) radarLiveDot.className = "w-1.5 h-1.5 rounded-full bg-slate-400";
                 if (bannerRadarBox) bannerRadarBox.className = "w-8 h-8 rounded-lg bg-slate-800 border border-slate-600/40 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden";
             }
         }

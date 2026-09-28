@@ -1684,16 +1684,24 @@ html = html.replace("__DATE__", DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))
 html = html.replace("__NEXT_URL__", neighbor_url(1))
 
-# 构建今日回扫发现滞后公告的横幅 HTML
-if today_delayed_items:
+# 构建滞后公告横幅 HTML（支持展示今日回扫发现的前期遗漏，或历史单日归档中确证滞后补录的条目）
+alert_items = list(today_delayed_items)
+is_historical_day = False
+if not alert_items:
+    alert_items = [it for it in items if it.get("is_delayed")]
+    if alert_items:
+        is_historical_day = True
+
+if alert_items:
     rows_h = []
-    for dit in today_delayed_items:
+    for dit in alert_items:
         d_delay = dit.get("delay_days", 0)
         d_title = html_mod.escape(dit.get("title", ""))
         d_link = html_mod.escape(dit.get("link") or dit.get("detail_url") or "#")
         d_pub = html_mod.escape(str(dit.get("pub_time", ""))[:16])
         d_area = html_mod.escape(str(dit.get("areaname", "") or dit.get("source", "")))
         d_stage = html_mod.escape(str(dit.get("stage", "") or "公告"))
+        tag_text = "回溯确证补录" if is_historical_day else "今日回扫捕获"
         rows_h.append(
             f'<a class="delayed-item-row" href="{d_link}" target="_blank" rel="noopener noreferrer">\n'
             f'    <div class="delayed-item-main">\n'
@@ -1703,7 +1711,7 @@ if today_delayed_items:
             f'    <div class="delayed-item-meta">\n'
             f'        <span>【{d_area}·{d_stage}】</span>\n'
             f'        <span>官方标称: {d_pub}</span>\n'
-            f'        <span style="color:#ea580c;font-weight:700;">今日回扫捕获</span>\n'
+            f'        <span style="color:#ea580c;font-weight:700;">{tag_text}</span>\n'
             f'    </div>\n'
             f'</a>'
         )
@@ -1724,14 +1732,18 @@ if today_delayed_items:
     else:
         list_inner = "".join(rows_h)
 
+    badge_text = "🚨 滞后公开存证" if is_historical_day else "🚨 历史回扫特别预警"
+    title_text = f"本日收录 <strong>{len(alert_items)}</strong> 条被官方滞后公开的项目" if is_historical_day else f"今日回扫捕获 <strong>{len(alert_items)}</strong> 条被官方滞后公开的项目"
+    desc_text = "官方标称发布于本日，但在当日正常扫描窗口未见该条目，后续由回扫系统确证补录" if is_historical_day else "官方标称发布于 2~30 天前，此前巡检未见该条目，在今日定时回扫中首次扫描捕获并确证存证"
+
     delayed_alert_html = (
         f'<div class="delayed-alert-box" id="delayedAlertBox">\n'
         f'    <div class="delayed-alert-header">\n'
         f'        <div class="delayed-alert-title-row">\n'
-        f'            <span class="delayed-alert-badge" style="border-radius:9999px;">🚨 历史回扫特别预警</span>\n'
-        f'            <span class="delayed-alert-title">今日回扫捕获 <strong>{len(today_delayed_items)}</strong> 条被官方滞后公开的项目</span>\n'
+            f'            <span class="delayed-alert-badge" style="border-radius:9999px;">{badge_text}</span>\n'
+            f'            <span class="delayed-alert-title">{title_text}</span>\n'
         f'        </div>\n'
-        f'        <div class="delayed-alert-desc">官方标称发布于 2~30 天前，此前巡检未见该条目，在今日定时回扫中首次扫描捕获并确证存证</div>\n'
+        f'        <div class="delayed-alert-desc">{desc_text}</div>\n'
         f'    </div>\n'
         f'    <div class="delayed-alert-list">\n'
         f'        {list_inner}\n'
