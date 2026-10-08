@@ -694,10 +694,46 @@
                 </form>
             </div>
         </div>
-        <!-- ============================================== -->
-        <!-- TAB 2: 监控与调度界面 -->
-        <!-- ============================================== -->
-        <div id="tab-content-dashboard" class="space-y-6 hidden">
+       <!-- ============================================== -->
+       <!-- TAB 2: 监控与调度界面 -->
+       <!-- ============================================== -->
+       <div id="tab-content-dashboard" class="space-y-6 hidden">
+            <!-- 首页全站跨历史日期检索直达卡片 -->
+            <div class="bg-white rounded-2xl border border-sky-200/90 shadow-sm p-4 sm:p-5 relative overflow-hidden bg-gradient-to-r from-white via-sky-50/30 to-indigo-50/20">
+                <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-2 text-xs font-bold text-sky-900 mb-1.5">
+                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-100 text-sky-700">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="2"></circle><line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"></line></svg>
+                            </span>
+                            <span>全站跨历史日期项目检索</span>
+                            <span class="text-[11px] font-normal text-slate-500">· 覆盖所有已归档日期的招标、中标与澄清公告，支持即搜即得</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="relative flex-1">
+                                <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="2"></circle><line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"></line></svg>
+                                <input type="text" id="dashboard-home-search-q" placeholder="输入项目名称、业主单位、标段、地市关键词（按回车即可全站即时检索）..." onkeydown="if(event.key==='Enter') quickSearchFromHome()" class="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500 focus:ring-2 focus:ring-sky-100 transition shadow-2xs text-slate-800 placeholder-slate-400">
+                            </div>
+                            <button type="button" onclick="quickSearchFromHome()" class="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 shadow-2xs transition shrink-0 cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="2"></circle><line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"></line></svg>
+                                <span>全站搜索</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 快捷筛选推荐标签 -->
+                <div class="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
+                    <span class="text-[11px] text-slate-400 font-medium mr-1">快捷筛选:</span>
+                    <button type="button" onclick="quickSearchFromHome('', 'project')" class="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-white text-slate-700 hover:text-sky-600 border border-slate-200 hover:border-sky-300 transition">🎯 重点项目</button>
+                    <button type="button" onclick="quickSearchFromHome('', 'owner')" class="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-white text-slate-700 hover:text-indigo-600 border border-slate-200 hover:border-indigo-300 transition">🏢 重点业主</button>
+                    <button type="button" onclick="quickSearchFromHome('', 'delayed')" class="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-white text-rose-700 hover:text-rose-800 border border-rose-200 bg-rose-50/30 hover:bg-rose-50 transition">⚠️ 滞后公开</button>
+                    <button type="button" onclick="quickSearchFromHome('南宁')" class="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-white text-slate-600 hover:text-sky-600 border border-slate-200 hover:border-sky-300 transition">南宁</button>
+                    <button type="button" onclick="quickSearchFromHome('柳州')" class="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-white text-slate-600 hover:text-sky-600 border border-slate-200 hover:border-sky-300 transition">柳州</button>
+                    <button type="button" onclick="quickSearchFromHome('桂林')" class="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-white text-slate-600 hover:text-sky-600 border border-slate-200 hover:border-sky-300 transition">桂林</button>
+                    <button type="button" onclick="quickSearchFromHome('高速公路')" class="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-white text-slate-600 hover:text-sky-600 border border-slate-200 hover:border-sky-300 transition">高速公路</button>
+                    <button type="button" onclick="quickSearchFromHome('水利')" class="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-white text-slate-600 hover:text-sky-600 border border-slate-200 hover:border-sky-300 transition">水利枢纽</button>
+                </div>
+            </div>
             <!-- 状态卡片概览 -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
@@ -755,12 +791,12 @@
                         <span class="text-xs text-slate-500">条底边原始数据</span>
                     </div>
                     <div class="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-purple-50">
-                        <div class="flex items-center gap-1">
-                            <span>确证滞后: <span id="stat-baseline-delayed" class="font-bold text-emerald-600">0</span> 条</span>
-                            <button type="button" onclick="event.stopPropagation(); openDelayedReviewModal();" class="ml-1.5 px-2 py-0.5 text-[11px] bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded font-semibold transition-colors">
-                                点此管理滞后讯息 →
+                       <div class="flex items-center gap-1">
+                           <span>确证滞后: <span id="stat-baseline-delayed" class="font-bold text-emerald-600">0</span> 条</span>
+                            <button type="button" onclick="event.stopPropagation(); openDelayedReviewModal();" class="ml-1.5 px-2.5 py-0.5 text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-md font-semibold transition-colors flex items-center gap-1 shadow-2xs">
+                                管理滞后讯息
                             </button>
-                        </div>
+                       </div>
                         <span>覆盖 <span id="stat-baseline-dates" class="font-bold text-slate-700">--</span> 天</span>
                     </div>
                 </div>
@@ -1400,19 +1436,9 @@
             runMgrSearch();
         }
 
-       function openDelayedReview() {
-            openDelayedReviewModal();
-       }
-
-       async function runMgrSearch() {
-           const qInput = document.getElementById('mgr-search-q');
-           const clearBtn = document.getElementById('mgr-search-clear');
-           const resultsEl = document.getElementById('mgr-search-results');
-           const countEl = document.getElementById('mgr-search-count');
-           const regSelect = document.getElementById('mgr-region-filter');
-           const stageSelect = document.getElementById('mgr-stage-filter');
-
-           if (!resultsEl) return;
+      function openDelayedReview() {
+           openDelayedReviewModal();
+      }
 
         function openDelayedReviewModal() {
             const m = document.getElementById('delayed-review-modal');
@@ -1421,11 +1447,13 @@
                 loadDelayedList();
             }
         }
+        window.openDelayedReviewModal = openDelayedReviewModal;
 
         function closeDelayedReviewModal() {
             const m = document.getElementById('delayed-review-modal');
             if (m) m.classList.add('hidden');
         }
+        window.closeDelayedReviewModal = closeDelayedReviewModal;
 
         function toggleBaselineExplanation() {
             const c = document.getElementById('baseline-explanation-content');
@@ -1441,6 +1469,7 @@
                 }
             }
         }
+        window.toggleBaselineExplanation = toggleBaselineExplanation;
 
         async function loadDelayedList() {
             const container = document.getElementById('modal-delayed-list');
@@ -1543,7 +1572,7 @@
                                         📄 打开当日日报
                                     </a>
                                 </div>
-                                <button type="button" onclick="unmarkDelayedNotice('${infoid}', '${pubDate}')" class="px-3 py-1 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors shadow-2xs flex items-center gap-1">
+                                <button type="button" onclick="unmarkDelayedNotice('${infoid}', '${pubDate}')" class="px-3 py-1 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors shadow-2xs flex items-center gap-1 cursor-pointer">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     解除滞后标记 (纠错划入基线)
                                 </button>
@@ -1556,9 +1585,10 @@
                 container.innerHTML = '<div class="text-center py-8 text-rose-500 text-xs">网络请求异常：' + escapeHtml(e.message) + '</div>';
             }
         }
+        window.loadDelayedList = loadDelayedList;
 
         async function unmarkDelayedNotice(infoid, dateStr) {
-            if (!confirm('确定要解除此公告的滞后标记吗？\\n\\n操作影响：\\n1. 该条目将永久被认定为底边原始基线数据。\\n2. 滞后标记将立即消除。\\n3. 系统将自动重新编译对应日报页面与全盘检索索引。')) {
+            if (!confirm('确定要解除此公告的滞后标记吗？\n\n操作影响：\n1. 该条目将永久被认定为底边原始基线数据。\n2. 滞后标记将立即消除。\n3. 系统将自动重新编译对应日报页面与全盘检索索引。')) {
                 return;
             }
             try {
@@ -1569,23 +1599,88 @@
                 });
                 const ret = await resp.json();
                 if (ret.ok) {
-                    alert('解除成功！已划入底边基线，日报与全盘检索已实时同步更新。');
+                    showToast('✓ 解除成功！已划入底边基线，日报与全盘检索已实时同步更新。', 'success');
                     loadDelayedList();
                     fetchBaselineStatus();
+                    runMgrSearch();
                 } else {
-                    alert('解除失败：' + (ret.msg || ret.error || '未知错误'));
+                    showToast('解除失败：' + (ret.msg || ret.error || '未知错误'), 'error');
                 }
             } catch(e) {
-                alert('请求异常：' + e.message);
+                showToast('请求异常：' + e.message, 'error');
             }
         }
+        window.unmarkDelayedNotice = unmarkDelayedNotice;
 
-        function runBackscanFromModal() {
-            closeDelayedReviewModal();
-            openBatchScanModal();
+       function runBackscanFromModal() {
+           closeDelayedReviewModal();
+           openBatchScanModal();
+       }
+       window.runBackscanFromModal = runBackscanFromModal;
+
+        async function fetchBaselineStatus() {
+            try {
+                const baseRes = await fetch("/api/baseline_status");
+                const baseData = await baseRes.json();
+                if (baseData.ok && baseData.stats) {
+                    const st = baseData.stats;
+                    const bCountEl = document.getElementById("stat-baseline-count");
+                    const bDelayedEl = document.getElementById("stat-baseline-delayed");
+                    const bDatesEl = document.getElementById("stat-baseline-dates");
+                    const bBadgeEl = document.getElementById("stat-baseline-badge");
+                    if (bCountEl) bCountEl.textContent = st.baseline_records || st.total_records || 0;
+                    if (bDelayedEl) {
+                        bDelayedEl.textContent = st.delayed_records || 0;
+                        bDelayedEl.className = (st.delayed_records > 0) ? "font-bold text-rose-600 animate-pulse" : "font-bold text-emerald-600";
+                    }
+                    if (bDatesEl) bDatesEl.textContent = st.dates_covered || 0;
+                    if (bBadgeEl) {
+                        if (st.delayed_records > 0) {
+                            bBadgeEl.className = "px-1.5 py-0.5 rounded text-[10px] bg-rose-100 text-rose-700 font-semibold";
+                            bBadgeEl.textContent = `待排查 ${st.delayed_records} 条`;
+                        } else {
+                            bBadgeEl.className = "px-1.5 py-0.5 rounded text-[10px] bg-purple-100 text-purple-700 font-semibold";
+                            bBadgeEl.textContent = "底边比对就绪";
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn("获取底边状态失败", e);
+            }
         }
+        window.fetchBaselineStatus = fetchBaselineStatus;
+        window.fetchBaselineStats = fetchBaselineStatus;
 
-            const q = (qInput ? qInput.value.trim() : '');
+       function quickSearchFromHome(query = '', filter = 'all') {
+            const qInput = document.getElementById('dashboard-home-search-q');
+            const qVal = query !== '' ? query : (qInput ? qInput.value.trim() : '');
+            switchTab('search');
+            const mgrInput = document.getElementById('mgr-search-q');
+            if (mgrInput) {
+                mgrInput.value = qVal;
+            }
+            if (filter && filter !== 'all') {
+                const chip = document.querySelector(`.mgr-chip[data-filter="${filter}"]`);
+                if (chip) {
+                    setMgrChip(chip, filter);
+                    return;
+                }
+            }
+            runMgrSearch();
+        }
+        window.quickSearchFromHome = quickSearchFromHome;
+
+       async function runMgrSearch() {
+           const qInput = document.getElementById('mgr-search-q');
+           const clearBtn = document.getElementById('mgr-search-clear');
+           const resultsEl = document.getElementById('mgr-search-results');
+           const countEl = document.getElementById('mgr-search-count');
+           const regSelect = document.getElementById('mgr-region-filter');
+           const stageSelect = document.getElementById('mgr-stage-filter');
+
+           if (!resultsEl) return;
+
+           const q = (qInput ? qInput.value.trim() : '');
             if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
             const region = regSelect ? regSelect.value : '';
             const stage = stageSelect ? stageSelect.value : '';

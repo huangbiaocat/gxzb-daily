@@ -605,7 +605,7 @@ PAGE = """<!DOCTYPE html>
 <div class="header-actions">
 <a class="btn-latest" href="./search.html" style="background: #ffffff; color: var(--primary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); margin-right: 8px;">
 <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
-<span>全盘检索</span>
+<span>全站搜索</span>
 </a>
 <a class="btn-latest" href="./{latest_date}.html" data-latest-date="{latest_date}" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
 <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
@@ -648,6 +648,11 @@ PAGE = """<!DOCTYPE html>
 <!-- Filter / View Switcher -->
 <section class="filter-section">
 <div class="filter-left">
+<div class="search-input-wrap" style="position: relative; max-width: 320px;">
+<svg class="search-icon" fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" x2="16.65"></line></svg>
+<input class="search-input" id="globalProjectSearch" placeholder="全站搜项目/业主/标段（回车直达）..." type="text" onkeydown="if(event.key==='Enter'&&this.value.trim()){window.location.href='./search.html?q='+encodeURIComponent(this.value.trim());}"/>
+<button type="button" onclick="const v=document.getElementById('globalProjectSearch').value.trim();if(v){window.location.href='./search.html?q='+encodeURIComponent(v);}" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: var(--primary); color: #fff; border: none; border-radius: 6px; font-size: 11px; padding: 4px 10px; cursor: pointer; font-weight: 500;">全站搜</button>
+</div>
 <div class="search-input-wrap">
 <svg class="search-icon" fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
 <input class="search-input" id="archiveSearch" placeholder="输入日期检索（如 2026-09、09-10、周四）..." type="text"/>
