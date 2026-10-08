@@ -1034,11 +1034,11 @@ __DAILY_CSS__
     <!-- Filter / Search -->
     <section class="filter-section daily">
         <div class="filter-row top">
-            <div class="search-input-wrap">
-                <svg class="search-icon" fill="none" height="16" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
-                <input class="search-input" id="searchInput" placeholder="全盘检索所有公告（如 水库、公路、学校，回车全盘搜索）..." type="text"/>
-                <button type="button" onclick="var q=(document.getElementById('searchInput').value||'').trim();window.location.href='./search.html'+(q?'?q='+encodeURIComponent(q):'');" title="在全历史数据库中全盘检索" style="border:none;background:#0284c7;color:#fff;border-radius:4px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer;margin-left:6px;white-space:nowrap;">全盘检索</button>
-            </div>
+           <div class="search-input-wrap">
+               <svg class="search-icon" fill="none" height="16" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
+                <input class="search-input" id="searchInput" placeholder="搜索项目/公告（输入即可跨所有历史日期检索全部结果）..." type="text"/>
+               <button type="button" onclick="var q=(document.getElementById('searchInput').value||'').trim();window.location.href='./search.html'+(q?'?q='+encodeURIComponent(q):'');" title="在全历史数据库中全盘检索" style="border:none;background:#0284c7;color:#fff;border-radius:4px;padding:4px 8px;font-size:12px;font-weight:700;cursor:pointer;margin-left:6px;white-space:nowrap;">全盘检索</button>
+           </div>
             <select class="select-input" id="industryFilter">
                 <option value="">全部工程大类</option>
                 <option value="水利工程">水利工程</option>
@@ -1105,10 +1105,13 @@ __DAILY_CSS__
         </div>
     </section>
 
-    __DELAYED_ALERT_BOX__
+   __DELAYED_ALERT_BOX__
 
-    <!-- Empty search state -->
-    <div class="empty-search-state" id="emptySearch">
+    <!-- 全盘跨日期检索结果容器（输入关键词时自动呈现所有历史日期匹配项） -->
+    <div id="globalSearchResults" style="display:none;margin-bottom:20px;"></div>
+
+   <!-- Empty search state -->
+   <div class="empty-search-state" id="emptySearch">
         <svg fill="none" height="48" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" width="48"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
         <h3>未找到匹配的公告</h3>
         <p>请尝试其它关键词，或重置工程大类 / 地市 / 业务环节筛选条件</p>
@@ -1350,13 +1353,124 @@ function apply() {
     const q = (searchInput.value || '').trim().toLowerCase();
     const ind = industryFilter.value;
     const src = sourceFilter ? sourceFilter.value : '';
-    const city = cityFilter.value;
-    const stage = stageFilter.value;
-    let shown = 0;
+   const city = cityFilter.value;
+   const stage = stageFilter.value;
+   let shown = 0;
 
+   var gBox = document.getElementById('globalSearchResults');
+   if (q) {
+        if (!window.__GLOBAL_SEARCH_INDEX__) {
+            hint.innerHTML = '🔍 正在全盘检索所有历史日期的公告...';
+            if (!window.__SEARCH_FETCHING__) {
+                window.__SEARCH_FETCHING__ = true;
+                fetch('./search_index.json')
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        window.__GLOBAL_SEARCH_INDEX__ = data || [];
+                        window.__SEARCH_FETCHING__ = false;
+                        apply();
+                    })
+                    .catch(function(err) {
+                        console.error('Failed to load global search index', err);
+                        window.__SEARCH_FETCHING__ = false;
+                    });
+            }
+            return;
+        }
+
+        // 已加载全历史索引，跨所有日期检索展示
+        container.style.display = 'none';
+        if (gBox) gBox.style.display = 'block';
+
+        var matches = window.__GLOBAL_SEARCH_INDEX__.filter(function(it) {
+            var title = (it.title || '').toLowerCase();
+            var area = (it.areaname || '').toLowerCase();
+            var industry = (it.industry || '').toLowerCase();
+            var stageName = (it.stage || '').toLowerCase();
+            if (title.indexOf(q) === -1 && area.indexOf(q) === -1 && industry.indexOf(q) === -1 && stageName.indexOf(q) === -1) {
+                return false;
+            }
+            if (ind && it.industry !== ind) return false;
+            if (src && it.source !== src) return false;
+            if (city) {
+                var itemCity = it.areaname || '';
+                if (city === '崇左市') {
+                    if (itemCity.indexOf('崇左') === -1 && itemCity.indexOf('龙州') === -1 && itemCity.indexOf('扶绥') === -1 && itemCity.indexOf('宁明') === -1 && itemCity.indexOf('凭祥') === -1 && itemCity.indexOf('大新') === -1 && itemCity.indexOf('天等') === -1) {
+                        return false;
+                    }
+                } else if (itemCity.indexOf(city) === -1) {
+                    return false;
+                }
+            }
+            if (stage && it.stage !== stage) return false;
+            if (focusProjectOnly && !it.is_focus) return false;
+            if (overtimeOnly && !it.is_overtime) return false;
+            if (delayedOnly && !it.is_delayed) return false;
+            return true;
+        });
+
+        matches.sort(function(a, b) {
+            var ta = a.pub_time || a.date || '';
+            var tb = b.pub_time || b.date || '';
+            return tb.localeCompare(ta);
+        });
+
+        hint.innerHTML = '🌐 全盘检索结果：在所有历史日期中找到 <strong>' + matches.length + '</strong> 条符合「' + esc(q) + '」的公告（不限日期，按发布时间倒序排列） · <a href="javascript:void(0)" onclick="document.getElementById(\\'searchInput\\').value=\\'\\';apply();" style="color:#0284c7;font-weight:700;margin-left:6px;text-decoration:underline;">✕ 清除搜索返回今日</a>';
+        empty.style.display = 'none';
+
+        if (matches.length === 0) {
+            if (gBox) gBox.innerHTML = '<div class="empty-search-state" style="display:block;"><h3>在所有历史日期的公告中均未找到包含「' + esc(q) + '」的标讯</h3><p style="margin-top:6px;color:#64748b;">请尝试缩短或更换关键词检索</p></div>';
+        } else if (gBox) {
+            var html = '<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'
+                + '<div style="font-size:13px;color:#0369a1;"><strong>🌐 跨所有日期检索结果</strong> · 共找到 <strong>' + matches.length + '</strong> 条匹配公告（已跨全部历史日期）</div>'
+                + '<a href="./search.html?q=' + encodeURIComponent(q) + '" style="font-size:12px;color:#0284c7;font-weight:700;text-decoration:none;">在全盘检索独立页查看 ↗</a>'
+                + '</div>';
+            html += '<div class="notice-list" style="display:flex;flex-direction:column;gap:6px;">';
+            matches.forEach(function(d) {
+                var dateBadge = '<a href="./' + (d.date || '') + '.html" title="点击查看 ' + (d.date || '') + ' 当日完整日报" style="flex-shrink:0;background:#e0f2fe;color:#0369a1;font-weight:700;font-size:11px;padding:2px 6px;border-radius:4px;text-decoration:none;border:1px solid #bae6fd;display:inline-flex;align-items:center;gap:2px;">📅 ' + (d.date || '') + '</a>';
+                var cityBadge = '<span class="city-tag" style="flex-shrink:0;">' + esc(shortArea(d.areaname)) + '</span>';
+                var indBadge = '<span class="cat-tag" style="flex-shrink:0;background:#f1f5f9;color:#475569;font-size:11px;padding:2px 6px;border-radius:4px;">' + esc(d.industry || '综合') + '</span>';
+                var stageBadge = '<span class="stage-tag" style="flex-shrink:0;background:#f8fafc;color:#64748b;font-size:11px;padding:2px 6px;border-radius:4px;border:1px solid #e2e8f0;">' + esc(d.stage || '公告') + '</span>';
+
+               var titleHighlighted = esc(d.title || '');
+               if (q) {
+                    var safeQ = q.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');
+                    var re = new RegExp('(' + safeQ + ')', 'gi');
+                   titleHighlighted = titleHighlighted.replace(re, '<mark style="background:#fef08a;color:#854d0e;padding:0 2px;border-radius:2px;">$1</mark>');
+               }
+
+                var extraTags = '';
+                if (d.is_focus) {
+                    extraTags += '<span class="focus-chip" style="background:#eff6ff;color:#1d4ed8;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #bfdbfe;">重点</span>';
+                }
+                if (d.is_overtime) {
+                    extraTags += '<span class="overtime-chip" style="background:#fdf4ff;color:#a21caf;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #f5d0fe;">🌙 加班</span>';
+                }
+                if (d.is_delayed) {
+                    extraTags += '<span class="delayed-chip" style="background:#fff1f2;color:#be123c;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid #fecdd3;">⚠️ 滞后</span>';
+                }
+
+                var timeStr = (d.pub_time || '').length >= 16 ? d.pub_time.substring(11, 16) : '';
+                var timeBadge = timeStr ? '<span class="notice-time" style="flex-shrink:0;font-size:11px;color:#94a3b8;font-family:monospace;">' + timeStr + '</span>' : '';
+
+                html += '<div class="notice-item" style="border-left:3px solid #0284c7;background:#fff;padding:8px 12px;border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,0.04);display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;">'
+                    + dateBadge + cityBadge + indBadge + stageBadge
+                    + '<a href="' + esc(d.link || '#') + '" target="_blank" rel="noopener noreferrer" style="flex:1;font-weight:600;font-size:13px;color:#0f172a;line-height:1.4;text-decoration:none;display:inline-flex;align-items:center;gap:4px;" class="notice-title">'
+                    + titleHighlighted + ' ' + EXT_ICON + '</a>'
+                    + extraTags + timeBadge + '</div>';
+            });
+            html += '</div>';
+            gBox.innerHTML = html;
+        }
+        return;
+    }
+
+   // q 为空时恢复单日视图
+   if (gBox) gBox.style.display = 'none';
+   container.style.display = 'block';
     Array.prototype.forEach.call(container.querySelectorAll('.notice-item'), function (it) {
-        let ok = true;
-        if (q) {
+       let ok = true;
+       if (q) {
             const hay = (it.getAttribute('data-title') || '').toLowerCase();
             if (hay.indexOf(q) === -1) { ok = false; }
         }
@@ -1845,7 +1959,7 @@ html = html.replace("__DAILY_CSS__", DAILY_CSS.strip())
 html = html.replace("__LATEST_PUB__", latest_pub)
 html = html.replace("__SCAN_TIME__", scan_time)
 html = html.replace("__LATEST__", latest_pub)
-html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.3.5"))
+html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.3.6"))
 html = html.replace("__DATE__", DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))
 html = html.replace("__NEXT_URL__", neighbor_url(1))

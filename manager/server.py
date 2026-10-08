@@ -182,19 +182,19 @@ def get_git_info():
             text=True,
             timeout=3
         )
-        if res.returncode == 0:
-            commit = res.stdout.strip()
-            app_ver = getattr(config, "APP_VERSION", "v0.3.5")
-            return {"commit": commit, "version": f"{app_ver} (#{commit})"}
-    except Exception:
-        pass
-    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.3.5")}
+       if res.returncode == 0:
+           commit = res.stdout.strip()
+            app_ver = getattr(config, "APP_VERSION", "v0.3.6")
+           return {"commit": commit, "version": f"{app_ver} (#{commit})"}
+   except Exception:
+       pass
+    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.3.6")}
 
 def check_app_upgrade():
     """
     检查当前本地版本与 GitHub 远程版本，获取差异提交列表与更新内容说明。
     """
-    local_version = getattr(config, "APP_VERSION", "v0.3.5")
+    local_version = getattr(config, "APP_VERSION", "v0.3.6")
     local_info = {
         "version": local_version,
         "commit": "",
@@ -1156,6 +1156,29 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
                     continue
                 filtered.append(it)
 
+            # 如果勾选了仅看滞后，额外从 scan_records 表补充以防 search_index.json 尚未同步
+            if delayed_only:
+                try:
+                    from scripts.scan_record_db import get_scan_record_db
+                    db = get_scan_record_db()
+                    with db._connection() as conn:
+                        conn.row_factory = sqlite3.Row
+                        cur = conn.cursor()
+                        cur.execute("""
+                            SELECT infoid, title, pub_time, pub_date as date,
+                                  delay_days, delay_hours, delay_label, is_delayed,
+                                  center as areaname, link, evidence_text as delayed_reason
+                            FROM scan_records
+                            WHERE is_delayed = 1
+                        """)
+                        for dr in [dict(r) for r in cur.fetchall()]:
+                            if not any(f.get("infoid") == dr.get("infoid") for f in filtered):
+                                if q and q not in (dr.get("title") or "").lower():
+                                   continue
+                                filtered.append(dr)
+                except Exception:
+                    pass
+
             # 严格时间倒序
             filtered.sort(key=lambda r: str(r.get("pub_time") or r.get("date") or ""), reverse=True)
             total = len(filtered)
@@ -1174,13 +1197,44 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
                     cur = conn.cursor()
                     cur.execute("""
                         SELECT infoid, title, pub_time, pub_date, first_scan_time, first_scan_date,
-                               delay_days, delay_hours, delay_label, is_delayed, is_baseline,
-                               center, link, evidence_text, notes
+                                delay_days, delay_hours, delay_label, is_delayed, is_baseline,
+                                center, link, evidence_text, notes
                         FROM scan_records
                         WHERE is_delayed = 1
                         ORDER BY pub_time DESC
                     """)
                     records = [dict(r) for r in cur.fetchall()]
+
+                # 兼容性检查：若 search_index.json 中包含 is_delayed 标记，一并汇总
+                seen_ids = {r.get("infoid") for r in records if r.get("infoid")}
+                idx_file = Path("data/search_index.json")
+                if not idx_file.is_file():
+                    idx_file = Path("dist/search_index.json")
+                if idx_file.is_file():
+                    try:
+                        idx_items = json.loads(idx_file.read_text(encoding="utf-8"))
+                        for it in idx_items:
+                            if it.get("is_delayed") and it.get("infoid") not in seen_ids:
+                                seen_ids.add(it.get("infoid"))
+                                records.append({
+                                    "infoid": it.get("infoid"),
+                                    "title": it.get("title", ""),
+                                    "pub_time": it.get("pub_time", ""),
+                                    "pub_date": it.get("date", ""),
+                                    "first_scan_time": "",
+                                    "first_scan_date": "",
+                                    "delay_days": it.get("delay_days", 0),
+                                    "delay_hours": it.get("delay_hours", 0),
+                                    "delay_label": it.get("delay_label", "滞后公开"),
+                                    "is_delayed": 1,
+                                    "is_baseline": 0,
+                                    "center": it.get("areaname", ""),
+                                    "link": it.get("link", ""),
+                                    "evidence_text": it.get("delayed_reason", "在全盘检索索引中标记为滞后公开"),
+                                    "notes": ""
+                                })
+                    except Exception:
+                        pass
                 self.send_json({"ok": True, "total": len(records), "records": records})
             except Exception as e:
                 self.send_json({"ok": False, "error": str(e), "records": []})

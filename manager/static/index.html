@@ -53,7 +53,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">v0.3.5</span>
+                        <span id="app-version-badge" class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">v0.3.6</span>
                         <!-- 实时全区雷达扫描状态指示器（静默常驻，带动态扫描动效，点击直达监控调度） -->
                         <div id="top-radar-indicator" onclick="switchTab('dashboard')" class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-all bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100" title="点击前往监控调度：全区雷达扫描中">
                             <span id="radar-char-top" class="font-mono text-xs font-bold text-emerald-600 select-none">◜</span>
@@ -92,16 +92,22 @@
                     </svg>
                     <span>监控调度</span>
                 </button>
-                <button id="tab-btn-history" onclick="switchTab('history')" class="tab-btn px-3 py-1.5 text-xs sm:text-sm font-medium flex items-center space-x-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <span>运行日志</span>
-                </button>
-            </nav>
+               <button id="tab-btn-history" onclick="switchTab('history')" class="tab-btn px-3 py-1.5 text-xs sm:text-sm font-medium flex items-center space-x-1.5">
+                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                   </svg>
+                   <span>运行日志</span>
+               </button>
+           </nav>
 
-            <!-- 右侧操作栏：整齐协调，去除臃肿监控按钮 -->
-            <div class="flex items-center space-x-2 shrink-0">
+            <!-- 顶部跨日期全盘搜索快捷输入框 -->
+            <div class="hidden lg:flex items-center relative ml-2 mr-1">
+                <input type="text" id="top-quick-search" placeholder="🔍 跨所有日期检索项目..." onkeydown="if(event.key==='Enter'){switchTab('search'); document.getElementById('mgr-search-q').value=this.value; runMgrSearch();}" class="text-xs pl-3 pr-7 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-48 xl:w-56 transition text-slate-800 placeholder-slate-400">
+                <button type="button" onclick="var v=document.getElementById('top-quick-search').value; switchTab('search'); document.getElementById('mgr-search-q').value=v; runMgrSearch();" class="absolute right-2 text-slate-400 hover:text-blue-600 text-xs font-bold" title="搜索">↵</button>
+            </div>
+
+           <!-- 右侧操作栏：整齐协调，去除臃肿监控按钮 -->
+           <div class="flex items-center space-x-2 shrink-0">
                 <!-- 清理指定日期内容 -->
                 <button onclick="openDeleteDateModal()" class="text-xs font-medium px-2.5 py-1.5 bg-white text-slate-600 hover:text-rose-600 hover:bg-rose-50/70 rounded-lg border border-slate-200 transition flex items-center space-x-1 shadow-2xs" title="彻底删除指定日期的全部采集数据与日报">
                     <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -736,17 +742,25 @@
                     <div id="stat-wechat-desc" class="text-xs text-slate-500 mt-1">--</div>
                 </div>
 
-                <div class="bg-white p-5 rounded-xl border border-purple-200 shadow-sm">
+                <div class="bg-white p-5 rounded-xl border border-purple-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer group" onclick="openDelayedReviewModal()" title="点击进入滞后公开公告管理与纠错中心">
                     <div class="text-xs font-medium text-purple-700 uppercase tracking-wider flex items-center justify-between">
-                        <span>底边扫描与滞后排查</span>
+                        <span class="flex items-center gap-1.5 font-bold">
+                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                            底边扫描与滞后排查
+                        </span>
                         <span id="stat-baseline-badge" class="px-1.5 py-0.5 rounded text-[10px] bg-purple-100 text-purple-800 font-bold">已启用</span>
                     </div>
                     <div class="mt-2 flex items-baseline justify-between">
                         <span id="stat-baseline-count" class="text-xl font-bold text-slate-800">--</span>
                         <span class="text-xs text-slate-500">条底边原始数据</span>
                     </div>
-                    <div class="text-xs text-slate-500 mt-1 flex items-center justify-between">
-                        <span>确证滞后: <span id="stat-baseline-delayed" class="font-bold text-emerald-600">0</span> 条 <a href="javascript:void(0)" onclick="openDelayedReview()" class="text-[11px] text-rose-600 hover:text-rose-800 underline font-medium ml-1">查看/纠错</a></span>
+                    <div class="text-xs text-slate-500 mt-2 flex items-center justify-between pt-2 border-t border-purple-50">
+                        <div class="flex items-center gap-1">
+                            <span>确证滞后: <span id="stat-baseline-delayed" class="font-bold text-emerald-600">0</span> 条</span>
+                            <button type="button" onclick="event.stopPropagation(); openDelayedReviewModal();" class="ml-1.5 px-2 py-0.5 text-[11px] bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded font-semibold transition-colors">
+                                点此管理滞后讯息 →
+                            </button>
+                        </div>
                         <span>覆盖 <span id="stat-baseline-dates" class="font-bold text-slate-700">--</span> 天</span>
                     </div>
                 </div>
@@ -1155,7 +1169,7 @@
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.3.5</span>
+        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.3.6</span>
         · <span class="text-slate-400">已接入: 广西公共资源交易平台 · 崇左阳光采购服务平台</span>
     </footer>
 
@@ -1386,23 +1400,190 @@
             runMgrSearch();
         }
 
-        function openDelayedReview() {
-            switchTab('search');
-            const delayedChip = document.querySelector('.mgr-chip[data-filter="delayed"]');
-            if (delayedChip) {
-                setMgrChip(delayedChip, 'delayed');
+       function openDelayedReview() {
+            openDelayedReviewModal();
+       }
+
+       async function runMgrSearch() {
+           const qInput = document.getElementById('mgr-search-q');
+           const clearBtn = document.getElementById('mgr-search-clear');
+           const resultsEl = document.getElementById('mgr-search-results');
+           const countEl = document.getElementById('mgr-search-count');
+           const regSelect = document.getElementById('mgr-region-filter');
+           const stageSelect = document.getElementById('mgr-stage-filter');
+
+           if (!resultsEl) return;
+
+        function openDelayedReviewModal() {
+            const m = document.getElementById('delayed-review-modal');
+            if (m) {
+                m.classList.remove('hidden');
+                loadDelayedList();
             }
         }
 
-        async function runMgrSearch() {
-            const qInput = document.getElementById('mgr-search-q');
-            const clearBtn = document.getElementById('mgr-search-clear');
-            const resultsEl = document.getElementById('mgr-search-results');
-            const countEl = document.getElementById('mgr-search-count');
-            const regSelect = document.getElementById('mgr-region-filter');
-            const stageSelect = document.getElementById('mgr-stage-filter');
+        function closeDelayedReviewModal() {
+            const m = document.getElementById('delayed-review-modal');
+            if (m) m.classList.add('hidden');
+        }
 
-            if (!resultsEl) return;
+        function toggleBaselineExplanation() {
+            const c = document.getElementById('baseline-explanation-content');
+            const ic = document.getElementById('baseline-exp-toggle-icon');
+            if (c) {
+                const isHidden = c.classList.contains('hidden');
+                if (isHidden) {
+                    c.classList.remove('hidden');
+                    if (ic) ic.textContent = '收起说明 ▴';
+                } else {
+                    c.classList.add('hidden');
+                    if (ic) ic.textContent = '展开查看原理 ▾';
+                }
+            }
+        }
+
+        async function loadDelayedList() {
+            const container = document.getElementById('modal-delayed-list');
+            const countEl = document.getElementById('modal-delayed-count');
+            const baseCountEl = document.getElementById('modal-baseline-count');
+            const baseDatesEl = document.getElementById('modal-baseline-dates');
+            if (!container) return;
+
+            container.innerHTML = '<div class="text-center py-10 text-slate-400 text-xs">正在查询确证滞后的公告条目...</div>';
+
+            try {
+                const baseResp = await fetch('/api/baseline_status');
+                const baseRet = await baseResp.json();
+                if (baseRet.ok && baseRet.stats) {
+                    if (baseCountEl) baseCountEl.textContent = baseRet.stats.baseline_records || 0;
+                    if (baseDatesEl) baseDatesEl.textContent = baseRet.stats.dates_covered || 0;
+                }
+            } catch(e) {}
+
+            try {
+                const resp = await fetch('/api/delayed_list');
+                const ret = await resp.json();
+                if (!ret.ok) {
+                    container.innerHTML = '<div class="text-center py-8 text-rose-500 text-xs">查询失败：' + escapeHtml(ret.msg || ret.error || '未知错误') + '</div>';
+                    return;
+                }
+
+                const records = ret.records || ret.items || [];
+                if (countEl) countEl.textContent = records.length;
+
+                const statDelayedEl = document.getElementById('stat-baseline-delayed');
+                if (statDelayedEl) {
+                    statDelayedEl.textContent = records.length;
+                    statDelayedEl.className = records.length > 0 ? 'font-bold text-rose-600 animate-pulse' : 'font-bold text-emerald-600';
+                }
+
+                if (records.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-10 px-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
+                            <div class="w-10 h-10 mx-auto bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <div class="text-sm font-bold text-emerald-900">当前底边存证库中暂无确证滞后公告</div>
+                            <p class="text-xs text-emerald-700 mt-1 max-w-md mx-auto">所有历史公告均在标称时效内正常发布入库，或已通过人工纠错纳入基线数据。</p>
+                            <button type="button" onclick="runBackscanFromModal()" class="mt-4 px-3 py-1.5 text-xs bg-white text-emerald-800 border border-emerald-200 rounded-lg hover:bg-emerald-100/60 font-semibold transition-colors shadow-2xs">
+                                🔄 启动近30天历史回扫排查 (检测官网是否事后悄悄补发)
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                records.forEach(r => {
+                    const infoid = escapeHtml(r.infoid || '');
+                    const title = escapeHtml(r.title || '无标题');
+                    const link = escapeHtml(r.link || '#');
+                    const pubDate = escapeHtml(r.pub_date || r.date || '');
+                    const pubTime = escapeHtml(r.pub_time || pubDate || '未知');
+                    const scanTime = escapeHtml(r.first_scan_time || '回扫捕获');
+                    const delayDays = r.delay_days || 0;
+                    const center = escapeHtml(r.center || '广西交易中心');
+                    const evidence = escapeHtml(r.evidence_text || '官网标称发布时间与系统首次回扫捕获间隔超过判定阈值，且当日原始底边快照未包含该条目。');
+
+                    html += `
+                        <div class="bg-white border border-rose-200 rounded-xl p-3.5 shadow-2xs hover:shadow-sm transition-shadow">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="space-y-1.5 flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="px-2 py-0.5 text-[11px] font-bold bg-rose-100 text-rose-800 rounded border border-rose-200">
+                                            ⚠️ 确证滞后 · 差值 ${delayDays} 天
+                                        </span>
+                                        <span class="px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-700 rounded">
+                                            ${center}
+                                        </span>
+                                        <a href="./${pubDate}.html" target="_blank" class="px-1.5 py-0.5 text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded border border-blue-200">
+                                            📅 查看 ${pubDate} 日报
+                                        </a>
+                                    </div>
+                                    <h4 class="text-xs sm:text-sm font-bold text-slate-900 leading-snug break-words">
+                                        <a href="${link}" target="_blank" class="hover:text-blue-600 underline hover:no-underline">
+                                            ${title}
+                                        </a>
+                                    </h4>
+                                    <div class="text-[11px] text-slate-500 flex items-center gap-3 flex-wrap">
+                                        <span>官网标称时间: <code class="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">${pubTime}</code></span>
+                                        <span>首次回扫捕获: <code class="font-mono text-amber-800 bg-amber-50 px-1 py-0.5 rounded">${scanTime}</code></span>
+                                    </div>
+                                    <div class="text-[11px] text-slate-600 bg-slate-50 rounded-lg p-2 border border-slate-200/70 leading-relaxed">
+                                        <strong class="text-slate-700">存证链判定依据：</strong> ${evidence}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
+                                <div class="flex items-center gap-2">
+                                    <a href="${link}" target="_blank" class="px-2.5 py-1 text-xs text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 font-medium transition-colors">
+                                        🌐 查看官方原网页
+                                    </a>
+                                    <a href="./${pubDate}.html" target="_blank" class="px-2.5 py-1 text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 font-medium transition-colors">
+                                        📄 打开当日日报
+                                    </a>
+                                </div>
+                                <button type="button" onclick="unmarkDelayedNotice('${infoid}', '${pubDate}')" class="px-3 py-1 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors shadow-2xs flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    解除滞后标记 (纠错划入基线)
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch(e) {
+                container.innerHTML = '<div class="text-center py-8 text-rose-500 text-xs">网络请求异常：' + escapeHtml(e.message) + '</div>';
+            }
+        }
+
+        async function unmarkDelayedNotice(infoid, dateStr) {
+            if (!confirm('确定要解除此公告的滞后标记吗？\\n\\n操作影响：\\n1. 该条目将永久被认定为底边原始基线数据。\\n2. 滞后标记将立即消除。\\n3. 系统将自动重新编译对应日报页面与全盘检索索引。')) {
+                return;
+            }
+            try {
+                const resp = await fetch('/api/unmark_delayed', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({infoid: infoid, date: dateStr, notes: '管理员控制台人工纠错解除'})
+                });
+                const ret = await resp.json();
+                if (ret.ok) {
+                    alert('解除成功！已划入底边基线，日报与全盘检索已实时同步更新。');
+                    loadDelayedList();
+                    fetchBaselineStatus();
+                } else {
+                    alert('解除失败：' + (ret.msg || ret.error || '未知错误'));
+                }
+            } catch(e) {
+                alert('请求异常：' + e.message);
+            }
+        }
+
+        function runBackscanFromModal() {
+            closeDelayedReviewModal();
+            openBatchScanModal();
+        }
 
             const q = (qInput ? qInput.value.trim() : '');
             if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
@@ -2188,7 +2369,7 @@
             const localDateEl = document.getElementById("upgrade-local-date");
             const localMsgEl = document.getElementById("upgrade-local-msg");
 
-            if (localVerEl) localVerEl.textContent = cur.version || "v0.3.5";
+            if (localVerEl) localVerEl.textContent = cur.version || "v0.3.6";
             if (localCommitEl) {
                 if (cur.commit) {
                     localCommitEl.textContent = "#" + cur.commit;
@@ -2207,7 +2388,7 @@
             const remoteDateEl = document.getElementById("upgrade-remote-date");
             const remoteMsgEl = document.getElementById("upgrade-remote-msg");
 
-            if (remoteVerEl) remoteVerEl.textContent = rem.version || cur.version || "v0.3.5";
+            if (remoteVerEl) remoteVerEl.textContent = rem.version || cur.version || "v0.3.6";
             if (remoteCommitEl) {
                 if (rem.commit && rem.commit !== "未知") {
                     remoteCommitEl.textContent = "#" + rem.commit;
@@ -3092,10 +3273,79 @@
         });
     </script>
 
+   <!-- ============================================== -->
+   <!-- 区间批量补扫弹窗 (Batch Scan Modal)             -->
+   <!-- ============================================== -->
     <!-- ============================================== -->
-    <!-- 区间批量补扫弹窗 (Batch Scan Modal)             -->
+    <!-- 滞后公开公告管理与纠错弹窗 (Delayed Review Modal) -->
     <!-- ============================================== -->
-    <div id="batch-scan-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div id="delayed-review-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full p-6 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
+            <!-- 头部 -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
+                <div class="flex items-center space-x-2.5">
+                    <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">滞后公开公告管理与纠错中心</h3>
+                        <p class="text-[11px] text-slate-500">严谨比对底边基准线存证，排查事后偷摸补发公告；支持核对依据链并人工一键纠错归入基线</p>
+                    </div>
+                </div>
+                <button onclick="closeDelayedReviewModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- 底边扫描原理与说明 (可折叠) -->
+            <div class="mt-3 shrink-0">
+                <div class="bg-purple-50/80 border border-purple-100 rounded-xl p-3 text-xs text-purple-900 leading-relaxed">
+                    <div class="flex items-center justify-between cursor-pointer" onclick="toggleBaselineExplanation()">
+                        <span class="font-bold text-purple-950 flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            什么是“底边扫描”？为什么叫底边？
+                        </span>
+                        <span id="baseline-exp-toggle-icon" class="text-purple-600 text-[11px] font-medium">展开查看原理 ▾</span>
+                    </div>
+                    <div id="baseline-explanation-content" class="hidden mt-2 pt-2 border-t border-purple-200/50 text-[11px] text-purple-800 space-y-1">
+                        <p><strong>1. 存证基准（底边 Baseline）：</strong> 当系统首次扫描或为某一历史日期抓取归档时，会将当日官网上存在的所有标讯存入基线库作为“不可篡改的历史底边证据”。</p>
+                        <p><strong>2. 滞后确证：</strong> 当系统执行“历史回扫比对”时，若官网在事后（如数天后）悄悄冒出一条标称发布在历史日期、但在该日期原始底边存证中原本不存在的新公告，系统即确证判定为“滞后公开”。</p>
+                        <p><strong>3. 人工纠错：</strong> 若某条公告系偶发网络抖动漏抓而被判定为滞后，您可在此点击<strong>【解除滞后标记】</strong>，系统将永久将其移出滞后名单并归入底边原始基线，自动重新编译日报与检索索引。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据统计与操作栏 -->
+            <div class="mt-3 flex items-center justify-between bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-2.5 text-xs shrink-0">
+                <div class="flex items-center gap-4">
+                    <div>当前确证滞后: <span id="modal-delayed-count" class="font-bold text-rose-600 text-sm">--</span> 条</div>
+                    <div class="text-slate-400">|</div>
+                    <div>底边存证: <span id="modal-baseline-count" class="font-bold text-slate-700">--</span> 条</div>
+                    <div class="text-slate-400">|</div>
+                    <div>覆盖天数: <span id="modal-baseline-dates" class="font-bold text-slate-700">--</span> 天</div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="loadDelayedList()" class="px-2.5 py-1 text-xs bg-white text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition font-medium flex items-center gap-1 shadow-2xs">
+                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        刷新
+                    </button>
+                    <button type="button" onclick="runBackscanFromModal()" class="px-2.5 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition font-medium flex items-center gap-1 shadow-2xs">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        历史回扫比对(近30天)
+                    </button>
+                </div>
+            </div>
+
+            <!-- 滞后公告列表 (可滚动) -->
+            <div id="modal-delayed-list" class="mt-3 overflow-y-auto space-y-2.5 flex-1 pr-1 min-h-[160px]">
+                <div class="text-center py-10 text-slate-400 text-xs">正在查询确证滞后的公告条目...</div>
+            </div>
+        </div>
+    </div>
+
+   <div id="batch-scan-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center space-x-2">
@@ -3297,7 +3547,7 @@
                                 <svg class="w-3.5 h-3.5 mr-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                 当前本机版本
                             </span>
-                            <span id="upgrade-local-ver" class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-200 text-slate-700">v0.3.5</span>
+                            <span id="upgrade-local-ver" class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-200 text-slate-700">v0.3.6</span>
                         </div>
                         <div class="flex items-center space-x-2 text-xs">
                             <span id="upgrade-local-commit" class="font-mono text-[11px] font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200">#--</span>
@@ -3313,7 +3563,7 @@
                                 <svg class="w-3.5 h-3.5 mr-1 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
                                 云端最新发布版本
                             </span>
-                            <span id="upgrade-remote-ver" class="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-100 text-indigo-700">v0.3.5</span>
+                            <span id="upgrade-remote-ver" class="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-100 text-indigo-700">v0.3.6</span>
                         </div>
                         <div class="flex items-center space-x-2 text-xs">
                             <span id="upgrade-remote-commit" class="font-mono text-[11px] font-bold text-indigo-800 bg-white px-1.5 py-0.5 rounded border border-indigo-200">#--</span>
