@@ -1,11 +1,11 @@
 {
   "version": "v0.3.6",
-  "commit": "pending",
+  "commit": "b0dd8a3",
   "date": "2026-09-28",
   "message": "feat(release): 升级至 v0.3.6，支持全盘跨历史日期实时检索与滞后公告专属管理中心",
   "commits": [
     {
-      "commit": "pending",
+      "commit": "b0dd8a3",
       "author": "黄彪",
       "date": "2026-09-28",
       "message": "feat(release): 升级至 v0.3.6，支持全盘跨历史日期实时检索与滞后公告专属管理中心"
