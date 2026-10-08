@@ -1,9 +1,15 @@
 {
   "version": "v0.3.7",
-  "commit": "a77a08e",
+  "commit": "5fb4d06",
   "date": "2026-10-08",
-  "message": "feat(release): 升级至 v0.3.7，单日归档页重点与预警筛选调整为互斥模式",
+  "message": "chore: 同步 version.json 最新 commit 哈希",
   "commits": [
+    {
+      "commit": "5fb4d06",
+      "author": "黄彪",
+      "date": "2026-10-08",
+      "message": "chore: 同步 version.json 最新 commit 哈希"
+    },
     {
       "commit": "a77a08e",
       "author": "黄彪",
@@ -33,12 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-08",
       "message": "feat(release): 升级至 v0.3.6，支持全盘跨历史日期实时检索与滞后公告专属管理中心"
-    },
-    {
-      "commit": "e57afad",
-      "author": "黄彪",
-      "date": "2026-09-28",
-      "message": "chore: 同步 version.json 最新 commit 哈希"
     }
   ]
 }
