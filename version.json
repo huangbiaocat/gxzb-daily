@@ -1,9 +1,27 @@
 {
-  "version": "v0.3.6",
-  "commit": "fafd003",
+  "version": "v0.3.7",
+  "commit": "a77a08e",
   "date": "2026-10-08",
-  "message": "chore: 同步 version.json 最新 commit 哈希",
+  "message": "feat(release): 升级至 v0.3.7，单日归档页重点与预警筛选调整为互斥模式",
   "commits": [
+    {
+      "commit": "a77a08e",
+      "author": "黄彪",
+      "date": "2026-10-08",
+      "message": "feat(release): 升级至 v0.3.7，单日归档页重点与预警筛选调整为互斥模式"
+    },
+    {
+      "commit": "2c29ea5",
+      "author": "黄彪",
+      "date": "2026-10-08",
+      "message": "fix(manager): add home global search bar, fix delayed review modal click and rename button"
+    },
+    {
+      "commit": "ca35a40",
+      "author": "黄彪",
+      "date": "2026-10-08",
+      "message": "fix(upgrade): 修复升级检测中远程版本号未同步、Windows Git 路径检索与热加载版本机制"
+    },
     {
       "commit": "fafd003",
       "author": "黄彪",
@@ -21,24 +39,6 @@
       "author": "黄彪",
       "date": "2026-09-28",
       "message": "chore: 同步 version.json 最新 commit 哈希"
-    },
-    {
-      "commit": "e596219",
-      "author": "黄彪",
-      "date": "2026-09-28",
-      "message": "feat(release): 升级至 v0.3.5，支持全文检索与滞后公开人工纠错解除"
-    },
-    {
-      "commit": "6fed6c7",
-      "author": "黄彪",
-      "date": "2026-09-28",
-      "message": "fix(upgrade): 修复非 Git 独立运行环境显示当前版本未知的缺陷并支持专线镜像直连检测"
-    },
-    {
-      "commit": "d760d2b",
-      "author": "黄彪",
-      "date": "2026-09-28",
-      "message": "fix(daily): 优化单日归档页滞后公告横幅提示与控制台导航细节"
     }
   ]
 }
