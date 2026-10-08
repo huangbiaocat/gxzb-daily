@@ -1227,6 +1227,10 @@ const btnFocusProject = document.getElementById('btnFocusProjectOnly');
 let focusProjectOnly = false;
 const btnFocusOwner = document.getElementById('btnFocusOwnerOnly');
 let focusOwnerOnly = false;
+const btnOvertime = document.getElementById('btnOvertimeOnly');
+let overtimeOnly = false;
+const btnDelayed = document.getElementById('btnDelayedOnly');
+let delayedOnly = false;
 
 function renderNoticeItem(d) {
     var isCz = (d.source === '崇左阳光采购' || (d.link && d.link.indexOf('gxygcg.com') !== -1) || d.areaname === '崇左阳光采购');
@@ -1403,7 +1407,14 @@ function apply() {
                 }
             }
             if (stage && it.stage !== stage) return false;
-            if (focusProjectOnly && !it.is_focus) return false;
+            if (focusProjectOnly) {
+                var p = (it.focus_tags || []).indexOf('重点项目') !== -1;
+                if (!p && !it.is_focus) return false;
+            }
+            if (focusOwnerOnly) {
+                var o = (it.focus_tags || []).indexOf('重点业主') !== -1;
+                if (!o) return false;
+            }
             if (overtimeOnly && !it.is_overtime) return false;
             if (delayedOnly && !it.is_delayed) return false;
             return true;
@@ -1487,17 +1498,8 @@ function apply() {
             }
         }
         if (ok && stage && it.getAttribute('data-stage') !== stage) { ok = false; }
-        if (ok) {
-            if (focusProjectOnly && focusOwnerOnly) {
-                if (it.getAttribute('data-focus-project') !== '1' && it.getAttribute('data-focus-owner') !== '1') {
-                    ok = false;
-                }
-            } else if (focusProjectOnly && it.getAttribute('data-focus-project') !== '1') {
-                ok = false;
-            } else if (focusOwnerOnly && it.getAttribute('data-focus-owner') !== '1') {
-                ok = false;
-            }
-        }
+        if (ok && focusProjectOnly && it.getAttribute('data-focus-project') !== '1') { ok = false; }
+        if (ok && focusOwnerOnly && it.getAttribute('data-focus-owner') !== '1') { ok = false; }
         if (ok && overtimeOnly && it.getAttribute('data-overtime') !== '1') { ok = false; }
         if (ok && delayedOnly && it.getAttribute('data-delayed') !== '1') { ok = false; }
         it.hidden = !ok;
@@ -1598,52 +1600,77 @@ if (sourceFilter) sourceFilter.addEventListener('change', apply);
 cityFilter.addEventListener('change', apply);
 stageFilter.addEventListener('change', apply);
 
+function clearSpecialFilters() {
+    focusProjectOnly = false;
+    if (btnFocusProject) btnFocusProject.classList.remove('active');
+    focusOwnerOnly = false;
+    if (btnFocusOwner) btnFocusOwner.classList.remove('active');
+    overtimeOnly = false;
+    if (btnOvertime) btnOvertime.classList.remove('active');
+    delayedOnly = false;
+    if (btnDelayed) btnDelayed.classList.remove('active');
+}
+
 if (btnFocusProject) {
     btnFocusProject.addEventListener('click', function () {
-        focusProjectOnly = !focusProjectOnly;
-        this.classList.toggle('active', focusProjectOnly);
-        if (focusProjectOnly && focusOwnerOnly) {
-            focusOwnerOnly = false;
-            if (btnFocusOwner) btnFocusOwner.classList.remove('active');
+        var willActive = !focusProjectOnly;
+        clearSpecialFilters();
+        if (willActive) {
+            focusProjectOnly = true;
+            this.classList.add('active');
+            showFilterToast('已筛选：🎯 重点项目');
+        } else {
+            showFilterToast('已取消重点项目筛选');
         }
         apply();
-        showFilterToast(focusProjectOnly ? '已筛选：🎯 重点项目' : '已取消重点项目筛选');
     });
 }
 if (btnFocusOwner) {
     btnFocusOwner.addEventListener('click', function () {
-        focusOwnerOnly = !focusOwnerOnly;
-        this.classList.toggle('active', focusOwnerOnly);
-        if (focusOwnerOnly && focusProjectOnly) {
-            focusProjectOnly = false;
-            if (btnFocusProject) btnFocusProject.classList.remove('active');
+        var willActive = !focusOwnerOnly;
+        clearSpecialFilters();
+        if (willActive) {
+            focusOwnerOnly = true;
+            this.classList.add('active');
+            showFilterToast('已筛选：🏢 重点业主');
+        } else {
+            showFilterToast('已取消重点业主筛选');
         }
         apply();
-        showFilterToast(focusOwnerOnly ? '已筛选：🏢 重点业主' : '已取消重点业主筛选');
     });
 }
 
-let overtimeOnly = false;
-const btnOvertime = document.getElementById('btnOvertimeOnly');
 if (btnOvertime) {
     btnOvertime.addEventListener('click', function () {
-        overtimeOnly = !overtimeOnly;
-        this.classList.toggle('active', overtimeOnly);
+        var willActive = !overtimeOnly;
+        clearSpecialFilters();
+        if (willActive) {
+            overtimeOnly = true;
+            this.classList.add('active');
+            showFilterToast('已筛选：🌙 加班发布');
+        } else {
+            showFilterToast('已取消加班发布筛选');
+        }
         apply();
     });
 }
 
-let delayedOnly = false;
-const btnDelayed = document.getElementById('btnDelayedOnly');
 if (btnDelayed) {
     btnDelayed.addEventListener('click', function () {
-        delayedOnly = !delayedOnly;
-        this.classList.toggle('active', delayedOnly);
-        apply();
-        var alertBox = document.getElementById('delayedAlertBox');
-        if (delayedOnly && alertBox) {
-            alertBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        var willActive = !delayedOnly;
+        clearSpecialFilters();
+        if (willActive) {
+            delayedOnly = true;
+            this.classList.add('active');
+            showFilterToast('已筛选：⚠️ 滞后公开');
+            var alertBox = document.getElementById('delayedAlertBox');
+            if (alertBox) {
+                alertBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } else {
+            showFilterToast('已取消滞后公开筛选');
         }
+        apply();
     });
 }
 
@@ -1653,14 +1680,7 @@ document.getElementById('btnReset').addEventListener('click', function () {
     if (sourceFilter) sourceFilter.value = '';
     cityFilter.value = '';
     stageFilter.value = '';
-    focusProjectOnly = false;
-    if (btnFocusProject) btnFocusProject.classList.remove('active');
-    focusOwnerOnly = false;
-    if (btnFocusOwner) btnFocusOwner.classList.remove('active');
-    overtimeOnly = false;
-    if (btnOvertime) btnOvertime.classList.remove('active');
-    delayedOnly = false;
-    if (btnDelayed) btnDelayed.classList.remove('active');
+    clearSpecialFilters();
     apply();
     showFilterToast('已重置所有筛选条件');
 });
@@ -1959,7 +1979,7 @@ html = html.replace("__DAILY_CSS__", DAILY_CSS.strip())
 html = html.replace("__LATEST_PUB__", latest_pub)
 html = html.replace("__SCAN_TIME__", scan_time)
 html = html.replace("__LATEST__", latest_pub)
-html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.3.6"))
+html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.3.7"))
 html = html.replace("__DATE__", DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))
 html = html.replace("__NEXT_URL__", neighbor_url(1))

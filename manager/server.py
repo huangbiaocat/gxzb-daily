@@ -201,11 +201,11 @@ def get_git_info():
         )
         if res.returncode == 0:
             commit = res.stdout.strip()
-            app_ver = getattr(config, "APP_VERSION", "v0.3.6")
+            app_ver = getattr(config, "APP_VERSION", "v0.3.7")
             return {"commit": commit, "version": f"{app_ver} (#{commit})"}
     except Exception:
         pass
-    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.3.6")}
+    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.3.7")}
 
 def check_app_upgrade():
     """
@@ -217,7 +217,7 @@ def check_app_upgrade():
     except Exception:
         pass
 
-    local_version = getattr(config, "APP_VERSION", "v0.3.6")
+    local_version = getattr(config, "APP_VERSION", "v0.3.7")
     version_file = ROOT_DIR / "version.json"
     if version_file.exists():
         try:

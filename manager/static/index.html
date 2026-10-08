@@ -53,7 +53,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">v0.3.6</span>
+                        <span id="app-version-badge" class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">v0.3.7</span>
                         <!-- 实时全区雷达扫描状态指示器（静默常驻，带动态扫描动效，点击直达监控调度） -->
                         <div id="top-radar-indicator" onclick="switchTab('dashboard')" class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-all bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100" title="点击前往监控调度：全区雷达扫描中">
                             <span id="radar-char-top" class="font-mono text-xs font-bold text-emerald-600 select-none">◜</span>
@@ -2464,7 +2464,7 @@
             const localDateEl = document.getElementById("upgrade-local-date");
             const localMsgEl = document.getElementById("upgrade-local-msg");
 
-            if (localVerEl) localVerEl.textContent = cur.version || "v0.3.6";
+            if (localVerEl) localVerEl.textContent = cur.version || "v0.3.7";
             if (localCommitEl) {
                 if (cur.commit) {
                     localCommitEl.textContent = "#" + cur.commit;
@@ -2483,7 +2483,7 @@
             const remoteDateEl = document.getElementById("upgrade-remote-date");
             const remoteMsgEl = document.getElementById("upgrade-remote-msg");
 
-            if (remoteVerEl) remoteVerEl.textContent = rem.version || cur.version || "v0.3.6";
+            if (remoteVerEl) remoteVerEl.textContent = rem.version || cur.version || "v0.3.7";
             if (remoteCommitEl) {
                 if (rem.commit && rem.commit !== "未知") {
                     remoteCommitEl.textContent = "#" + rem.commit;

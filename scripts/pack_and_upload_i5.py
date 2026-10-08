@@ -85,7 +85,7 @@ def main():
         print(f"[Warn] 读取 Git 版本信息失败: {e}")
 
     v_info = {
-        "version": getattr(config, "APP_VERSION", "v0.3.6"),
+        "version": getattr(config, "APP_VERSION", "v0.3.7"),
         "commit": commit,
         "date": date,
         "message": message,
