@@ -36,10 +36,26 @@ def log(msg):
 def is_git_repo(path: Path) -> bool:
     return (path / ".git").is_dir()
 
+def find_git_cmd():
+    cmd = shutil.which("git")
+    if cmd:
+        return cmd
+    candidates = [
+        r"C:\Program Files\Git\cmd\git.exe",
+        r"C:\Program Files\Git\bin\git.exe",
+        r"C:\Program Files (x86)\Git\cmd\git.exe",
+        r"D:\Program Files\Git\cmd\git.exe",
+    ]
+    for c in candidates:
+        if Path(c).exists():
+            return c
+    return "git"
+
 def get_current_git_version():
+    git_cmd = find_git_cmd()
     try:
         res = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
+            [git_cmd, "rev-parse", "--short", "HEAD"],
             cwd=str(ROOT_DIR),
             capture_output=True,
             text=True,
@@ -49,7 +65,7 @@ def get_current_git_version():
             commit = res.stdout.strip()
             # 获取最近一次提交信息
             res_msg = subprocess.run(
-                ["git", "log", "-1", "--format=%s"],
+                [git_cmd, "log", "-1", "--format=%s"],
                 cwd=str(ROOT_DIR),
                 capture_output=True,
                 text=True,
@@ -72,11 +88,12 @@ def get_current_git_version():
     return None
 
 def upgrade_via_git():
+    git_cmd = find_git_cmd()
     log("【通道 1】检测到本地为 Git 仓库，尝试使用 Git 获取远程更新...")
     try:
         log("正在连接 GitHub 获取最新版本 (git fetch)...")
         fetch_res = subprocess.run(
-            ["git", "fetch", "origin", "main"],
+            [git_cmd, "fetch", "origin", "main"],
             cwd=str(ROOT_DIR),
             capture_output=True,
             text=True,
@@ -88,7 +105,7 @@ def upgrade_via_git():
             return False, f"Git 获取远程更新失败: {err}"
 
         diff_res = subprocess.run(
-            ["git", "rev-list", "HEAD..origin/main", "--count"],
+            [git_cmd, "rev-list", "HEAD..origin/main", "--count"],
             cwd=str(ROOT_DIR),
             capture_output=True,
             text=True,
@@ -101,10 +118,10 @@ def upgrade_via_git():
 
         log(f"发现远程有 {behind_count} 个新提交，准备同步...")
 
-        subprocess.run(["git", "stash"], cwd=str(ROOT_DIR), capture_output=True, timeout=10)
+        subprocess.run([git_cmd, "stash"], cwd=str(ROOT_DIR), capture_output=True, timeout=10)
 
         pull_res = subprocess.run(
-            ["git", "pull", "--rebase", "origin", "main"],
+            [git_cmd, "pull", "--rebase", "origin", "main"],
             cwd=str(ROOT_DIR),
             capture_output=True,
             text=True,
@@ -113,7 +130,7 @@ def upgrade_via_git():
         if pull_res.returncode != 0:
             log("rebase pull 遇到冲突，尝试重置非数据代码分支 (git reset --hard origin/main)...")
             reset_res = subprocess.run(
-                ["git", "reset", "--hard", "origin/main"],
+                [git_cmd, "reset", "--hard", "origin/main"],
                 cwd=str(ROOT_DIR),
                 capture_output=True,
                 text=True,

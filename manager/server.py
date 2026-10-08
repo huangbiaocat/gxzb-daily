@@ -172,29 +172,62 @@ class ProcessManager:
 
 PROC_MGR = ProcessManager()
 
+def find_git_cmd():
+    import shutil
+    cmd = shutil.which("git")
+    if cmd:
+        return cmd
+    candidates = [
+        r"C:\Program Files\Git\cmd\git.exe",
+        r"C:\Program Files\Git\bin\git.exe",
+        r"C:\Program Files (x86)\Git\cmd\git.exe",
+        r"D:\Program Files\Git\cmd\git.exe",
+    ]
+    for c in candidates:
+        if Path(c).exists():
+            return c
+    return "git"
+
 def get_git_info():
     """获取本地 Git 版本信息"""
+    git_cmd = find_git_cmd()
     try:
         res = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
+            [git_cmd, "rev-parse", "--short", "HEAD"],
             cwd=str(ROOT_DIR),
             capture_output=True,
             text=True,
             timeout=3
         )
-       if res.returncode == 0:
-           commit = res.stdout.strip()
+        if res.returncode == 0:
+            commit = res.stdout.strip()
             app_ver = getattr(config, "APP_VERSION", "v0.3.6")
-           return {"commit": commit, "version": f"{app_ver} (#{commit})"}
-   except Exception:
-       pass
+            return {"commit": commit, "version": f"{app_ver} (#{commit})"}
+    except Exception:
+        pass
     return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.3.6")}
 
 def check_app_upgrade():
     """
     检查当前本地版本与 GitHub 远程版本，获取差异提交列表与更新内容说明。
     """
+    try:
+        import importlib
+        importlib.reload(config)
+    except Exception:
+        pass
+
     local_version = getattr(config, "APP_VERSION", "v0.3.6")
+    version_file = ROOT_DIR / "version.json"
+    if version_file.exists():
+        try:
+            with open(version_file, "r", encoding="utf-8") as vf:
+                vdata = json.load(vf)
+                if vdata.get("version"):
+                    local_version = vdata.get("version")
+        except Exception:
+            pass
+
     local_info = {
         "version": local_version,
         "commit": "",
@@ -212,11 +245,12 @@ def check_app_upgrade():
     has_update = False
     behind_count = 0
     connected = False
+    git_cmd = find_git_cmd()
 
     # 1. 本地 Git 版本与提交信息
     try:
         res = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
+            [git_cmd, "rev-parse", "--short", "HEAD"],
             cwd=str(ROOT_DIR),
             capture_output=True,
             text=True,
@@ -226,7 +260,7 @@ def check_app_upgrade():
             local_info["commit"] = res.stdout.strip()
             local_info["is_git"] = True
             log_res = subprocess.run(
-                ["git", "log", "-1", "--pretty=format:%ad\t%s", "--date=short"],
+                [git_cmd, "log", "-1", "--pretty=format:%ad\t%s", "--date=short"],
                 cwd=str(ROOT_DIR),
                 capture_output=True,
                 text=True,
@@ -257,7 +291,7 @@ def check_app_upgrade():
     if local_info["is_git"]:
         try:
             f_res = subprocess.run(
-                ["git", "fetch", "origin", "main", "--quiet"],
+                [git_cmd, "fetch", "origin", "main", "--quiet"],
                 cwd=str(ROOT_DIR),
                 capture_output=True,
                 text=True,
@@ -266,7 +300,7 @@ def check_app_upgrade():
             if f_res.returncode == 0:
                 connected = True
                 r_commit_res = subprocess.run(
-                    ["git", "rev-parse", "--short", "origin/main"],
+                    [git_cmd, "rev-parse", "--short", "origin/main"],
                     cwd=str(ROOT_DIR),
                     capture_output=True,
                     text=True,
@@ -276,7 +310,7 @@ def check_app_upgrade():
                     remote_info["commit"] = r_commit_res.stdout.strip()
 
                 r_log_res = subprocess.run(
-                    ["git", "log", "-1", "origin/main", "--pretty=format:%ad\t%s", "--date=short"],
+                    [git_cmd, "log", "-1", "origin/main", "--pretty=format:%ad\t%s", "--date=short"],
                     cwd=str(ROOT_DIR),
                     capture_output=True,
                     text=True,
@@ -287,24 +321,36 @@ def check_app_upgrade():
                     remote_info["date"] = parts[0]
                     remote_info["message"] = parts[1]
 
-                # 尝试从 origin/main:config.py 获取远程 APP_VERSION
+                # 尝试从 origin/main:version.json 或 origin/main:config.py 获取远程 APP_VERSION
                 try:
-                    c_res = subprocess.run(
-                        ["git", "show", "origin/main:config.py"],
+                    v_res = subprocess.run(
+                        [git_cmd, "show", "origin/main:version.json"],
                         cwd=str(ROOT_DIR),
                         capture_output=True,
                         text=True,
                         timeout=3
                     )
-                    if c_res.returncode == 0:
-                        m = re.search(r'APP_VERSION\s*=\s*["\']([^"\']+)["\']', c_res.stdout)
-                        if m:
-                            remote_info["version"] = m.group(1)
+                    if v_res.returncode == 0:
+                        v_dict = json.loads(v_res.stdout)
+                        if v_dict.get("version"):
+                            remote_info["version"] = v_dict["version"]
+                    else:
+                        c_res = subprocess.run(
+                            [git_cmd, "show", "origin/main:config.py"],
+                            cwd=str(ROOT_DIR),
+                            capture_output=True,
+                            text=True,
+                            timeout=3
+                        )
+                        if c_res.returncode == 0:
+                            m = re.search(r'APP_VERSION\s*=\s*["\']([^"\']+)["\']', c_res.stdout)
+                            if m:
+                                remote_info["version"] = m.group(1)
                 except Exception:
                     pass
 
                 cnt_res = subprocess.run(
-                    ["git", "rev-list", "HEAD..origin/main", "--count"],
+                    [git_cmd, "rev-list", "HEAD..origin/main", "--count"],
                     cwd=str(ROOT_DIR),
                     capture_output=True,
                     text=True,
@@ -316,7 +362,7 @@ def check_app_upgrade():
                 if behind_count > 0:
                     has_update = True
                     diff_res = subprocess.run(
-                        ["git", "log", "HEAD..origin/main", "--pretty=format:%h\t%an\t%ad\t%s", "--date=short"],
+                        [git_cmd, "log", "HEAD..origin/main", "--pretty=format:%h\t%an\t%ad\t%s", "--date=short"],
                         cwd=str(ROOT_DIR),
                         capture_output=True,
                         text=True,
@@ -329,7 +375,7 @@ def check_app_upgrade():
                                 commits.append({"hash": p[0], "author": p[1], "date": p[2], "message": p[3]})
                 else:
                     recent_res = subprocess.run(
-                        ["git", "log", "-5", "--pretty=format:%h\t%an\t%ad\t%s", "--date=short"],
+                        [git_cmd, "log", "-5", "--pretty=format:%h\t%an\t%ad\t%s", "--date=short"],
                         cwd=str(ROOT_DIR),
                         capture_output=True,
                         text=True,
@@ -398,6 +444,28 @@ def check_app_upgrade():
                         remote_info["commit"] = top.get("sha", "")[:7]
                         remote_info["message"] = top.get("commit", {}).get("message", "").split("\n")[0]
                         remote_info["date"] = top.get("commit", {}).get("author", {}).get("date", "")[:10]
+
+                        # 尝试从提交列表中提取最新版本号 (如 "feat(release): 升级至 v0.3.6")
+                        for item in gh_data:
+                            c_msg = item.get("commit", {}).get("message", "")
+                            m = re.search(r'(v\d+\.\d+\.\d+)', c_msg)
+                            if m:
+                                remote_info["version"] = m.group(1)
+                                break
+
+                        # 尝试通过 jsdelivr 或 raw 快速读取云端最新 version.json
+                        try:
+                            req_v = urllib.request.Request(
+                                "https://cdn.jsdelivr.net/gh/huangbiaocat/gxzb-daily@main/version.json",
+                                headers={"User-Agent": "GXZB-Updater/1.0"}
+                            )
+                            with urllib.request.urlopen(req_v, timeout=2.5) as r_v:
+                                if r_v.status == 200:
+                                    v_parsed = json.loads(r_v.read().decode("utf-8"))
+                                    if v_parsed.get("version"):
+                                        remote_info["version"] = v_parsed["version"]
+                        except Exception:
+                            pass
                         
                         if local_info["commit"] and remote_info["commit"] != local_info["commit"]:
                             has_update = True
