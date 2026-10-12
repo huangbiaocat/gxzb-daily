@@ -59,7 +59,7 @@ def execute_with_retry(cmd, max_retries=3, base_delay=3):
             sleep_time = base_delay * (2 ** (attempt - 1))
             print(f"[VPS] 等待 {sleep_time} 秒后自动重试...")
             time.sleep(sleep_time)
-            host = getattr(config, "VPS_HOST", "217.142.149.2")
+            host = getattr(config, "VPS_HOST", "8.134.69.22")
             port = str(getattr(config, "VPS_PORT", "22"))
             ok, banner = test_vps_connectivity(host, port, timeout=4)
             if not ok:
@@ -69,7 +69,7 @@ def execute_with_retry(cmd, max_retries=3, base_delay=3):
 def main():
     dist = Path(config.SITE_DIR)
     
-    host = getattr(config, "VPS_HOST", "217.142.149.2")
+    host = getattr(config, "VPS_HOST", "8.134.69.22")
     port = str(getattr(config, "VPS_PORT", "22"))
     user = getattr(config, "VPS_USER", "root")
     remote_path = getattr(config, "VPS_PATH", "/opt/1panel/www/tender_site/")

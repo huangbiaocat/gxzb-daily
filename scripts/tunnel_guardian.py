@@ -27,11 +27,11 @@ if str(REPO_ROOT) not in sys.path:
 
 try:
     import config
-    VPS_HOST = getattr(config, "VPS_HOST", "217.142.149.2")
+    VPS_HOST = getattr(config, "VPS_HOST", "8.134.69.22")
     VPS_PORT = str(getattr(config, "VPS_PORT", "22"))
     VPS_USER = getattr(config, "VPS_USER", "root")
 except Exception:
-    VPS_HOST = "217.142.149.2"
+    VPS_HOST = "8.134.69.22"
     VPS_PORT = "22"
     VPS_USER = "root"
 

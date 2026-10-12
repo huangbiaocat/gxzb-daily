@@ -118,7 +118,7 @@ def main():
     print(f"[Pack] 打包完成，大小: {zip_path.stat().st_size / 1024:.1f} KB")
     
     # 同步上传到 VPS
-    host = getattr(config, "VPS_HOST", "217.142.149.2")
+    host = getattr(config, "VPS_HOST", "8.134.69.22")
     port = str(getattr(config, "VPS_PORT", "22"))
     user = getattr(config, "VPS_USER", "root")
     remote_path = getattr(config, "VPS_PATH", "/opt/1panel/www/tender_site/")

@@ -687,7 +687,7 @@ def get_system_status():
         "today_db_count": today_db_count,
         "today_monitor_count": today_monitor_count,
         "last_monitor_time": last_monitor_time,
-        "vps_host": getattr(config, "VPS_HOST", "217.142.149.2"),
+        "vps_host": getattr(config, "VPS_HOST", "8.134.69.22"),
         "vps_user": getattr(config, "VPS_USER", "root"),
         "vps_path": getattr(config, "VPS_PATH", "/opt/1panel/apps/openresty/openresty/www/sites/ztb/index/"),
         "auto_upload_vps": getattr(config, "AUTO_UPLOAD_VPS", False),
@@ -704,7 +704,7 @@ def get_system_status():
             "master_exists": (ROOT_DIR / "config" / "focus_rules_master.json").exists()
         },
         "vps": {
-            "host": getattr(config, "VPS_HOST", "217.142.149.2"),
+            "host": getattr(config, "VPS_HOST", "8.134.69.22"),
             "auto_upload": getattr(config, "AUTO_UPLOAD_VPS", False),
             "path": getattr(config, "VPS_PATH", "/opt/1panel/www/tender_site/"),
             "last_sync_time": (json.loads((ROOT_DIR / "data" / "last_vps_sync.json").read_text(encoding="utf-8")).get("last_sync_time", "") if (ROOT_DIR / "data" / "last_vps_sync.json").exists() else ""),
@@ -750,7 +750,7 @@ def read_config_env():
         "FOCUS_PROJECT_TYPES": "\n".join(getattr(config, "FOCUS_PROJECT_TYPES", [])) if getattr(config, "FOCUS_PROJECT_TYPES", None) else "",
         "FOCUS_MIN_AMOUNT": getattr(config, "FOCUS_MIN_AMOUNT_RAW", ""),
         "AUTO_UPLOAD_VPS": "true" if getattr(config, "AUTO_UPLOAD_VPS", False) else "false",
-        "VPS_HOST": getattr(config, "VPS_HOST", "217.142.149.2"),
+        "VPS_HOST": getattr(config, "VPS_HOST", "8.134.69.22"),
         "VPS_PORT": getattr(config, "VPS_PORT", "22"),
         "VPS_USER": getattr(config, "VPS_USER", "root"),
         "VPS_PATH": getattr(config, "VPS_PATH", "/opt/1panel/www/tender_site/"),
@@ -965,7 +965,7 @@ def save_config_env(data):
         "FOCUS_PROJECT_TYPES": ",".join([p.strip() for p in data.get("FOCUS_PROJECT_TYPES", "").replace("\r\n", "\n").replace("，", ",").split("\n") if p.strip()]) if "\n" in data.get("FOCUS_PROJECT_TYPES", "") else data.get("FOCUS_PROJECT_TYPES", "").strip(),
         "FOCUS_MIN_AMOUNT": str(data.get("FOCUS_MIN_AMOUNT", "")).strip(),
         "AUTO_UPLOAD_VPS": data.get("AUTO_UPLOAD_VPS", "true").strip().lower(),
-        "VPS_HOST": data.get("VPS_HOST", "").strip() or "217.142.149.2",
+        "VPS_HOST": data.get("VPS_HOST", "").strip() or "8.134.69.22",
         "VPS_PORT": data.get("VPS_PORT", "22").strip() or "22",
         "VPS_USER": data.get("VPS_USER", "root").strip() or "root",
         "VPS_PATH": data.get("VPS_PATH", "").strip() or "/opt/1panel/www/tender_site/",
@@ -1635,7 +1635,7 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             return
 
         if path == "/api/test_ssh":
-            host = post_data.get("host", "").strip() or getattr(config, "VPS_HOST", "217.142.149.2")
+            host = post_data.get("host", "").strip() or getattr(config, "VPS_HOST", "8.134.69.22")
             port = str(post_data.get("port", "").strip() or getattr(config, "VPS_PORT", "22"))
             user = post_data.get("user", "").strip() or getattr(config, "VPS_USER", "root")
             key_path = post_data.get("key_path", "").strip() or getattr(config, "VPS_KEY_PATH", "")
