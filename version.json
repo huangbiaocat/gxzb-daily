@@ -1,44 +1,23 @@
 {
-  "version": "v0.3.7",
-  "commit": "5fb4d06",
-  "date": "2026-10-08",
-  "message": "chore: 同步 version.json 最新 commit 哈希",
-  "commits": [
+  "version": "v0.3.8",
+  "commit": "340841a",
+  "date": "2026-10-12",
+  "message": "feat: 升级检索页支持多词空格检索/罗马数字归一/URL定位，更新默认VPS节点配置",
+  "history": [
     {
-      "commit": "5fb4d06",
-      "author": "黄彪",
-      "date": "2026-10-08",
-      "message": "chore: 同步 version.json 最新 commit 哈希"
+      "version": "v0.3.8",
+      "date": "2026-10-12",
+      "message": "feat: 升级检索页支持多词空格检索/罗马数字归一/URL定位，更新默认VPS节点配置"
     },
     {
-      "commit": "a77a08e",
-      "author": "黄彪",
+      "version": "v0.3.7",
       "date": "2026-10-08",
-      "message": "feat(release): 升级至 v0.3.7，单日归档页重点与预警筛选调整为互斥模式"
+      "message": "chore: 同步升级脚本逻辑及历史优化"
     },
     {
-      "commit": "2c29ea5",
-      "author": "黄彪",
+      "version": "v0.3.6",
       "date": "2026-10-08",
-      "message": "fix(manager): add home global search bar, fix delayed review modal click and rename button"
-    },
-    {
-      "commit": "ca35a40",
-      "author": "黄彪",
-      "date": "2026-10-08",
-      "message": "fix(upgrade): 修复升级检测中远程版本号未同步、Windows Git 路径检索与热加载版本机制"
-    },
-    {
-      "commit": "fafd003",
-      "author": "黄彪",
-      "date": "2026-10-08",
-      "message": "chore: 同步 version.json 最新 commit 哈希"
-    },
-    {
-      "commit": "b0dd8a3",
-      "author": "黄彪",
-      "date": "2026-10-08",
-      "message": "feat(release): 升级至 v0.3.6，支持全盘跨历史日期实时检索与滞后公告专属管理中心"
+      "message": "feat(release): 升级至 v0.3.6，引入安全版本控制与更新提醒"
     }
   ]
 }

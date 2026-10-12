@@ -22,7 +22,7 @@ else:
 ROOT_DIR = REPO_ROOT
 
 # ------------------------------------------------------------------ 统一版本
-APP_VERSION = "v0.3.7"
+APP_VERSION = "v0.3.8"
 
 # ------------------------------------------------------------------ .env 解析
 def load_env_file(path=None):
@@ -468,7 +468,7 @@ else:
     PUSH_TRIGGER_RULES = _rules
 
 AUTO_UPLOAD_VPS = get("AUTO_UPLOAD_VPS", "true").strip().lower() in ("true", "1", "yes", "on")
-VPS_HOST = get("VPS_HOST", "217.142.149.2").strip() or "217.142.149.2"
+VPS_HOST = get("VPS_HOST", "8.134.69.22").strip() or "8.134.69.22"
 VPS_PORT = get("VPS_PORT", "22").strip() or "22"
 VPS_USER = get("VPS_USER", "root").strip() or "root"
 VPS_PATH = get("VPS_PATH", "/opt/1panel/www/tender_site/").strip() or "/opt/1panel/www/tender_site/"

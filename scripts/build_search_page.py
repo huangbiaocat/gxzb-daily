@@ -726,14 +726,36 @@ def build_search_page() -> Path:
         return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    // Helper: Normalize text (Roman numerals to ASCII, lowercase)
+    function normalizeText(s) {
+        if (!s) return '';
+        return String(s).toLowerCase()
+            .replace(/[ⅰⅠ]/g, 'i')
+            .replace(/[ⅱⅡ]/g, 'ii')
+            .replace(/[ⅲⅢ]/g, 'iii')
+            .replace(/[ⅳⅣ]/g, 'iv')
+            .replace(/[ⅴⅤ]/g, 'v')
+            .replace(/[ⅵⅥ]/g, 'vi')
+            .replace(/[ⅶⅦ]/g, 'vii')
+            .replace(/[ⅷⅧ]/g, 'viii')
+            .replace(/[ⅸⅨ]/g, 'ix')
+            .replace(/[ⅹⅩ]/g, 'x');
+    }
+
     // Highlight matched text
     function highlightText(text, keyword) {
         if (!keyword || !text) return esc(text);
-        const escapedKw = keyword.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');
-        const regex = new RegExp(`(${escapedKw})`, 'gi');
+        if (/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(keyword) || keyword.startsWith('http')) {
+            return esc(text);
+        }
+        const terms = keyword.trim().split(/\\s+/).filter(t => t.length > 0);
+        if (terms.length === 0) return esc(text);
+        const escapedTerms = terms.map(t => t.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'));
+        const regex = new RegExp(`(${escapedTerms.join('|')})`, 'gi');
         const parts = String(text).split(regex);
         return parts.map(part => {
-            if (part.toLowerCase() === keyword.toLowerCase()) {
+            const isMatch = terms.some(t => t.toLowerCase() === part.toLowerCase());
+            if (isMatch) {
                 return `<mark>${esc(part)}</mark>`;
             }
             return esc(part);
@@ -742,22 +764,38 @@ def build_search_page() -> Path:
 
     // Filter & Search
     function applyFilters() {
-        const q = (searchInput.value || '').trim().toLowerCase();
+        const rawQ = (searchInput.value || '').trim();
         const reg = regionSelect.value;
         const stg = stageSelect.value;
         const ind = industrySelect.value;
 
-        clearBtn.style.display = q ? 'block' : 'none';
+        clearBtn.style.display = rawQ ? 'block' : 'none';
+
+        // Detect UUID / URL infoid query
+        const uuidMatch = rawQ.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+        const targetUuid = uuidMatch ? uuidMatch[0].toLowerCase() : null;
+        const searchTerms = rawQ ? rawQ.split(/\\s+/).map(normalizeText).filter(Boolean) : [];
 
         filteredData = allData.filter(item => {
-            // Keyword search across title, areaname, stage, industry
-            if (q) {
-                const t = (item.title || '').toLowerCase();
-                const a = (item.areaname || '').toLowerCase();
-                const s = (item.stage || '').toLowerCase();
-                const i = (item.industry || '').toLowerCase();
-                if (!t.includes(q) && !a.includes(q) && !s.includes(q) && !i.includes(q)) {
-                    return false;
+            // Keyword, link, infoid search
+            if (rawQ) {
+                if (targetUuid) {
+                    const itemUuid = (item.infoid || '').toLowerCase();
+                    const itemLink = (item.link || '').toLowerCase();
+                    if (itemUuid !== targetUuid && !itemLink.includes(targetUuid)) {
+                        return false;
+                    }
+                } else {
+                    const normTitle = normalizeText(item.title);
+                    const normArea = normalizeText(item.areaname);
+                    const normStage = normalizeText(item.stage);
+                    const normInd = normalizeText(item.industry);
+                    const normLink = normalizeText(item.link);
+                    const normId = normalizeText(item.infoid);
+                    const haystack = `${normTitle} ${normArea} ${normStage} ${normInd} ${normLink} ${normId}`;
+                    
+                    const allMatch = searchTerms.every(term => haystack.includes(term));
+                    if (!allMatch) return false;
                 }
             }
 
@@ -772,7 +810,11 @@ def build_search_page() -> Path:
             if (reg && !(item.areaname || '').includes(reg)) return false;
 
             // Stage
-            if (stg && !(item.stage || '').includes(stg)) return false;
+            if (stg) {
+                const stageMatch = (item.stage || '').includes(stg);
+                const titleClarifyMatch = (stg === '答疑') && /(澄清|答疑|更正|修改通知|补遗)/.test(item.title || '');
+                if (!stageMatch && !titleClarifyMatch) return false;
+            }
 
             // Industry
             if (ind && !(item.industry || '').includes(ind)) return false;
@@ -952,7 +994,7 @@ def build_search_page() -> Path:
     // Load data from search_index.json
     async function initData() {
         try {
-            const res = await fetch('./search_index.json');
+            const res = await fetch('./search_index.json?v=' + Date.now());
             if (!res.ok) throw new Error('HTTP ' + res.status);
             allData = await res.json();
             
