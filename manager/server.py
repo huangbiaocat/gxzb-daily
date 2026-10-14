@@ -4,6 +4,8 @@
 内置原生 HTTP 服务，无需安装 Flask/FastAPI 即可运行。
 """
 import http.server
+import hashlib
+import hmac
 import json
 import mimetypes
 import os
@@ -15,6 +17,7 @@ import subprocess
 import sys
 import threading
 import time
+from http.cookies import SimpleCookie
 from datetime import datetime, date, timedelta
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -45,6 +48,28 @@ def get_static_dir() -> Path:
     return candidates[0] if candidates else Path(__file__).resolve().parent / "static"
 
 STATIC_DIR = get_static_dir()
+
+def generate_auth_token(password: str) -> str:
+    """生成基于时间戳与密码的 HMAC 鉴权 Token"""
+    ts = int(time.time())
+    salt = f"{password}:gxzb_secure_salt_2026"
+    sig = hmac.new(salt.encode("utf-8"), f"admin:{ts}".encode("utf-8"), hashlib.sha256).hexdigest()
+    return f"{sig}.{ts}"
+
+def verify_auth_token(token: str, password: str, max_age: int = 7 * 86400) -> bool:
+    """校验 Token 的签名与有效期（默认 7 天）"""
+    if not token or "." not in token:
+        return False
+    sig, ts_str = token.split(".", 1)
+    try:
+        ts = int(ts_str)
+    except (ValueError, TypeError):
+        return False
+    if time.time() - ts > max_age:
+        return False
+    salt = f"{password}:gxzb_secure_salt_2026"
+    expected_sig = hmac.new(salt.encode("utf-8"), f"admin:{ts}".encode("utf-8"), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(sig, expected_sig)
 
 def get_site_dir() -> Path:
     """获取展示大屏与日报静态文件所在目录 (dist)"""
@@ -755,6 +780,8 @@ def read_config_env():
         "VPS_PORT": getattr(config, "VPS_PORT", "22"),
         "VPS_USER": getattr(config, "VPS_USER", "root"),
         "VPS_PATH": getattr(config, "VPS_PATH", "/opt/1panel/www/tender_site/"),
+        "HAS_ADMIN_PASSWORD": bool(getattr(config, "ADMIN_PASSWORD", "")),
+        "ADMIN_PASSWORD": "",
         "VPS_KEY_PATH": getattr(config, "VPS_KEY_PATH", ""),
         "SYSTEM_DEFAULT_KEY": str(Path.home() / ".ssh" / "id_rsa"),
         "SYSTEM_SSH_DIR": str(Path.home() / ".ssh"),
@@ -965,12 +992,12 @@ def save_config_env(data):
         "FOCUS_OWNERS": ",".join(o_list),
         "FOCUS_PROJECT_TYPES": ",".join([p.strip() for p in data.get("FOCUS_PROJECT_TYPES", "").replace("\r\n", "\n").replace("，", ",").split("\n") if p.strip()]) if "\n" in data.get("FOCUS_PROJECT_TYPES", "") else data.get("FOCUS_PROJECT_TYPES", "").strip(),
         "FOCUS_MIN_AMOUNT": str(data.get("FOCUS_MIN_AMOUNT", "")).strip(),
-        "AUTO_UPLOAD_VPS": data.get("AUTO_UPLOAD_VPS", "true").strip().lower(),
-        "VPS_HOST": data.get("VPS_HOST", "").strip() or "8.134.69.22",
-        "VPS_PORT": data.get("VPS_PORT", "22").strip() or "22",
-        "VPS_USER": data.get("VPS_USER", "root").strip() or "root",
-        "VPS_PATH": data.get("VPS_PATH", "").strip() or "/opt/1panel/www/tender_site/",
-        "VPS_KEY_PATH": data.get("VPS_KEY_PATH", "").strip(),
+        "AUTO_UPLOAD_VPS": str(data.get("AUTO_UPLOAD_VPS", getattr(config, "AUTO_UPLOAD_VPS", False))).strip().lower(),
+        "VPS_HOST": data.get("VPS_HOST", getattr(config, "VPS_HOST", "8.134.69.22")).strip() or "8.134.69.22",
+        "VPS_PORT": str(data.get("VPS_PORT", getattr(config, "VPS_PORT", "22"))).strip() or "22",
+        "VPS_USER": data.get("VPS_USER", getattr(config, "VPS_USER", "root")).strip() or "root",
+        "VPS_PATH": data.get("VPS_PATH", getattr(config, "VPS_PATH", "/opt/1panel/www/tender_site/")).strip() or "/opt/1panel/www/tender_site/",
+        "VPS_KEY_PATH": data.get("VPS_KEY_PATH", getattr(config, "VPS_KEY_PATH", "")).strip(),
         "SITE_BASE_URL": data.get("SITE_BASE_URL", "").strip(),
         "WECHAT_APPID": data.get("WECHAT_APPID", "").strip(),
         "WECHAT_APPSECRET": data.get("WECHAT_APPSECRET", "").strip(),
@@ -995,6 +1022,10 @@ def save_config_env(data):
         "BACKSCAN_DAYS": str(data.get("BACKSCAN_DAYS", "30")).strip(),
         "BACKSCAN_MIN_DELAY": str(data.get("BACKSCAN_MIN_DELAY", "2")).strip(),
     }
+
+    admin_pw_input = str(data.get("ADMIN_PASSWORD", "")).strip()
+    if admin_pw_input:
+        mapping["ADMIN_PASSWORD"] = admin_pw_input
 
     for line in lines:
         stripped = line.strip()
@@ -1038,8 +1069,37 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Auth-Token")
         super().end_headers()
+
+    def is_authenticated(self) -> bool:
+        """检查请求是否通过管理员鉴权（Cookie / Authorization / X-Auth-Token）"""
+        admin_pw = getattr(config, "ADMIN_PASSWORD", "").strip() if config else ""
+        if not admin_pw:
+            return True
+        # 1. Check Cookie
+        cookie_header = self.headers.get("Cookie", "")
+        if cookie_header:
+            try:
+                cookie = SimpleCookie()
+                cookie.load(cookie_header)
+                if "auth_token" in cookie:
+                    token = cookie["auth_token"].value
+                    if verify_auth_token(token, admin_pw):
+                        return True
+            except Exception:
+                pass
+        # 2. Check Authorization Header (Bearer <token>)
+        auth_hdr = self.headers.get("Authorization", "")
+        if auth_hdr.startswith("Bearer "):
+            token = auth_hdr[7:].strip()
+            if verify_auth_token(token, admin_pw):
+                return True
+        # 3. Check X-Auth-Token
+        x_token = self.headers.get("X-Auth-Token", "").strip()
+        if x_token and verify_auth_token(x_token, admin_pw):
+            return True
+        return False
 
     def do_OPTIONS(self):
         self.send_response(200)
@@ -1090,6 +1150,13 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             return
 
         if path == "/api/status":
+            self.send_json(get_system_status())
+            return
+
+        if path == "/api/check_auth":
+            admin_pw = getattr(config, "ADMIN_PASSWORD", "").strip() if config else ""
+            self.send_json({"authenticated": self.is_authenticated(), "has_password": bool(admin_pw)})
+            return
             self.send_json(get_system_status())
             return
 
@@ -1370,6 +1437,47 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                 post_data = json.loads(raw)
             except Exception:
                 pass
+
+        if path == "/api/login":
+            req_password = post_data.get("password", "").strip()
+            admin_pw = getattr(config, "ADMIN_PASSWORD", "").strip() if config else ""
+            if not admin_pw or req_password == admin_pw:
+                token = generate_auth_token(admin_pw)
+                cookie_val = f"auth_token={token}; Path=/; Max-Age=604800; SameSite=Lax"
+                body = json.dumps({"ok": True, "token": token, "msg": "登录成功"}, ensure_ascii=False).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Set-Cookie", cookie_val)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            else:
+                self.send_json({"ok": False, "msg": "管理员密码错误，请重新输入"})
+                return
+
+        if path == "/api/logout":
+            cookie_val = "auth_token=; Path=/; Max-Age=0; SameSite=Lax"
+            body = json.dumps({"ok": True, "msg": "已安全退出登录"}, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Set-Cookie", cookie_val)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        # 敏感写操作与流水线触发鉴权拦截
+        protected_paths = {
+            "/api/abort_task", "/api/save_config", "/api/rollback_config",
+            "/api/delete_date", "/api/monitor_control"
+        }
+        if path.startswith("/api/run_") or path in protected_paths:
+            if not self.is_authenticated():
+                self.send_json({"ok": False, "error": "unauthorized", "msg": "未登录或登录已过期，请重新登录管理员账号"}, status=401)
+                return
 
         py_exe = sys.executable
         collector_exe = None

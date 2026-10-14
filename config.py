@@ -77,6 +77,9 @@ def get(key, default=""):
         return _ENV[key]
     return default
 
+# ------------------------------------------------------------------ 管理员安全认证
+ADMIN_PASSWORD = get("ADMIN_PASSWORD", "admin123").strip()
+
 
 def _detect_is_on_vps() -> bool:
     """智能探测当前是否直接运行在生产 VPS 上"""

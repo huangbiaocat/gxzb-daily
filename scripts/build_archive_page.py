@@ -357,6 +357,199 @@ extra_style = """
                 flex-wrap: wrap;
             }
         }
+
+        /* ===== Admin Login Entry & Modal Styles ===== */
+        .btn-admin-entry {
+            background: #ffffff;
+            color: #475569;
+            border: 1px solid var(--border-color, #e2e8f0);
+            box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+            margin-right: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-admin-entry:hover {
+            border-color: #0284c7;
+            color: #0284c7;
+            background: #f0f9ff;
+        }
+        .admin-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .admin-modal-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 410px;
+            border-radius: 12px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 1px solid #e2e8f0;
+            padding: 26px 28px;
+            position: relative;
+            box-sizing: border-box;
+            animation: adminModalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes adminModalIn {
+            from { opacity: 0; transform: scale(0.96) translateY(-10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .admin-modal-close {
+            position: absolute;
+            top: 14px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            line-height: 1;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: all 0.15s;
+        }
+        .admin-modal-close:hover {
+            color: #0f172a;
+            background: #f1f5f9;
+        }
+        .admin-modal-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .admin-modal-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: #e0f2fe;
+            color: #0284c7;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+        .admin-modal-title {
+            margin: 0 0 6px 0;
+            font-size: 1.18rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .admin-modal-subtitle {
+            margin: 0;
+            font-size: 0.82rem;
+            color: #64748b;
+        }
+        .admin-form-group {
+            margin-bottom: 16px;
+        }
+        .admin-form-label {
+            display: block;
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+        .admin-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .admin-form-input {
+            width: 100%;
+            height: 42px;
+            padding: 0 42px 0 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            color: #0f172a;
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.2s;
+            background: #f8fafc;
+        }
+        .admin-form-input:focus {
+            background: #ffffff;
+            border-color: #0284c7;
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18);
+        }
+        .btn-toggle-pwd {
+            position: absolute;
+            right: 8px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+        }
+        .btn-toggle-pwd:hover {
+            color: #475569;
+        }
+        .admin-login-tip {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            margin-bottom: 14px;
+            line-height: 1.4;
+        }
+        .tip-error {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+        .tip-success {
+            background: #f0fdf4;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+        .admin-btn-submit {
+            width: 100%;
+            height: 42px;
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .admin-btn-submit:hover:not(:disabled) {
+            opacity: 0.95;
+            box-shadow: 0 4px 8px rgba(2, 132, 199, 0.35);
+        }
+        .admin-btn-submit:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+        .admin-modal-footer {
+            margin-top: 16px;
+            text-align: center;
+        }
+        .admin-direct-link {
+            font-size: 0.78rem;
+            color: #64748b;
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        .admin-direct-link:hover {
+            color: #0284c7;
+            text-decoration: underline;
+        }
     </style>
 """
 
@@ -603,6 +796,10 @@ PAGE = """<!DOCTYPE html>
 </div>
 </a>
 <div class="header-actions">
+<a class="btn-latest btn-admin-entry" id="btnAdminLogin" href="javascript:void(0)" onclick="openAdminModal()">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><rect height="11" rx="2" ry="2" width="18" x="3" y="11"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+<span id="adminBtnText">管理登录</span>
+</a>
 <a class="btn-latest" href="./search.html" style="background: #ffffff; color: var(--primary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); margin-right: 8px;">
 <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
 <span>全站搜索</span>
@@ -785,14 +982,167 @@ PAGE = """<!DOCTYPE html>
     }
 })();
 </script>
+{admin_modal_html}
+{admin_modal_script}
 </body>
 </html>
+"""
+
+admin_modal_html = """
+<!-- 管理员安全登录弹窗 -->
+<div id="adminLoginModal" class="admin-modal-overlay" style="display: none;" onclick="handleAdminModalBackdrop(event)">
+  <div class="admin-modal-card">
+    <button type="button" class="admin-modal-close" onclick="closeAdminModal()" aria-label="关闭">&times;</button>
+    <div class="admin-modal-header">
+      <div class="admin-modal-icon">
+        <svg fill="none" height="24" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="24"><rect height="11" rx="2" ry="2" width="18" x="3" y="11"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      </div>
+      <h3 class="admin-modal-title">管理员安全登录</h3>
+      <p class="admin-modal-subtitle">广西招投标数据监控与自动化运维后台</p>
+    </div>
+    <form class="admin-modal-form" onsubmit="handleAdminLogin(event)">
+      <div class="admin-form-group">
+        <label for="adminPasswordInput" class="admin-form-label">管理员密码</label>
+        <div class="admin-input-wrapper">
+          <input type="password" id="adminPasswordInput" class="admin-form-input" placeholder="请输入管理员访问密码" autocomplete="current-password" required />
+          <button type="button" class="btn-toggle-pwd" onclick="togglePasswordVisibility()" title="显示/隐藏密码">
+            <svg id="eyeIcon" fill="none" height="16" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
+      </div>
+      <div id="adminLoginTip" class="admin-login-tip" style="display: none;"></div>
+      <button type="submit" id="btnAdminSubmit" class="admin-btn-submit">
+        <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+        <span id="btnAdminSubmitText">安全登录并进入后台</span>
+      </button>
+      <div class="admin-modal-footer">
+        <a href="/admin/" class="admin-direct-link">局域网/免密环境？直接跳转管理后台 &rarr;</a>
+      </div>
+    </form>
+  </div>
+</div>
+"""
+
+admin_modal_script = """
+<script>
+function openAdminModal() {
+    var modal = document.getElementById('adminLoginModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    var input = document.getElementById('adminPasswordInput');
+    if (input) {
+        input.value = '';
+        setTimeout(function() { input.focus(); }, 120);
+    }
+    var tip = document.getElementById('adminLoginTip');
+    if (tip) tip.style.display = 'none';
+}
+
+function closeAdminModal() {
+    var modal = document.getElementById('adminLoginModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function handleAdminModalBackdrop(e) {
+    if (e.target.id === 'adminLoginModal') {
+        closeAdminModal();
+    }
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeAdminModal();
+});
+
+function togglePasswordVisibility() {
+    var input = document.getElementById('adminPasswordInput');
+    if (!input) return;
+    input.type = (input.type === 'password') ? 'text' : 'password';
+}
+
+async function handleAdminLogin(e) {
+    e.preventDefault();
+    var input = document.getElementById('adminPasswordInput');
+    var btn = document.getElementById('btnAdminSubmit');
+    var btnText = document.getElementById('btnAdminSubmitText');
+    var tip = document.getElementById('adminLoginTip');
+    if (!input || !btn) return;
+    
+    var password = input.value.trim();
+    if (!password) return;
+
+    btn.disabled = true;
+    if (btnText) btnText.innerText = '正在验证安全密码...';
+    if (tip) tip.style.display = 'none';
+
+    try {
+        var res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: password })
+        });
+        var data = await res.json();
+        if (data.ok) {
+            if (data.token) {
+                localStorage.setItem('gxzb_auth_token', data.token);
+            }
+            if (tip) {
+                tip.className = 'admin-login-tip tip-success';
+                tip.innerText = '验证成功，正在进入管理后台...';
+                tip.style.display = 'block';
+            }
+            setTimeout(function() {
+                window.location.href = '/admin/';
+            }, 350);
+        } else {
+            if (tip) {
+                tip.className = 'admin-login-tip tip-error';
+                tip.innerText = data.msg || '密码错误，请重新输入';
+                tip.style.display = 'block';
+            }
+            btn.disabled = false;
+            if (btnText) btnText.innerText = '安全登录并进入后台';
+            input.focus();
+            input.select();
+        }
+    } catch (err) {
+        if (tip) {
+            tip.className = 'admin-login-tip tip-error';
+            tip.innerText = '请求服务失败，请检查网络或直接访问 /admin/';
+            tip.style.display = 'block';
+        }
+        btn.disabled = false;
+        if (btnText) btnText.innerText = '安全登录并进入后台';
+    }
+}
+
+// 自动检测管理员鉴权状态
+(function checkAdminAuth() {
+    fetch('/api/check_auth')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data && data.authenticated) {
+                var btn = document.getElementById('btnAdminLogin');
+                var txt = document.getElementById('adminBtnText');
+                if (txt) txt.innerText = '管理后台';
+                if (btn) {
+                    btn.onclick = function() { window.location.href = '/admin/'; };
+                    btn.title = '已验证管理员身份，点击直达管理后台';
+                    btn.style.borderColor = '#0284c7';
+                    btn.style.color = '#0284c7';
+                }
+            }
+        })
+        .catch(function() {});
+})();
+</script>
 """
 
 _FIELDS = {
     "base_style": base_style,
     "extra_style": extra_style,
     "base_script": base_script,
+    "admin_modal_html": admin_modal_html,
+    "admin_modal_script": admin_modal_script,
     "site": html.escape(arc.get("site", "广西全区招投标数据监控中心")),
     "subtitle": html.escape(arc.get("subtitle", "广西公共资源交易 · 工程建设类公告每日归档")),
     "app_version": getattr(config, "APP_VERSION", "v0.1.0"),

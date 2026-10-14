@@ -43,56 +43,56 @@
 
     <!-- 顶部导航栏 -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-            <div class="flex items-center space-x-3">
-                <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-full max-w-[1720px] mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-3">
+            <div class="flex items-center space-x-2.5 shrink-0">
+                <div class="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20 shrink-0">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                     </svg>
                 </div>
-                <div>
-                    <div class="flex items-center space-x-2">
-                        <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">v0.1.0</span>
+                <div class="shrink-0">
+                    <div class="flex items-center space-x-1.5 sm:space-x-2">
+                        <h1 class="text-sm sm:text-base font-bold text-slate-900 leading-tight whitespace-nowrap">招投标数据中心控制台</h1>
+                        <span id="app-version-badge" class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap">v0.1.0</span>
                         <!-- 实时全区雷达扫描状态指示器（静默常驻，带动态扫描动效，点击直达监控调度） -->
-                        <div id="top-radar-indicator" onclick="switchTab('dashboard')" class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-all bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100" title="点击前往监控调度：全区雷达扫描中">
+                        <div id="top-radar-indicator" onclick="switchTab('dashboard')" class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-all bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100 whitespace-nowrap" title="点击前往监控调度：全区雷达扫描中">
                             <span id="radar-char-top" class="font-mono text-xs font-bold text-emerald-600 select-none">◜</span>
-                            <span id="top-radar-text" class="text-[11px] font-medium">雷达监控中</span>
+                            <span id="top-radar-text" class="text-[10px] sm:text-[11px] font-medium">雷达监控中</span>
                         </div>
                     </div>
-                    <p class="text-xs text-slate-400 mt-0.5 leading-none">Tender Data Control & Settings Center</p>
+                    <p class="hidden xl:block text-[11px] text-slate-400 mt-0.5 leading-none whitespace-nowrap">Tender Data Control & Settings Center</p>
                 </div>
             </div>
 
             <!-- Tab 切换导航 -->
-            <nav class="hidden md:flex items-center p-1 bg-slate-100/90 rounded-xl space-x-1 border border-slate-200/60 shadow-2xs">
-                <button id="tab-btn-business" onclick="switchTab('business')" class="tab-btn active px-3 py-1.5 text-xs sm:text-sm font-medium flex items-center space-x-1.5">
+            <nav class="hidden md:flex items-center p-1 bg-slate-100/90 rounded-xl space-x-0.5 sm:space-x-1 border border-slate-200/60 shadow-2xs shrink-0">
+                <button id="tab-btn-business" onclick="switchTab('business')" class="tab-btn active px-2.5 sm:px-3 py-1.5 text-xs font-medium flex items-center space-x-1.5 whitespace-nowrap">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
                     </svg>
                     <span>重点跟踪</span>
                 </button>
-                <button id="tab-btn-search" onclick="switchTab('search')" class="tab-btn px-3 py-1.5 text-xs sm:text-sm font-medium flex items-center space-x-1.5">
+                <button id="tab-btn-search" onclick="switchTab('search')" class="tab-btn px-2.5 sm:px-3 py-1.5 text-xs font-medium flex items-center space-x-1.5 whitespace-nowrap">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <circle cx="11" cy="11" r="8" stroke-width="2"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"></line>
                     </svg>
-                    <span>全盘检索与纠错</span>
+                    <span>检索与纠错</span>
                 </button>
-                <button id="tab-btn-env" onclick="switchTab('env')" class="tab-btn px-3 py-1.5 text-xs sm:text-sm font-medium flex items-center space-x-1.5">
+                <button id="tab-btn-env" onclick="switchTab('env')" class="tab-btn px-2.5 sm:px-3 py-1.5 text-xs font-medium flex items-center space-x-1.5 whitespace-nowrap">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
                     <span>环境配置</span>
                 </button>
-                <button id="tab-btn-dashboard" onclick="switchTab('dashboard')" class="tab-btn px-3 py-1.5 text-xs sm:text-sm font-medium flex items-center space-x-1.5">
+                <button id="tab-btn-dashboard" onclick="switchTab('dashboard')" class="tab-btn px-2.5 sm:px-3 py-1.5 text-xs font-medium flex items-center space-x-1.5 whitespace-nowrap">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                     </svg>
                     <span>监控调度</span>
                 </button>
-               <button id="tab-btn-history" onclick="switchTab('history')" class="tab-btn px-3 py-1.5 text-xs sm:text-sm font-medium flex items-center space-x-1.5">
+               <button id="tab-btn-history" onclick="switchTab('history')" class="tab-btn px-2.5 sm:px-3 py-1.5 text-xs font-medium flex items-center space-x-1.5 whitespace-nowrap">
                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                    </svg>
@@ -101,51 +101,62 @@
            </nav>
 
             <!-- 顶部跨日期全盘搜索快捷输入框 -->
-            <div class="hidden lg:flex items-center relative ml-2 mr-1">
-                <input type="text" id="top-quick-search" placeholder="🔍 跨所有日期检索项目..." onkeydown="if(event.key==='Enter'){switchTab('search'); document.getElementById('mgr-search-q').value=this.value; runMgrSearch();}" class="text-xs pl-3 pr-7 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-48 xl:w-56 transition text-slate-800 placeholder-slate-400">
+            <div class="hidden 2xl:flex items-center relative ml-1 mr-1 shrink-0">
+                <input type="text" id="top-quick-search" placeholder="🔍 跨所有日期检索..." onkeydown="if(event.key==='Enter'){switchTab('search'); document.getElementById('mgr-search-q').value=this.value; runMgrSearch();}" class="text-xs pl-3 pr-7 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-40 transition text-slate-800 placeholder-slate-400">
                 <button type="button" onclick="var v=document.getElementById('top-quick-search').value; switchTab('search'); document.getElementById('mgr-search-q').value=v; runMgrSearch();" class="absolute right-2 text-slate-400 hover:text-blue-600 text-xs font-bold" title="搜索">↵</button>
             </div>
 
-           <!-- 右侧操作栏：整齐协调，去除臃肿监控按钮 -->
-           <div class="flex items-center space-x-2 shrink-0">
-                <!-- 清理指定日期内容 -->
-                <button onclick="openDeleteDateModal()" class="text-xs font-medium px-2.5 py-1.5 bg-white text-slate-600 hover:text-rose-600 hover:bg-rose-50/70 rounded-lg border border-slate-200 transition flex items-center space-x-1 shadow-2xs" title="彻底删除指定日期的全部采集数据与日报">
+           <!-- 右侧操作栏：整齐优雅，杜绝折行与挤压 -->
+           <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+                <!-- 清理指定日期内容（图标按钮，带明确提示） -->
+                <button onclick="openDeleteDateModal()" class="p-1.5 sm:px-2.5 sm:py-1.5 bg-white text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-slate-200 transition flex items-center space-x-1 shadow-2xs whitespace-nowrap" title="彻底删除指定日期的全部采集数据与日报">
                     <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>
-                    <span class="hidden sm:inline">清理日期</span>
-                </button>
-
-                <!-- 打开线上网站 -->
-                <button onclick="openOnlineWebsite()" class="text-xs font-medium px-2.5 py-1.5 bg-white text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/70 rounded-lg border border-slate-200 transition flex items-center space-x-1.5 shadow-2xs" title="在浏览器新标签页打开线上网站">
-                    <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                    </svg>
-                    <span class="hidden sm:inline">线上网站</span>
+                    <span class="hidden 2xl:inline text-xs font-medium">清理</span>
                 </button>
 
                 <!-- 同步升级 -->
-                <button onclick="openUpgradeModal()" id="btn-top-upgrade" class="text-xs font-medium px-2.5 py-1.5 bg-white text-slate-700 hover:text-emerald-700 hover:bg-emerald-50/70 rounded-lg border border-slate-200 transition flex items-center space-x-1.5 shadow-2xs" title="检查并从 GitHub 同步升级新版本">
+                <button onclick="openUpgradeModal()" id="btn-top-upgrade" class="text-xs font-medium px-2 sm:px-2.5 py-1.5 bg-white text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg border border-slate-200 transition flex items-center space-x-1 shadow-2xs whitespace-nowrap" title="检查并从 GitHub 同步升级新版本">
                     <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                     </svg>
-                    <span>同步升级</span>
+                    <span class="hidden xl:inline">同步升级</span>
                 </button>
 
                 <!-- 刷新状态 -->
-                <button id="btn-top-refresh" onclick="refreshAll()" class="p-1.5 text-slate-500 hover:text-slate-800 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition shadow-2xs" title="刷新页面状态与配置">
+                <button id="btn-top-refresh" onclick="refreshAll()" class="p-1.5 text-slate-500 hover:text-slate-800 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 transition shadow-2xs shrink-0" title="刷新页面状态与配置">
                     <svg class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
                 </button>
 
+                <!-- 分割线 -->
+                <div class="h-4 w-px bg-slate-200 mx-0.5"></div>
+
                 <!-- 打开看板（主行动按钮） -->
-                <a href="/preview/" target="_blank" class="text-xs font-medium px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center space-x-1.5 shadow-xs" title="在浏览器新标签页打开数据看板">
-                    <span>打开看板</span>
+                <a href="/preview/" target="_blank" class="text-xs font-medium px-2.5 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center space-x-1 shadow-xs whitespace-nowrap" title="在浏览器新标签页打开数据看板">
                     <svg class="w-3.5 h-3.5 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                     </svg>
+                    <span>打开看板</span>
                 </a>
+
+                <!-- 公开首页 -->
+                <a href="/" class="text-xs font-medium px-2.5 sm:px-3 py-1.5 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition flex items-center space-x-1 shadow-2xs whitespace-nowrap" title="返回招标简报公开首页">
+                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    <span>公开首页</span>
+                </a>
+
+                <!-- 退出登录 -->
+                <button id="btn-top-logout" onclick="handleLogout()" class="text-xs font-medium px-2.5 py-1.5 text-red-600 hover:text-red-700 bg-white hover:bg-red-50 border border-red-200 rounded-lg transition flex items-center space-x-1 shadow-2xs whitespace-nowrap" title="退出管理员登录状态">
+                    <svg class="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    <span>退出</span>
+                </button>
             </div>
         </div>
     </header>
@@ -520,6 +531,11 @@
                                 <label class="block text-xs font-semibold text-slate-700 mb-1">采集异常告警模版 ID (WECHAT_ALERT_TEMPLATE_ID)</label>
                                 <input id="cfg-wx-alert-tpl" type="text" placeholder="留空则回退使用日报模版" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
                             </div>
+                            <div class="md:col-span-2 pt-2 border-t border-slate-100">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">管理员安全登录密码 (ADMIN_PASSWORD)</label>
+                                <input id="cfg-admin-password" type="password" placeholder="留空保持原密码不变，填写可修改管理员密码" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                                <span class="text-[11px] text-slate-400 mt-1 block">用于公开主页及管理控制台的身份验证，修改后即时生效。</span>
+                            </div>
                         </div>
                     </div>
 
@@ -602,72 +618,6 @@
                                     <span class="text-xs text-slate-400 shrink-0">条</span>
                                 </div>
                                 <span class="text-[10px] text-slate-400 mt-0.5 block">0 表示不设数量门槛</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- VPS 云端同步配置 -->
-                    <div class="space-y-4 pt-4 border-t border-slate-100">
-                        <div class="flex items-center space-x-2">
-                            <span class="w-1.5 h-4 bg-indigo-600 rounded-full"></span>
-                            <h3 class="text-sm font-bold text-slate-800">云端服务器同步 (SCP / SSH)</h3>
-                            <span id="vps-env-banner" class="hidden text-xs px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-md font-medium">当前直接运行在生产 VPS，静态产物就地生效，无需网络上传</span>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">自动同步 VPS (AUTO_UPLOAD_VPS)</label>
-                                <select id="cfg-vps-auto" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="false">关闭 (False) - 仅本地生成</option>
-                                    <option value="true">开启 (True) - 生成后自动上传</option>
-                                </select>
-                                <span class="text-[11px] text-slate-400 mt-1 block">开启后，每日自动化调度运行结束将直接通过 SSH 上传至云服务器。</span>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">云端服务器 IP 地址 (VPS_HOST)</label>
-                                <input id="cfg-vps-host" type="text" placeholder="8.134.69.22" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">SSH 端口 (VPS_PORT)</label>
-                                <input id="cfg-vps-port" type="text" placeholder="22" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">SSH 登录用户名 (VPS_USER)</label>
-                                <input id="cfg-vps-user" type="text" placeholder="root" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                            </div>
-                            <div class="sm:col-span-2">
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">云端 Web 根目录路径 (VPS_PATH)</label>
-                                <input id="cfg-vps-path" type="text" placeholder="/opt/1panel/www/tender_site/" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                            </div>
-                            <div class="sm:col-span-3">
-                                <div class="flex items-center justify-between mb-1">
-                                    <label class="block text-xs font-semibold text-slate-700">指定私钥文件路径 (VPS_KEY_PATH) <span class="text-slate-400 font-normal">[选填]</span></label>
-                                    <button type="button" onclick="testSshConnection()" id="btn-test-ssh" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-[11px] rounded border border-indigo-200 transition inline-flex items-center gap-1 cursor-pointer">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                        一键测试 SSH 连通性
-                                    </button>
-                                </div>
-                                <input id="cfg-vps-key-path" type="text" placeholder="留空则自动使用本机默认路径，或放入软件 data/id_rsa" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono">
-                                <div class="mt-1.5 text-[11px] text-slate-500 flex flex-wrap items-center gap-2">
-                                    <span>当前电脑默认检测路径: <code id="cfg-system-default-key" class="bg-slate-100 px-1 py-0.5 rounded font-mono text-slate-700"></code></span>
-                                    <span id="cfg-system-key-badge" class="px-1.5 py-0.5 rounded font-medium"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 换电脑安装指引提示 -->
-                        <div class="p-3.5 rounded-lg bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-950 leading-relaxed space-y-2">
-                            <div class="flex items-start gap-2">
-                                <svg class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <div>
-                                    <strong class="font-bold text-slate-800">【换电脑安装/迁移后，私钥应该放哪里？】</strong>
-                                    <div class="mt-1.5 text-slate-600 space-y-1.5">
-                                        <div><strong>方案 A（Windows 万能快捷方式，最省心）：</strong>按下键盘 <kbd class="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-mono text-[10px]">Win + R</kbd> 打开运行窗口，输入 <code class="bg-indigo-100/70 text-indigo-900 px-1 py-0.5 rounded font-mono font-bold select-all">%USERPROFILE%\.ssh</code> 并回车。系统会自动打开当前用户的 SSH 文件夹，将私钥文件重命名为 <code class="font-mono font-bold text-slate-800">id_rsa</code> 粘贴进去即可。</div>
-                                        <div><strong>方案 B（随软件便携模式）：</strong>直接把私钥文件复制到本软件的 <code class="bg-indigo-100/70 text-indigo-900 px-1 py-0.5 rounded font-mono">data/</code> 目录下（命名为 <code>id_rsa</code> 或 <code>vps_key.pem</code>），软件会自动优先使用。</div>
-                                        <div><strong>方案 C（自定义任意位置）：</strong>放在电脑任意盘符，在上方【指定私钥文件路径】输入完整绝对路径。</div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -2090,34 +2040,17 @@
                 if (data.SITE_BASE_URL) {
                     onlineSiteUrl = data.SITE_BASE_URL;
                 }
-                setVal("cfg-vps-auto", String(data.AUTO_UPLOAD_VPS).toLowerCase() === "true" ? "true" : "false");
-                setVal("cfg-vps-host", data.VPS_HOST || "");
-                setVal("cfg-vps-port", data.VPS_PORT || "22");
-                setVal("cfg-vps-user", data.VPS_USER || "root");
-                setVal("cfg-vps-path", data.VPS_PATH || "");
-                setVal("cfg-vps-key-path", data.VPS_KEY_PATH || "");
-
-                const defKeyElem = document.getElementById("cfg-system-default-key");
-                const badgeElem = document.getElementById("cfg-system-key-badge");
-                if (defKeyElem) defKeyElem.textContent = data.SYSTEM_DEFAULT_KEY || "~/.ssh/id_rsa";
-                if (badgeElem) {
-                    if (data.SYSTEM_KEY_EXISTS) {
-                        badgeElem.className = "px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-semibold";
-                        badgeElem.textContent = "✅ 已检测到系统私钥";
-                    } else if (data.VPS_KEY_PATH) {
-                        badgeElem.className = "px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-800 font-semibold";
-                        badgeElem.textContent = "ℹ️ 已指定自定义私钥";
-                    } else {
-                        badgeElem.className = "px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800 font-semibold";
-                        badgeElem.textContent = "⚠️ 未检测到系统私钥";
-                    }
-                }
                 setVal("cfg-wx-appid", data.WECHAT_APPID || "");
                 setVal("cfg-wx-appsecret", data.WECHAT_APPSECRET || "");
                 setVal("cfg-wx-touser", data.WECHAT_TOUSER || "");
                 setVal("cfg-wx-admin-touser", data.WECHAT_ADMIN_TOUSER || "");
                 setVal("cfg-wx-tpl", data.WECHAT_TEMPLATE_ID || "");
                 setVal("cfg-wx-alert-tpl", data.WECHAT_ALERT_TEMPLATE_ID || "");
+                setVal("cfg-admin-password", "");
+                const pwInput = document.getElementById("cfg-admin-password");
+                if (pwInput) {
+                    pwInput.placeholder = data.HAS_ADMIN_PASSWORD ? "已设置密码（留空保持不变，填写可修改）" : "尚未设置密码，填写将启用鉴权";
+                }
                 setVal("cfg-monitor-start", data.MONITOR_START_TIME || "08:00");
                 setVal("cfg-monitor-end", data.MONITOR_END_TIME || "20:00");
                 setVal("cfg-monitor-interval", data.MONITOR_INTERVAL_MINUTES || 10);
@@ -2196,12 +2129,6 @@
                 PUSH_BATCH_HOURS: batchHoursVal,
                 PUSH_CONDITIONAL_INCREMENTAL: isConditionalChecked ? "true" : "false",
                 SITE_BASE_URL: getVal("cfg-site-base-url"),
-                AUTO_UPLOAD_VPS: getVal("cfg-vps-auto", "false"),
-                VPS_HOST: getVal("cfg-vps-host"),
-                VPS_PORT: getVal("cfg-vps-port", "22"),
-                VPS_USER: getVal("cfg-vps-user", "root"),
-                VPS_PATH: getVal("cfg-vps-path"),
-                VPS_KEY_PATH: getVal("cfg-vps-key-path"),
                 WECHAT_APPID: getVal("cfg-wx-appid"),
                 WECHAT_APPSECRET: getVal("cfg-wx-appsecret"),
                 WECHAT_TOUSER: getVal("cfg-wx-touser"),
@@ -2217,6 +2144,11 @@
                 BACKSCAN_DAYS: getVal("cfg-backscan-days", "30"),
                 BACKSCAN_MIN_DELAY: getVal("cfg-backscan-min-delay", "2")
             };
+
+            const adminPw = getVal("cfg-admin-password", "").trim();
+            if (adminPw) {
+                payload.ADMIN_PASSWORD = adminPw;
+            }
 
             try {
                 const res = await fetch("/api/save_config", {
@@ -2253,37 +2185,6 @@
                 }
             } catch (err) {
                 showTip("❌ 网络或接口异常: " + err, "text-xs text-red-600 font-semibold");
-            }
-        }
-
-        async function testSshConnection() {
-            const btn = document.getElementById("btn-test-ssh");
-            const oldText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = `<svg class="w-3.5 h-3.5 animate-spin inline mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> 测试连接中...`;
-
-            try {
-                const getVal = (id, def = "") => {
-                    const el = document.getElementById(id);
-                    return el ? el.value.trim() : def;
-                };
-                const res = await fetch("/api/test_ssh", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        host: getVal("cfg-vps-host"),
-                        port: getVal("cfg-vps-port", "22"),
-                        user: getVal("cfg-vps-user", "root"),
-                        key_path: getVal("cfg-vps-key-path")
-                    })
-                });
-                const data = await res.json();
-                alert(data.msg);
-            } catch (e) {
-                alert("测试请求失败: " + e.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = oldText;
             }
         }
 
@@ -3376,6 +3277,7 @@
 
         // 初始化载入
         window.addEventListener("DOMContentLoaded", () => {
+            checkManagerAuth();
             const savedTab = localStorage.getItem("active_tab") || "business";
             switchTab(savedTab);
             initPushConfigSync();
@@ -3387,6 +3289,81 @@
             if (pEl) pEl.addEventListener("input", updateRulesCountDisplay);
             if (oEl) oEl.addEventListener("input", updateRulesCountDisplay);
         });
+
+        async function checkManagerAuth() {
+            try {
+                const res = await fetch("/api/check_auth");
+                const data = await res.json();
+                const overlay = document.getElementById("admin-auth-overlay");
+                if (data && data.has_password && !data.authenticated) {
+                    if (overlay) overlay.classList.remove("hidden");
+                } else {
+                    if (overlay) overlay.classList.add("hidden");
+                }
+            } catch (e) {
+                console.error("checkManagerAuth error:", e);
+            }
+        }
+
+        async function handleManagerLogin(e) {
+            e.preventDefault();
+            const pwdInput = document.getElementById("admin-manager-pwd");
+            const errEl = document.getElementById("admin-manager-err");
+            const submitBtn = document.getElementById("admin-manager-submit");
+            if (!pwdInput) return;
+            const password = pwdInput.value.trim();
+            if (!password) return;
+
+            if (errEl) errEl.classList.add("hidden");
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span>正在验证...</span>';
+            }
+
+            try {
+                const res = await fetch("/api/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ password: password })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    const overlay = document.getElementById("admin-auth-overlay");
+                    if (overlay) overlay.classList.add("hidden");
+                    showToast("管理员安全验证通过", "success");
+                    fetchConfig();
+                    fetchStatus();
+                } else {
+                    if (errEl) {
+                        errEl.innerText = data.msg || "密码错误，请重新输入";
+                        errEl.classList.remove("hidden");
+                    }
+                    pwdInput.focus();
+                    pwdInput.select();
+                }
+            } catch (err) {
+                if (errEl) {
+                    errEl.innerText = "登录请求失败，请检查网络连接";
+                    errEl.classList.remove("hidden");
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span>验证并进入控制台</span>';
+                }
+            }
+        }
+
+        async function handleLogout() {
+            if (!confirm("确定要退出管理员登录吗？")) return;
+            try {
+                await fetch("/api/logout", { method: "POST" });
+            } catch (e) {}
+            showToast("已退出管理员登录", "info");
+            setTimeout(() => {
+                window.location.href = "/";
+            }, 400);
+        }
     </script>
 
    <!-- ============================================== -->
@@ -3892,6 +3869,37 @@
             <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex justify-end">
                 <button onclick="closeConfigSnapshotsModal()" class="px-4 py-1.5 text-xs text-slate-600 hover:bg-slate-200 rounded-lg font-medium transition">关闭</button>
             </div>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 管理员身份安全拦截弹窗 (Admin Auth Overlay)     -->
+    <!-- ============================================== -->
+    <div id="admin-auth-overlay" class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm p-6 space-y-4 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl mx-auto flex items-center justify-center">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-slate-800">管理员安全身份验证</h3>
+                <p class="text-xs text-slate-500 mt-1">控制台涉及数据采集触发与关键配置，请输入密码进入</p>
+            </div>
+            <form onsubmit="handleManagerLogin(event)" class="space-y-3 text-left">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">管理密码</label>
+                    <input id="admin-manager-pwd" type="password" placeholder="请输入管理员访问密码" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" required autofocus>
+                </div>
+                <div id="admin-manager-err" class="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2 hidden"></div>
+                <button id="admin-manager-submit" type="submit" class="w-full text-xs font-semibold py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shadow-sm flex items-center justify-center space-x-1">
+                    <span>验证并进入控制台</span>
+                </button>
+                <div class="text-center pt-2">
+                    <a href="/" class="text-xs text-slate-400 hover:text-slate-600">&larr; 返回招标简报公开首页</a>
+                </div>
+            </form>
         </div>
     </div>
 
