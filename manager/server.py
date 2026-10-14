@@ -201,11 +201,11 @@ def get_git_info():
         )
         if res.returncode == 0:
             commit = res.stdout.strip()
-            app_ver = getattr(config, "APP_VERSION", "v0.3.7")
+            app_ver = getattr(config, "APP_VERSION", "v0.3.9")
             return {"commit": commit, "version": f"{app_ver} (#{commit})"}
     except Exception:
         pass
-    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.3.7")}
+    return {"commit": "release", "version": getattr(config, "APP_VERSION", "v0.3.9")}
 
 def check_app_upgrade():
     """
@@ -217,7 +217,7 @@ def check_app_upgrade():
     except Exception:
         pass
 
-    local_version = getattr(config, "APP_VERSION", "v0.3.7")
+    local_version = getattr(config, "APP_VERSION", "v0.3.9")
     version_file = ROOT_DIR / "version.json"
     if version_file.exists():
         try:
@@ -445,7 +445,7 @@ def check_app_upgrade():
                         remote_info["message"] = top.get("commit", {}).get("message", "").split("\n")[0]
                         remote_info["date"] = top.get("commit", {}).get("author", {}).get("date", "")[:10]
 
-                        # 尝试从提交列表中提取最新版本号 (如 "feat(release): 升级至 v0.3.6")
+                        # 尝试从提交列表中提取最新版本号 (如 "feat(release): 升级至 v0.3.9")
                         for item in gh_data:
                             c_msg = item.get("commit", {}).get("message", "")
                             m = re.search(r'(v\d+\.\d+\.\d+)', c_msg)

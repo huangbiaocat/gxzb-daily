@@ -440,6 +440,16 @@ def main(argv=None):
                 failed_steps.append("build_archive_page")
         else:
             print("   未找到归档样板，跳过：", config.TEMPLATE_ARCHIVE_SAMPLE)
+        if (SCRIPT / "build_search_index.py").exists():
+            banner("4.1/8", "刷新全盘搜索索引")
+            rc, ok = run([PY, SCRIPT / "build_search_index.py"], allow_codes=(0,))
+            if not ok:
+                failed_steps.append("build_search_index")
+        if (SCRIPT / "build_search_page.py").exists():
+            banner("4.2/8", "刷新全盘搜索独立页面")
+            rc, ok = run([PY, SCRIPT / "build_search_page.py"], allow_codes=(0,))
+            if not ok:
+                failed_steps.append("build_search_page")
 
     # 5) 核验
     banner("5/8", "核验页面缺失条目")
