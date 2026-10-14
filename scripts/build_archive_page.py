@@ -400,7 +400,7 @@ today_str = datetime.date.today().strftime("%Y-%m-%d")
 current_ym = today_str[:7]
 month_set = {d["date"][:7] for d in days}
 month_set.add(current_ym)
-months = sorted(month_set, reverse=True)[:3]
+months = sorted(month_set, reverse=True)
 
 # ---------- 月历视图 ----------
 month_cards = []
