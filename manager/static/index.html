@@ -53,7 +53,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h1 class="text-base font-bold text-slate-900 leading-tight">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">v0.3.9</span>
+                        <span id="app-version-badge" class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">v0.1.0</span>
                         <!-- 实时全区雷达扫描状态指示器（静默常驻，带动态扫描动效，点击直达监控调度） -->
                         <div id="top-radar-indicator" onclick="switchTab('dashboard')" class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-all bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100" title="点击前往监控调度：全区雷达扫描中">
                             <span id="radar-char-top" class="font-mono text-xs font-bold text-emerald-600 select-none">◜</span>
@@ -1205,7 +1205,7 @@
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.3.9</span>
+        广西招投标数据自动化采集中心 &copy; 2026 · <span class="font-semibold text-slate-500">版本: v0.1.0</span>
         · <span class="text-slate-400">已接入: 广西公共资源交易平台 · 崇左阳光采购服务平台</span>
     </footer>
 
@@ -2464,7 +2464,7 @@
             const localDateEl = document.getElementById("upgrade-local-date");
             const localMsgEl = document.getElementById("upgrade-local-msg");
 
-            if (localVerEl) localVerEl.textContent = cur.version || "v0.3.9";
+            if (localVerEl) localVerEl.textContent = cur.version || "v0.1.0";
             if (localCommitEl) {
                 if (cur.commit) {
                     localCommitEl.textContent = "#" + cur.commit;
@@ -2483,7 +2483,7 @@
             const remoteDateEl = document.getElementById("upgrade-remote-date");
             const remoteMsgEl = document.getElementById("upgrade-remote-msg");
 
-            if (remoteVerEl) remoteVerEl.textContent = rem.version || cur.version || "v0.3.9";
+            if (remoteVerEl) remoteVerEl.textContent = rem.version || cur.version || "v0.1.0";
             if (remoteCommitEl) {
                 if (rem.commit && rem.commit !== "未知") {
                     remoteCommitEl.textContent = "#" + rem.commit;
@@ -3642,7 +3642,7 @@
                                 <svg class="w-3.5 h-3.5 mr-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                 当前本机版本
                             </span>
-                            <span id="upgrade-local-ver" class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-200 text-slate-700">v0.3.9</span>
+                            <span id="upgrade-local-ver" class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-200 text-slate-700">v0.1.0</span>
                         </div>
                         <div class="flex items-center space-x-2 text-xs">
                             <span id="upgrade-local-commit" class="font-mono text-[11px] font-bold text-slate-800 bg-white px-1.5 py-0.5 rounded border border-slate-200">#--</span>
@@ -3658,7 +3658,7 @@
                                 <svg class="w-3.5 h-3.5 mr-1 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
                                 云端最新发布版本
                             </span>
-                            <span id="upgrade-remote-ver" class="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-100 text-indigo-700">v0.3.9</span>
+                            <span id="upgrade-remote-ver" class="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-100 text-indigo-700">v0.1.0</span>
                         </div>
                         <div class="flex items-center space-x-2 text-xs">
                             <span id="upgrade-remote-commit" class="font-mono text-[11px] font-bold text-indigo-800 bg-white px-1.5 py-0.5 rounded border border-indigo-200">#--</span>
