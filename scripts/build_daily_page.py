@@ -78,7 +78,9 @@ if ARGS.all:
         print("正在同步更新首页/归档索引...")
         import run_daily
         run_daily.refresh_archive(dates[-1])
-    if not ARGS.no_vps and getattr(config, "AUTO_UPLOAD_VPS", True):
+    if getattr(config, "IS_ON_VPS", False):
+        print("当前直接运行于生产 VPS，静态页面已就地实时生效。")
+    elif not ARGS.no_vps and getattr(config, "AUTO_UPLOAD_VPS", True):
         print("正在全量同步上传 VPS...")
         upload_cmd = [sys.executable, str(Path(__file__).resolve().parent / "upload_vps.py")]
         subprocess.run(upload_cmd, check=True)
@@ -2171,7 +2173,9 @@ try:
         print("WARN: 归档首页生成返回异常码 %d" % rc)
 
     # 联动同步 VPS
-    if getattr(config, "AUTO_UPLOAD_VPS", True) and not getattr(ARGS, "no_vps", False):
+    if getattr(config, "IS_ON_VPS", False):
+        pass
+    elif getattr(config, "AUTO_UPLOAD_VPS", True) and not getattr(ARGS, "no_vps", False):
         upload_script = _REPO / "scripts" / "upload_vps.py"
         if upload_script.exists():
             subprocess.run([sys.executable, str(upload_script)], check=False)

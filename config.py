@@ -78,9 +78,38 @@ def get(key, default=""):
     return default
 
 
+def _detect_is_on_vps() -> bool:
+    """智能探测当前是否直接运行在生产 VPS 上"""
+    if os.environ.get("IS_ON_VPS", "").lower() in ("true", "1", "yes"):
+        return True
+    if Path("/opt/gxzb").exists() and (REPO_ROOT == Path("/opt/gxzb") or str(REPO_ROOT).startswith("/opt/")):
+        return True
+    try:
+        host = get("VPS_HOST", "8.134.69.22").strip()
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        if local_ip == host:
+            return True
+    except Exception:
+        pass
+    return False
+
+
+IS_ON_VPS = _detect_is_on_vps()
+
+
 def get_path(key, default):
     """路径型配置：相对路径一律相对仓库根目录解析，保证 cron / 双击运行结果一致。"""
-    p = Path(os.path.expanduser(get(key, str(default))))
+    raw_val = get(key, "")
+    if not raw_val:
+        return default if isinstance(default, Path) else Path(default).resolve()
+    p = Path(os.path.expanduser(raw_val))
+    # 若在非 macOS 系统（如 Linux VPS）却配置了 /Users/... 路径，安全回退为默认路径，防止环境污染
+    if sys.platform != "darwin" and str(p).startswith("/Users/"):
+        return default if isinstance(default, Path) else Path(default).resolve()
     if not p.is_absolute():
         p = REPO_ROOT / p
     return p.resolve()
@@ -467,7 +496,11 @@ else:
         _rules = ["focus", "batch_time", "error"]
     PUSH_TRIGGER_RULES = _rules
 
-AUTO_UPLOAD_VPS = get("AUTO_UPLOAD_VPS", "true").strip().lower() in ("true", "1", "yes", "on")
+# 若在生产 VPS 原生运行，静态站点直接写入本地磁盘即由 Nginx 毫秒级生效，默认关闭网络上传
+if IS_ON_VPS:
+    AUTO_UPLOAD_VPS = get("AUTO_UPLOAD_VPS", "false").strip().lower() in ("true", "1", "yes", "on")
+else:
+    AUTO_UPLOAD_VPS = get("AUTO_UPLOAD_VPS", "true").strip().lower() in ("true", "1", "yes", "on")
 VPS_HOST = get("VPS_HOST", "8.134.69.22").strip() or "8.134.69.22"
 VPS_PORT = get("VPS_PORT", "22").strip() or "22"
 VPS_USER = get("VPS_USER", "root").strip() or "root"

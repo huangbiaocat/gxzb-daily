@@ -111,7 +111,9 @@ def main():
     subprocess.run([py_exe, "-u", str(ROOT_DIR / "scripts" / "build_archive_page.py")])
 
     # 5. 若配置了自动上传，统一同步云端
-    if not args.skip_upload and getattr(config, "AUTO_UPLOAD_VPS", True):
+    if getattr(config, "IS_ON_VPS", False):
+        print("\n[*] 当前直接运行于生产 VPS，全量补扫数据与静态网页已就地由 Nginx 实时响应生效！", flush=True)
+    elif not args.skip_upload and getattr(config, "AUTO_UPLOAD_VPS", True):
         print("\n[*] 正在将全量补扫数据与网页同步发布到云端服务器 ...", flush=True)
         upload_script = ROOT_DIR / "scripts" / "upload_vps.py"
         if upload_script.exists():

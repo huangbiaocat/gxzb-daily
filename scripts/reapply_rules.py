@@ -207,7 +207,9 @@ def main():
         print(f"build_archive_page.py 失败:\n{sub.stderr}")
 
     # 5. 自动同步 VPS（若开启）
-    if getattr(config, "AUTO_UPLOAD_VPS", True):
+    if getattr(config, "IS_ON_VPS", False):
+        print("-> 当前直接运行于生产 VPS，重算页面已就地生效。")
+    elif getattr(config, "AUTO_UPLOAD_VPS", True):
         print("-> 自动同步最新页面至 VPS 云端站点...")
         sub_vps = subprocess.run(
             [sys.executable, str(REPO_ROOT / "scripts" / "upload_vps.py")],

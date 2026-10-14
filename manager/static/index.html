@@ -611,6 +611,7 @@
                         <div class="flex items-center space-x-2">
                             <span class="w-1.5 h-4 bg-indigo-600 rounded-full"></span>
                             <h3 class="text-sm font-bold text-slate-800">云端服务器同步 (SCP / SSH)</h3>
+                            <span id="vps-env-banner" class="hidden text-xs px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-md font-medium">当前直接运行在生产 VPS，静态产物就地生效，无需网络上传</span>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             <div>
@@ -756,7 +757,7 @@
 
                 <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
                     <div>
-                        <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">云端同步 VPS</div>
+                        <div id="stat-vps-title" class="text-xs font-medium text-slate-500 uppercase tracking-wider">云端同步 VPS</div>
                         <div class="mt-2 flex items-baseline justify-between">
                             <span id="stat-vps-status" class="text-base font-semibold text-slate-700">未配置</span>
                             <span id="stat-vps-badge" class="px-2 py-0.5 rounded text-xs">--</span>
@@ -937,15 +938,15 @@
                                 <span class="text-[10px] text-indigo-500 mt-0.5">batch_scan.py</span>
                             </button>
                             <button onclick="triggerTask('upload')" class="btn-action flex flex-col items-center justify-center p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
-                                <span class="text-xs font-semibold">手动同步云端</span>
-                                <span class="text-[10px] text-slate-400 mt-0.5">upload_vps.py</span>
+                                <span class="text-xs font-semibold" id="btn-sync-vps-title">手动同步云端</span>
+                                <span class="text-[10px] text-slate-400 mt-0.5" id="btn-sync-vps-sub">upload_vps.py</span>
                             </button>
                             <button onclick="refreshIndexPage(this)" class="btn-action flex flex-col items-center justify-center p-3 bg-blue-50/80 hover:bg-blue-100 rounded-xl border border-blue-200 text-blue-700 transition shadow-xs">
                                 <div class="flex items-center space-x-1">
                                     <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                     <span class="text-xs font-semibold">刷新首页信息</span>
                                 </div>
-                                <span class="text-[10px] text-blue-500 mt-0.5">重算索引同步VPS</span>
+                                <span class="text-[10px] text-blue-500 mt-0.5" id="btn-refresh-index-sub">重算索引即时生效</span>
                             </button>
                             <button onclick="openDeleteDateModal()" class="btn-action flex flex-col items-center justify-center p-3 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 text-rose-700 transition">
                                 <div class="flex items-center space-x-1">
@@ -1880,7 +1881,27 @@
                 const vpsBadge = document.getElementById("stat-vps-badge");
                 const vpsDesc = document.getElementById("stat-vps-desc");
                 const vpsTime = document.getElementById("stat-vps-time");
-                if (data.vps && data.vps.auto_upload) {
+                const vpsTitle = document.getElementById("stat-vps-title");
+                const vpsBanner = document.getElementById("vps-env-banner");
+                const btnSyncTitle = document.getElementById("btn-sync-vps-title");
+                const btnSyncSub = document.getElementById("btn-sync-vps-sub");
+                const btnRefreshSub = document.getElementById("btn-refresh-index-sub");
+
+                if (data.is_on_vps) {
+                    if (vpsTitle) vpsTitle.textContent = "站点发布模式";
+                    vpsStatus.textContent = "生产 VPS 原生运行";
+                    vpsBadge.textContent = "本地自治";
+                    vpsBadge.className = "px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-800 font-semibold";
+                    vpsDesc.textContent = "Nginx 直接承接产物目录，毫秒级生效无需网络上传";
+                    if (vpsTime) {
+                        vpsTime.textContent = "本地实时响应";
+                        vpsTime.className = "font-mono font-medium text-emerald-600 text-[11px]";
+                    }
+                    if (vpsBanner) vpsBanner.classList.remove("hidden");
+                    if (btnSyncTitle) btnSyncTitle.textContent = "校验静态产物";
+                    if (btnSyncSub) btnSyncSub.textContent = "本地直接生效";
+                    if (btnRefreshSub) btnRefreshSub.textContent = "重算索引即时生效";
+                } else if (data.vps && data.vps.auto_upload) {
                     vpsStatus.textContent = data.vps.host || "已开启";
                     vpsBadge.textContent = "自动同步";
                     vpsBadge.className = "px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-800 font-semibold";
@@ -3067,7 +3088,7 @@
                 });
                 const d = await res.json();
                 if (d.ok) {
-                    alert("✅ " + (d.msg || "首页归档信息已重新计算生成，并已同步至 VPS！"));
+                    alert("✅ " + (d.msg || "首页归档信息已重新计算生成，并已即时生效！"));
                     await fetchStatus();
                 } else {
                     alert("❌ 刷新首页失败: " + (d.msg || "未知错误"));
@@ -3214,7 +3235,7 @@
                 }
             }
             const desc = dates.length === 1 ? dates[0] : `选中的 ${dates.length} 个日期 (${dates.slice(0, 3).join(", ")}${dates.length > 3 ? " 等" : ""})`;
-            if (!confirm(`确定要彻底删除 ${desc} 的全部数据与日报页面吗？\n\n此操作将删除这些日期的原始采集、清洗入库记录、HTML 日报，并彻底重新计算归档总索引并同步清理云端 VPS。\n\n⚠️ 注意：此操作不可撤销！`)) {
+            if (!confirm(`确定要彻底删除 ${desc} 的全部数据与日报页面吗？\n\n此操作将删除这些日期的原始采集、清洗入库记录、HTML 日报，并重新计算归档总索引与更新站点。\n\n⚠️ 注意：此操作不可撤销！`)) {
                 return;
             }
             try {
@@ -3774,7 +3795,7 @@
                     </div>
                     <div>
                         <h3 class="text-sm font-bold text-slate-900">删除日期历史数据 (支持单日与批量)</h3>
-                        <p class="text-[11px] text-slate-400">彻底清理指定日期的数据、HTML日报，并重构首页大屏与同步VPS</p>
+                        <p class="text-[11px] text-slate-400">彻底清理指定日期的数据、HTML日报，并重构首页大屏与归档索引</p>
                     </div>
                 </div>
                 <button onclick="closeDeleteDateModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
@@ -3832,7 +3853,7 @@
                         <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                         <span>警告：此操作不可恢复！</span>
                     </div>
-                    确认后将删除目标日期的原始采集 JSON、入库清洗数据、SQLite 记录及 HTML 日报文件；系统将自动重新计算归档总索引并彻底同步清理 VPS 云端站点。
+                    确认后将删除目标日期的原始采集 JSON、入库清洗数据、SQLite 记录及 HTML 日报文件；系统将自动重新计算归档总索引并实时更新站点。
                 </div>
 
                 <div class="pt-2 flex items-center justify-end space-x-3">

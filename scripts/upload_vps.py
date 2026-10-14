@@ -68,6 +68,12 @@ def execute_with_retry(cmd, max_retries=3, base_delay=3):
 
 def main():
     dist = Path(config.SITE_DIR)
+
+    if getattr(config, "IS_ON_VPS", False):
+        print(f"[VPS 自治模式] 当前系统已直接运行在生产 VPS 本机 ({config.REPO_ROOT})。")
+        print(f"[VPS 自治模式] 静态产物目录：{dist}，由本地 Nginx 实时承接，无需进行网络上传。")
+        record_vps_sync_result("localhost", str(dist), "local_direct", True)
+        return 0
     
     host = getattr(config, "VPS_HOST", "8.134.69.22")
     port = str(getattr(config, "VPS_PORT", "22"))

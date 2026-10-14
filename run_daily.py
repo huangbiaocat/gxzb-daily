@@ -476,7 +476,10 @@ def main(argv=None):
 
 
     # 7) 自动同步 VPS（可选）
-    if getattr(config, "AUTO_UPLOAD_VPS", True):
+    if getattr(config, "IS_ON_VPS", False):
+        banner("7/8", "站点静态产物就地发布 (VPS 自治模式)")
+        print(f"当前直接运行在生产 VPS 本地，产物由 Nginx 实时响应：{SITE_DIR}")
+    elif getattr(config, "AUTO_UPLOAD_VPS", True):
         banner("7/8", "同步上传静态站点至 VPS")
         rc, ok = run([PY, SCRIPT / "upload_vps.py"], allow_codes=(0,))
         if not ok:
@@ -487,6 +490,8 @@ def main(argv=None):
                 send_alert(day, f"无法更新 VPS 上的信息：静态站点同步上传失败 (退出码 {rc})，请检查 VPS SSH 连通性与网络状态", "upload_vps")
             except Exception as exc:
                 print("VPS 告警推送异常：", exc)
+    else:
+        banner("7/8", "跳过 VPS 同步（AUTO_UPLOAD_VPS=False）")
 
     # 8) 微信服务号模版推送（可选）
     if getattr(config, "WECHAT_APPID", "") and getattr(config, "WECHAT_TOUSER", ""):

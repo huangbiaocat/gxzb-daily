@@ -687,6 +687,7 @@ def get_system_status():
         "today_db_count": today_db_count,
         "today_monitor_count": today_monitor_count,
         "last_monitor_time": last_monitor_time,
+        "is_on_vps": getattr(config, "IS_ON_VPS", False),
         "vps_host": getattr(config, "VPS_HOST", "8.134.69.22"),
         "vps_user": getattr(config, "VPS_USER", "root"),
         "vps_path": getattr(config, "VPS_PATH", "/opt/1panel/apps/openresty/openresty/www/sites/ztb/index/"),
@@ -1571,9 +1572,11 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             except Exception as e_arc:
                 print(f"[警告] 重建归档总索引异常: {e_arc}")
 
-            # 5. 自动同步 VPS 云端站点（通过 rsync --delete 彻底清理云端已删除文件并更新首页）
+            # 5. 自动同步 VPS 云端站点（非 VPS 部署环境执行网络同步）
             vps_synced = False
-            if getattr(config, "AUTO_UPLOAD_VPS", True):
+            if getattr(config, "IS_ON_VPS", False):
+                vps_text = "（VPS 本地实时生效）"
+            elif getattr(config, "AUTO_UPLOAD_VPS", True):
                 try:
                     upload_script = ROOT_DIR / "scripts" / "upload_vps.py"
                     if upload_script.exists():
@@ -1581,8 +1584,10 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                         vps_synced = (res_up.returncode == 0)
                 except Exception as e_vps:
                     print(f"[警告] 同步 VPS 异常: {e_vps}")
+                vps_text = "，并已彻底同步清理 VPS 云端站点" if vps_synced else ""
+            else:
+                vps_text = ""
 
-            vps_text = "，并已彻底同步清理 VPS 云端站点" if vps_synced else ""
             target_desc = f"{len(target_dates)} 个日期 ({', '.join(target_dates[:3])}{'...' if len(target_dates) > 3 else ''})"
             self.send_json({
                 "ok": True,
@@ -1601,7 +1606,9 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                     return
 
                 vps_msg = ""
-                if getattr(config, "AUTO_UPLOAD_VPS", True):
+                if getattr(config, "IS_ON_VPS", False):
+                    vps_msg = "（当前运行于 VPS 本机，Nginx 毫秒级即时生效）"
+                elif getattr(config, "AUTO_UPLOAD_VPS", True):
                     upload_script = ROOT_DIR / "scripts" / "upload_vps.py"
                     if upload_script.exists():
                         res_vps = subprocess.run([py_exe, "-u", str(upload_script)], capture_output=True, text=True)
@@ -1629,6 +1636,9 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             return
 
         if path == "/api/run_upload":
+            if getattr(config, "IS_ON_VPS", False):
+                self.send_json({"ok": True, "msg": "系统当前直接运行在生产 VPS 本机，静态文件已就地实时生效，无需重复进行网络上传！"})
+                return
             cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "upload_vps.py")]
             ok, msg = PROC_MGR.start_task("同步上传静态文件至 VPS", cmd)
             self.send_json({"ok": ok, "msg": msg})
