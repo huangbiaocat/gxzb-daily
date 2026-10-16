@@ -1,9 +1,27 @@
 {
-  "version": "v0.1.13",
-  "commit": "f6de5ed",
+  "version": "v0.1.14",
+  "commit": "dca80a0",
   "date": "2026-10-16",
-  "message": "chore(release): bump version v0.1.13",
+  "message": "chore(release): bump version v0.1.14",
   "commits": [
+    {
+      "commit": "dca80a0",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.14"
+    },
+    {
+      "commit": "049b035",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "feat(notify): 实现交建通私有化自建应用与群机器人双通道推送及控制台配置 (ZTB-13)"
+    },
+    {
+      "commit": "de385a4",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): update version.json build metadata for v0.1.13"
+    },
     {
       "commit": "f6de5ed",
       "author": "黄彪",
@@ -21,24 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-16",
       "message": "chore(release): bump version v0.1.12"
-    },
-    {
-      "commit": "96c0d80",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "fix(batch_scan): 增加子任务超时保护与断点续跑日期反转容错 (ZTB-22, ZTB-23)"
-    },
-    {
-      "commit": "7f15590",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): bump version v0.1.11"
-    },
-    {
-      "commit": "e4853d1",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "feat(manager): add create and delete functionality for config snapshots"
     }
   ]
 }
