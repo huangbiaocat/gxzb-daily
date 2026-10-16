@@ -1112,6 +1112,35 @@ def restore_config_snapshot(filename):
         importlib.reload(config)
     return True
 
+def create_config_snapshot():
+    backup_dir = ROOT_DIR / "data" / "backup" / "config"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    env_file = ROOT_DIR / ".env"
+    if not env_file.exists():
+        raise FileNotFoundError("未找到 .env 配置文件，无法创建快照")
+    snap_name = f"env_{ts}.env"
+    shutil.copy2(env_file, backup_dir / snap_name)
+    rules_path = ROOT_DIR / "data" / "focus_rules.json"
+    if rules_path.exists():
+        shutil.copy2(rules_path, backup_dir / f"rules_{ts}.json")
+    return snap_name
+
+def delete_config_snapshot(filename):
+    if not filename or "/" in filename or "\\" in filename or ".." in filename:
+        raise ValueError("非法的快照文件名")
+    if not filename.startswith("env_") or not filename.endswith(".env"):
+        raise ValueError("仅允许删除 env_*.env 格式的配置快照")
+    backup_dir = ROOT_DIR / "data" / "backup" / "config"
+    target = backup_dir / filename
+    if not target.exists() or not target.is_file():
+        raise FileNotFoundError(f"快照文件不存在: {filename}")
+    target.unlink()
+    rule_snap = backup_dir / filename.replace("env_", "rules_").replace(".env", ".json")
+    if rule_snap.exists() and rule_snap.is_file():
+        rule_snap.unlink()
+    return True
+
 def restore_master_focus_rules():
     master_path = ROOT_DIR / "config" / "focus_rules_master.json"
     if not master_path.exists():
@@ -2299,12 +2328,10 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
 
                 task_event_db.resume_event(event_id)
 
-                dates_str = ",".join(unfinished)
                 cmd = [
                     py_exe, "-u", str(ROOT_DIR / "scripts" / "batch_scan.py"),
                     "--event-id", event_id,
                     "--resume",
-                    "--dates", dates_str,
                     "--title", event.get("title", "")
                 ]
                 task_name = f"断点续跑: {event.get('title', '')} (剩余 {len(unfinished)} 天)"
@@ -2740,6 +2767,27 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             except Exception as exc:
                 self._audit("RESTORE_SNAPSHOT", "FAILED", f"恢复快照失败: {str(exc)}")
                 self.send_json({"ok": False, "msg": f"恢复快照失败: {str(exc)}"}, status=500)
+            return
+
+        if path == "/api/create_snapshot":
+            try:
+                snap_name = create_config_snapshot()
+                self._audit("CREATE_SNAPSHOT", "SUCCESS", f"手动创建配置快照: {snap_name}")
+                self.send_json({"ok": True, "msg": f"已成功创建快照 {snap_name}！", "filename": snap_name})
+            except Exception as exc:
+                self._audit("CREATE_SNAPSHOT", "FAILED", f"创建快照失败: {str(exc)}")
+                self.send_json({"ok": False, "msg": f"创建快照失败: {str(exc)}"}, status=500)
+            return
+
+        if path == "/api/delete_snapshot":
+            try:
+                snap_name = post_data.get("filename", "")
+                delete_config_snapshot(snap_name)
+                self._audit("DELETE_SNAPSHOT", "SUCCESS", f"删除配置快照: {snap_name}")
+                self.send_json({"ok": True, "msg": f"已成功删除快照 {snap_name}！"})
+            except Exception as exc:
+                self._audit("DELETE_SNAPSHOT", "FAILED", f"删除快照失败: {str(exc)}")
+                self.send_json({"ok": False, "msg": f"删除快照失败: {str(exc)}"}, status=500)
             return
 
         self.send_error(404, "Not Found")

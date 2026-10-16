@@ -219,9 +219,12 @@
                         <h2 class="text-lg font-bold text-slate-900">重点跟踪信息与触发推送管理</h2>
                         <p class="text-xs text-slate-500 mt-0.5">管理重点跟踪项目、重点业主名单、核心预警规则及微信推送触发条件，修改后直接写入本地 <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600">.env</code> 并实时生效。</p>
                     </div>
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center space-x-2.5">
+                        <span id="save-business-top-tip" class="text-xs font-medium"></span>
                         <button type="button" onclick="fetchConfig()" class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">重置/重新载入</button>
-                        <button type="submit" form="business-form" class="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition">保存重点跟踪与推送配置</button>
+                        <button id="btn-save-business-top" type="button" onclick="saveConfig(event)" class="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-lg shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
+                            <span>保存重点跟踪与推送配置</span>
+                        </button>
                     </div>
                 </div>
 
@@ -430,8 +433,8 @@
                     <!-- 操作提交栏 -->
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
                         <span id="save-business-tip" class="text-xs text-slate-500"></span>
-                        <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
-                            保存重点跟踪与推送配置
+                        <button id="btn-save-business-bottom" type="button" onclick="saveConfig(event)" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-lg shadow-sm transition cursor-pointer">
+                            <span>保存重点跟踪与推送配置</span>
                         </button>
                     </div>
                 </form>
@@ -1735,6 +1738,30 @@
             }
         }
 
+        // Mobile "more" bottom-sheet controls
+        function toggleMobileMoreMenu() {
+            const menu = document.getElementById("mobile-more-menu");
+            const overlay = document.getElementById("mobile-more-overlay");
+            if (!menu || !overlay) return;
+            const isOpen = !menu.classList.contains("translate-y-full");
+            if (isOpen) {
+                closeMobileMoreMenu();
+            } else {
+                menu.classList.remove("translate-y-full");
+                overlay.classList.remove("hidden");
+                document.body.classList.add("overflow-hidden");
+            }
+        }
+
+        function closeMobileMoreMenu() {
+            const menu = document.getElementById("mobile-more-menu");
+            const overlay = document.getElementById("mobile-more-overlay");
+            if (!menu || !overlay) return;
+            menu.classList.add("translate-y-full");
+            overlay.classList.add("hidden");
+            document.body.classList.remove("overflow-hidden");
+        }
+
         // ==============================================
         // 用户中心与重点关注监控业务逻辑 (User & Favorites Audit)
         // ==============================================
@@ -2622,12 +2649,18 @@
 
         async function saveConfig(e) {
             if (e) e.preventDefault();
+            const btnTop = document.getElementById("btn-save-business-top");
+            const btnBottom = document.getElementById("btn-save-business-bottom");
+            const tipBusinessTop = document.getElementById("save-business-top-tip");
             const tipBusiness = document.getElementById("save-business-tip");
             const tipEnv = document.getElementById("save-env-tip");
             const showTip = (text, cls) => {
+                if (tipBusinessTop) { tipBusinessTop.textContent = text; tipBusinessTop.className = cls; }
                 if (tipBusiness) { tipBusiness.textContent = text; tipBusiness.className = cls; }
                 if (tipEnv) { tipEnv.textContent = text; tipEnv.className = cls; }
             };
+            if (btnTop) { btnTop.disabled = true; btnTop.classList.add("opacity-75", "cursor-not-allowed"); btnTop.innerHTML = "<span>正在保存...</span>"; }
+            if (btnBottom) { btnBottom.disabled = true; btnBottom.classList.add("opacity-75", "cursor-not-allowed"); btnBottom.innerHTML = "<span>正在保存...</span>"; }
             showTip("正在保存并更新配置...", "text-xs text-blue-600 font-medium");
 
             const getVal = (id, def = "") => {
@@ -2696,6 +2729,7 @@
                 });
                 const ret = await res.json();
                 if (ret.ok) {
+                    showToast("✓ 重点跟踪与推送配置保存成功并已实时生效！", "success", 4000);
                     showTip("✅ " + (ret.msg || "配置保存成功并已重载生效！"), "text-xs text-emerald-600 font-semibold");
                     setTimeout(() => { showTip("", ""); }, 4000);
                     fetchConfig();
@@ -2711,6 +2745,7 @@
                             });
                             const retryRet = await retryRes.json();
                             if (retryRet.ok) {
+                                showToast("✓ 配置强制保存成功并自动备份！", "success", 4000);
                                 showTip("✅ " + (retryRet.msg || "配置强制保存成功并自动备份！"), "text-xs text-emerald-600 font-semibold");
                                 setTimeout(() => { showTip("", ""); }, 4000);
                                 fetchConfig();
@@ -2719,10 +2754,15 @@
                             }
                         }
                     }
+                    showToast("保存失败: " + (ret.msg || "未知错误"), "error", 5000);
                     showTip("❌ " + (ret.msg || "保存失败"), "text-xs text-red-600 font-semibold");
                 }
             } catch (err) {
+                showToast("保存异常: " + (err.message || "请求失败"), "error", 5000);
                 showTip("❌ 网络或接口异常: " + err, "text-xs text-red-600 font-semibold");
+            } finally {
+                if (btnTop) { btnTop.disabled = false; btnTop.classList.remove("opacity-75", "cursor-not-allowed"); btnTop.innerHTML = "<span>保存重点跟踪与推送配置</span>"; }
+                if (btnBottom) { btnBottom.disabled = false; btnBottom.classList.remove("opacity-75", "cursor-not-allowed"); btnBottom.innerHTML = "<span>保存重点跟踪与推送配置</span>"; }
             }
         }
 
@@ -4207,9 +4247,13 @@
 
         async function openConfigSnapshotsModal() {
             const modal = document.getElementById("modal-config-snapshots");
-            const listEl = document.getElementById("snapshots-list");
             if (modal) modal.classList.remove("hidden");
-            if (listEl) listEl.innerHTML = '<div class="text-slate-400 text-center py-4">正在读取配置快照...</div>';
+            await loadConfigSnapshotsList();
+        }
+
+        async function loadConfigSnapshotsList() {
+            const listEl = document.getElementById("snapshots-list");
+            if (listEl) listEl.innerHTML = '<div class="text-slate-400 text-center py-4 text-xs">正在读取配置快照...</div>';
 
             try {
                 const res = await fetch("/api/config_snapshots");
@@ -4217,24 +4261,77 @@
                 if (data.ok && data.snapshots && data.snapshots.length > 0) {
                     listEl.innerHTML = data.snapshots.map(s => `
                         <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-lg hover:bg-blue-50/50 transition">
-                            <div class="flex flex-col">
-                                <span class="font-bold text-slate-800 text-xs">${s.filename}</span>
+                            <div class="flex flex-col pr-2 overflow-hidden">
+                                <span class="font-bold text-slate-800 text-xs truncate">${s.filename}</span>
                                 <span class="text-[10px] text-slate-500">${s.time_str} (${(s.size / 1024).toFixed(1)} KB)</span>
                             </div>
-                            <button onclick="restoreSnapshot('${s.filename}')" class="px-2.5 py-1 text-xs bg-white text-blue-700 border border-blue-300 rounded hover:bg-blue-100 font-semibold transition">还原此版本</button>
+                            <div class="flex items-center space-x-1.5 shrink-0">
+                                <button onclick="restoreSnapshot('${s.filename}')" class="px-2.5 py-1 text-xs bg-white text-blue-700 border border-blue-300 rounded hover:bg-blue-100 font-semibold transition">还原此版本</button>
+                                <button onclick="deleteSnapshot('${s.filename}')" class="px-2 py-1 text-xs bg-white text-rose-600 border border-rose-200 rounded hover:bg-rose-50 font-medium transition" title="删除此快照">删除</button>
+                            </div>
                         </div>
                     `).join("");
                 } else {
-                    listEl.innerHTML = '<div class="text-slate-400 text-center py-4">暂无历史备份快照（系统将在每次修改保存配置时自动生成）</div>';
+                    listEl.innerHTML = '<div class="text-slate-400 text-center py-4 text-xs">暂无历史备份快照（可点击右上角“新建快照”手动归档当前配置）</div>';
                 }
             } catch (err) {
-                if (listEl) listEl.innerHTML = `<div class="text-rose-500 text-center py-4">读取快照失败: ${err.message}</div>`;
+                if (listEl) listEl.innerHTML = `<div class="text-rose-500 text-center py-4 text-xs">读取快照失败: ${err.message}</div>`;
             }
         }
 
         function closeConfigSnapshotsModal() {
             const modal = document.getElementById("modal-config-snapshots");
             if (modal) modal.classList.add("hidden");
+        }
+
+        async function createNewSnapshot() {
+            const btn = document.getElementById("btn-create-snapshot");
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add("opacity-60", "cursor-not-allowed");
+            }
+            try {
+                const res = await fetch("/api/create_snapshot", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    alert(data.msg || "快照创建成功！");
+                    await loadConfigSnapshotsList();
+                } else {
+                    alert("创建快照失败: " + (data.msg || "未知错误"));
+                }
+            } catch (err) {
+                alert("创建快照请求失败: " + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.classList.remove("opacity-60", "cursor-not-allowed");
+                }
+            }
+        }
+
+        async function deleteSnapshot(filename) {
+            if (!confirm(`确定要彻底删除该配置快照 [${filename}] 吗？\n删除后不可恢复。`)) {
+                return;
+            }
+            try {
+                const res = await fetch("/api/delete_snapshot", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ filename })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    alert(data.msg || "删除成功！");
+                    await loadConfigSnapshotsList();
+                } else {
+                    alert("删除快照失败: " + (data.msg || "未知错误"));
+                }
+            } catch (err) {
+                alert("删除请求失败: " + err.message);
+            }
         }
 
         async function restoreSnapshot(filename) {
@@ -4850,7 +4947,13 @@
                 </button>
             </div>
             <div class="p-6 space-y-3">
-                <div class="text-xs text-slate-600">系统历史配置备份文件：</div>
+                <div class="flex items-center justify-between">
+                    <div class="text-xs text-slate-600 font-medium">系统历史配置备份文件：</div>
+                    <button type="button" onclick="createNewSnapshot()" id="btn-create-snapshot" class="px-2.5 py-1 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xs flex items-center space-x-1 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        <span>新建快照</span>
+                    </button>
+                </div>
                 <div id="snapshots-list" class="max-h-72 overflow-y-auto space-y-2 pr-1">
                     <div class="text-slate-400 text-center py-6 text-xs">加载中...</div>
                 </div>
@@ -4894,25 +4997,3 @@
 
 </body>
 </html>
-        // Mobile "more" bottom-sheet controls
-        function toggleMobileMoreMenu() {
-            const menu = document.getElementById("mobile-more-menu");
-            const overlay = document.getElementById("mobile-more-overlay");
-            if (!menu || !overlay) return;
-            const isOpen = !menu.classList.contains("translate-y-full");
-            if (isOpen) {
-                closeMobileMoreMenu();
-            } else {
-                menu.classList.remove("translate-y-full");
-                menu.style.transform = "translateY(0)";
-                overlay.classList.remove("hidden");
-            }
-        }
-        function closeMobileMoreMenu() {
-            const menu = document.getElementById("mobile-more-menu");
-            const overlay = document.getElementById("mobile-more-overlay");
-            if (menu) { menu.classList.add("translate-y-full"); menu.style.transform = ""; }
-            if (overlay) overlay.classList.add("hidden");
-        }
-
-        function switchTab(tabId) {
