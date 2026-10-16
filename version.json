@@ -1,9 +1,21 @@
 {
-  "version": "v0.1.11",
-  "commit": "7f15590",
+  "version": "v0.1.12",
+  "commit": "e4989c1",
   "date": "2026-10-16",
-  "message": "chore(release): bump version v0.1.11",
+  "message": "chore(release): bump version v0.1.12",
   "commits": [
+    {
+      "commit": "e4989c1",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.12"
+    },
+    {
+      "commit": "96c0d80",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "fix(batch_scan): 增加子任务超时保护与断点续跑日期反转容错 (ZTB-22, ZTB-23)"
+    },
     {
       "commit": "7f15590",
       "author": "黄彪",
@@ -27,18 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-16",
       "message": "chore(release): bump version v0.1.10"
-    },
-    {
-      "commit": "a4dbed8",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): bump version v0.1.9"
-    },
-    {
-      "commit": "2d516cf",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "feat(history): 严格区分自动执行流水与事件任务台账并剔除历史派生记录 (ZTB-21)"
     }
   ]
 }
