@@ -1,9 +1,21 @@
 {
-  "version": "v0.1.3",
-  "commit": "8d8ebbe",
+  "version": "v0.1.4",
+  "commit": "2ab255a",
   "date": "2026-10-16",
-  "message": "chore(release): bump version v0.1.3",
+  "message": "chore(release): bump version v0.1.4",
   "commits": [
+    {
+      "commit": "2ab255a",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.4"
+    },
+    {
+      "commit": "ec9a0d4",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "feat(manager): 适配管理后台移动端设备访问体验与底部快捷导航 (ZTB-14)"
+    },
     {
       "commit": "8d8ebbe",
       "author": "黄彪",
@@ -27,18 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-16",
       "message": "feat(manager): 增加网站安全与操作审计日志系统 (ZTB-19)"
-    },
-    {
-      "commit": "def59c6",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): bump version v0.1.1"
-    },
-    {
-      "commit": "93fa51b",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "feat(release): 自动版本递增 - bump_version.py + pack_and_upload 集成 (ZTB-18)"
     }
   ]
 }
