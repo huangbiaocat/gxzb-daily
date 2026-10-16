@@ -32,8 +32,12 @@ import config
 
 def parse_args():
     p = argparse.ArgumentParser(description="历史数据批量补扫调度工具")
-    p.add_argument("--start-date", "--start", dest="start_date", required=True, help="起始补扫日期 YYYY-MM-DD")
-    p.add_argument("--end-date", "--end", dest="end_date", required=True, help="截止补扫日期 YYYY-MM-DD")
+    p.add_argument("--start-date", "--start", dest="start_date", default="", help="起始补扫日期 YYYY-MM-DD")
+    p.add_argument("--end-date", "--end", dest="end_date", default="", help="截止补扫日期 YYYY-MM-DD")
+    p.add_argument("--dates", dest="dates", default="", help="指定的日期列表（逗号分隔）")
+    p.add_argument("--event-id", dest="event_id", default="", help="关联的任务事件 ID")
+    p.add_argument("--title", dest="title", default="", help="自定义事件任务标题")
+    p.add_argument("--resume", action="store_true", help="是否为断点续跑模式")
     p.add_argument("--skip-upload", action="store_true", help="完成补扫后跳过自动上传 VPS")
     return p.parse_args()
 
@@ -43,23 +47,65 @@ def main():
     py_exe = sys.executable
 
     try:
-        d_start = datetime.strptime(args.start_date.strip(), "%Y-%m-%d").date()
-        d_end = datetime.strptime(args.end_date.strip(), "%Y-%m-%d").date()
-    except Exception as e:
-        print(f"[错误] 日期格式不正确，必须为 YYYY-MM-DD 格式: {e}")
+        target_dates = []
+        if args.dates.strip():
+            raw_dates = [d.strip() for d in args.dates.split(",") if d.strip()]
+            for rd in raw_dates:
+                try:
+                    datetime.strptime(rd, "%Y-%m-%d")
+                    target_dates.append(rd)
+                except Exception:
+                    print(f"[警告] 忽略无效日期参数: {rd}")
+            target_dates = sorted(list(set(target_dates)), reverse=True)
+        elif args.start_date.strip() and args.end_date.strip():
+            d_start = datetime.strptime(args.start_date.strip(), "%Y-%m-%d").date()
+            d_end = datetime.strptime(args.end_date.strip(), "%Y-%m-%d").date()
+            if d_start > d_end:
+                d_start, d_end = d_end, d_start
+            curr = d_start
+            while curr <= d_end:
+                target_dates.append(curr.isoformat())
+                curr += timedelta(days=1)
+            target_dates.reverse()
+        elif args.event_id.strip():
+            try:
+                from scripts import task_event_db
+                target_dates = task_event_db.get_unfinished_dates(args.event_id.strip())
+                target_dates = list(reversed(target_dates))
+            except Exception as e_ev:
+                print(f"[警告] 从事件 ID 加载未完成日期失败: {e_ev}")
+        else:
+            print("[错误] 必须提供 --start-date 与 --end-date，或者通过 --dates 指定日期列表")
+            sys.exit(1)
+    except Exception as e_date:
+        print(f"[错误] 解析扫描日期失败: {e_date}")
         sys.exit(1)
 
-    if d_start > d_end:
-        d_start, d_end = d_end, d_start
+    if not target_dates:
+        print("[错误] 未指定任何有效的扫描日期")
+        sys.exit(1)
 
-    curr = d_start
-    target_dates = []
-    while curr <= d_end:
-        target_dates.append(curr.isoformat())
-        curr += timedelta(days=1)
+    # 引入任务事件台账组件
+    event_id = args.event_id.strip()
+    try:
+        from scripts import task_event_db
+        task_event_db.init_db()
+        if not event_id:
+            event_id = task_event_db.create_event(
+                task_type="batch_scan",
+                target_dates=target_dates,
+                title=args.title.strip() or None,
+                params={"start_date": args.start_date, "end_date": args.end_date, "skip_upload": args.skip_upload}
+            )
+    except Exception as e_evt:
+        print(f"[提示] 事件任务台账初始化提示: {e_evt}")
+        task_event_db = None
 
     print("=" * 68)
-    print(f"[*] 启动历史日期批量补扫任务：共 {len(target_dates)} 天 ({target_dates[0]} 至 {target_dates[-1]})", flush=True)
+    mode_tag = "【断点续跑】" if args.resume else "【批量扫描】"
+    print(f"[*] 启动{mode_tag}事件任务：共 {len(target_dates)} 天 ({target_dates[0]} 至 {target_dates[-1]})", flush=True)
+    if event_id:
+        print(f"[*] 关联事件任务 ID: {event_id}", flush=True)
     print("=" * 68)
 
     success_days = []
@@ -70,6 +116,11 @@ def main():
         pct = int(idx / len(target_dates) * 100)
         print(f"\n" + "-" * 50, flush=True)
         print(f">>> [{idx}/{len(target_dates)} - 进度 {pct}%] 正在补扫执行日期: {day_str} ...", flush=True)
+        if task_event_db and event_id:
+            try:
+                task_event_db.update_day_progress(event_id, day_str, status="running")
+            except Exception:
+                pass
         try:
             # 1. 执行单日采集 (含公共资源交易中心与崇左阳光采购)
             print(f"    [步骤 1/3] 抓取当日公告数据 (公共资源 + 崇左阳光采购)...", flush=True)
@@ -77,6 +128,9 @@ def main():
             res1 = subprocess.run(cmd_collect)
             if res1.returncode != 0:
                 print(f"    [警告] {day_str} 采集脚本退出码异常: {res1.returncode}", flush=True)
+
+            cmd_cz = [py_exe, "-u", str(ROOT_DIR / "scripts" / "collect_cz_ygcg.py"), "--date", day_str]
+            subprocess.run(cmd_cz)
 
             # 2. 数据合并入库 (reconcile)
             print(f"    [步骤 2/3] 合并数据入库 (reconcile)...", flush=True)
@@ -91,6 +145,20 @@ def main():
             cmd_build = [py_exe, "-u", str(ROOT_DIR / "scripts" / "build_daily_page.py"), "--date", day_str, "--no-vps"]
             res2 = subprocess.run(cmd_build)
             elapsed = time.time() - t_start
+
+            # 查询当日抓取公告总数与重点公告数
+            notice_cnt = 0
+            focus_cnt = 0
+            try:
+                import sqlite3
+                with sqlite3.connect(str(config.DB_PATH)) as conn:
+                    row_all = conn.execute("SELECT count(*) FROM notices WHERE pub_time LIKE ?", (f"{day_str}%",)).fetchone()
+                    notice_cnt = row_all[0] if row_all else 0
+                    row_foc = conn.execute("SELECT count(*) FROM notices WHERE pub_time LIKE ? AND (industry LIKE '%重点%' OR title LIKE '%重点%' OR title LIKE '%重大%')", (f"{day_str}%",)).fetchone()
+                    focus_cnt = row_foc[0] if row_foc else 0
+            except Exception:
+                pass
+
             if res2.returncode == 0:
                 success_days.append(day_str)
                 print(f"[OK] 日期 {day_str} 采集并构建完成！(耗时: {elapsed:.1f}s)", flush=True)
@@ -98,12 +166,33 @@ def main():
                     refresh_archive(day_str)
                 except Exception:
                     pass
+                if task_event_db and event_id:
+                    try:
+                        task_event_db.update_day_progress(
+                            event_id, day_str, status="success", count=notice_cnt, focus=focus_cnt, duration=elapsed
+                        )
+                    except Exception:
+                        pass
             else:
                 failed_days.append(day_str)
                 print(f"[FAIL] 日期 {day_str} 构建失败，返回码: {res2.returncode} (耗时: {elapsed:.1f}s)", flush=True)
+                if task_event_db and event_id:
+                    try:
+                        task_event_db.update_day_progress(
+                            event_id, day_str, status="failed", duration=elapsed, error=f"build_daily_page exit code {res2.returncode}"
+                        )
+                    except Exception:
+                        pass
         except Exception as e_day:
             failed_days.append(day_str)
             print(f"[FAIL] 日期 {day_str} 调度过程发生未捕获异常: {e_day}，继续处理下一日...", flush=True)
+            if task_event_db and event_id:
+                try:
+                    task_event_db.update_day_progress(
+                        event_id, day_str, status="failed", duration=time.time() - t_start, error=str(e_day)
+                    )
+                except Exception:
+                    pass
 
     # 4. 全部补扫完成后，全量重构归档总表（index.html）
     print("\n" + "=" * 68, flush=True)
@@ -124,6 +213,13 @@ def main():
     if failed_days:
         print(f"失败日期列表: {failed_days}", flush=True)
     print("=" * 68)
+
+    # 完成事件任务归档
+    if task_event_db and event_id:
+        try:
+            task_event_db.finish_event(event_id)
+        except Exception as e_fin:
+            print(f"[提示] 事件任务归档提示: {e_fin}")
 
 
 if __name__ == "__main__":
