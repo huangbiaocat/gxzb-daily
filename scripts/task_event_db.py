@@ -332,6 +332,26 @@ def resume_event(event_id: str) -> bool:
         row = conn.execute("SELECT * FROM task_events WHERE event_id = ?", (event_id,)).fetchone()
         if not row:
             return False
+
+        # 检查 days_detail，若有单天因异常退出停留在 'running' 状态，重置为 'pending' 供续跑重新调度
+        days_detail_raw = row["days_detail"]
+        if days_detail_raw:
+            try:
+                days_detail = json.loads(days_detail_raw)
+                updated = False
+                for d in days_detail:
+                    if d.get("status") == "running":
+                        d["status"] = "pending"
+                        d["error"] = "断点续跑前重置"
+                        updated = True
+                if updated:
+                    conn.execute(
+                        "UPDATE task_events SET days_detail = ? WHERE event_id = ?",
+                        (json.dumps(days_detail, ensure_ascii=False), event_id),
+                    )
+            except Exception as e:
+                logger.warning(f"重置 days_detail 状态异常: {e}")
+
         conn.execute(
             """
             UPDATE task_events SET

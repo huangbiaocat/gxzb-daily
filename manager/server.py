@@ -2398,6 +2398,11 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             if not event_id:
                 self.send_json({"ok": False, "msg": "缺少事件 ID (event_id)！"})
                 return
+
+            if PROC_MGR.status == "running":
+                self.send_json({"ok": False, "msg": f"当前已有任务正在运行: {PROC_MGR.task_name}，请等待其完成或先终止当前任务再续跑！"})
+                return
+
             try:
                 from scripts import task_event_db
                 event = task_event_db.get_event(event_id)
@@ -2409,8 +2414,6 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                     self.send_json({"ok": False, "msg": "该事件包含的所有日期均已成功完成，无需断点续跑！"})
                     return
 
-                task_event_db.resume_event(event_id)
-
                 cmd = [
                     py_exe, "-u", str(ROOT_DIR / "scripts" / "batch_scan.py"),
                     "--event-id", event_id,
@@ -2419,13 +2422,18 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                 ]
                 task_name = f"断点续跑: {event.get('title', '')} (剩余 {len(unfinished)} 天)"
                 ok, msg = PROC_MGR.start_task(task_name, cmd)
-                self._audit("RESUME_TASK", "SUCCESS" if ok else "FAILED", f"启动断点续跑事件 {event_id} (剩余 {len(unfinished)} 天)")
-                self.send_json({
-                    "ok": ok,
-                    "msg": f"已启动断点续跑，正在继续完成剩余 {len(unfinished)} 天数据扫描: {', '.join(unfinished[:5])}{'...' if len(unfinished)>5 else ''}" if ok else msg,
-                    "unfinished_count": len(unfinished),
-                    "event_id": event_id
-                })
+                if ok:
+                    task_event_db.resume_event(event_id)
+                    self._audit("RESUME_TASK", "SUCCESS", f"启动断点续跑事件 {event_id} (剩余 {len(unfinished)} 天)")
+                    self.send_json({
+                        "ok": True,
+                        "msg": f"已启动断点续跑，正在继续完成剩余 {len(unfinished)} 天数据扫描: {', '.join(unfinished[:5])}{'...' if len(unfinished)>5 else ''}",
+                        "unfinished_count": len(unfinished),
+                        "event_id": event_id
+                    })
+                else:
+                    self._audit("RESUME_TASK", "FAILED", f"启动断点续跑失败: {msg}")
+                    self.send_json({"ok": False, "msg": msg})
             except Exception as e:
                 self._audit("RESUME_TASK", "FAILED", f"断点续跑启动异常: {e}")
                 self.send_json({"ok": False, "msg": f"断点续跑启动异常: {e}"})
