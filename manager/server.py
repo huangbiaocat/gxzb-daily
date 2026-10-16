@@ -1727,22 +1727,6 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             kind_filter = query.get("kind", [""])[0].strip()
             day_filter = query.get("day", [""])[0].strip()
 
-            sql = "SELECT run_id, day, kind, started_at, finished_at, total, ok, failed, skipped, aborted, payload FROM runs"
-            params = []
-            where_clauses = []
-            # 仅排除大范围事件回扫派生流水，展示所有单次独立采集流水（包含定时与手动单步执行）
-            where_clauses.append("(trigger_type != 'event' OR trigger_type IS NULL)")
-            if kind_filter:
-                where_clauses.append("kind = ?")
-                params.append(kind_filter)
-            if day_filter:
-                where_clauses.append("day = ?")
-                params.append(day_filter)
-            if where_clauses:
-                sql += " WHERE " + " AND ".join(where_clauses)
-            sql += " ORDER BY started_at DESC LIMIT ? OFFSET ?"
-            params.extend([limit, offset])
-
             runs = []
             total_count = 0
             try:
@@ -1750,21 +1734,37 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
                 with sqlite3.connect(config.DB_PATH) as conn:
                     conn.row_factory = sqlite3.Row
                     cur = conn.cursor()
-                    # 容错：自动探测并补充旧数据库可能缺失的 trigger_type 字段
+                    # 动态探测 runs 表结构
+                    cols = []
                     try:
                         cols = [r[1] for r in cur.execute("PRAGMA table_info(runs)").fetchall()]
                         if cols and "trigger_type" not in cols:
                             conn.execute("ALTER TABLE runs ADD COLUMN trigger_type TEXT DEFAULT 'auto'")
                             conn.commit()
+                            cols.append("trigger_type")
                     except Exception:
                         pass
 
+                    where_clauses = []
+                    params = []
+                    # 仅在拥有 trigger_type 字段时过滤事件派生记录
+                    if "trigger_type" in cols:
+                        where_clauses.append("(trigger_type != 'event' OR trigger_type IS NULL)")
+                    if kind_filter:
+                        where_clauses.append("kind = ?")
+                        params.append(kind_filter)
+                    if day_filter:
+                        where_clauses.append("day = ?")
+                        params.append(day_filter)
+
+                    where_str = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
                     count_sql = "SELECT COUNT(*) FROM runs"
-                    if where_clauses:
-                        count_sql += " WHERE " + " AND ".join(where_clauses)
-                    cur.execute(count_sql, params[:-2] if where_clauses else [])
+                    cur.execute(count_sql + where_str, list(params))
                     total_count = cur.fetchone()[0]
-                    cur.execute(sql, params)
+
+                    query_sql = f"SELECT run_id, day, kind, started_at, finished_at, total, ok, failed, skipped, aborted, payload FROM runs{where_str} ORDER BY started_at DESC LIMIT ? OFFSET ?"
+                    query_params = list(params) + [limit, offset]
+                    cur.execute(query_sql, query_params)
                     for r in cur.fetchall():
                         d = dict(r)
                         if d.get("payload"):
