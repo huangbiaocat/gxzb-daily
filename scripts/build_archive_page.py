@@ -1624,7 +1624,7 @@ PAGE = """<!DOCTYPE html>
     }
 
     // 4. 顶栏按钮动态同步：今日有简报则跳今日，今日未生成则跳最新并注明
-    var btnLatest = document.querySelector('.btn-latest');
+    var btnLatest = document.getElementById('btnTodayBrief');
     if (btnLatest) {
         var btnText = btnLatest.querySelector('.btn-latest-text') || btnLatest.querySelector('span');
         var activeToday = document.querySelector('.cal-cell-active[data-date="' + todayStr + '"]');

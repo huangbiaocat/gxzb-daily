@@ -1,9 +1,21 @@
 {
-  "version": "v0.1.4",
-  "commit": "2ab255a",
+  "version": "v0.1.5",
+  "commit": "d9620b1",
   "date": "2026-10-16",
-  "message": "chore(release): bump version v0.1.4",
+  "message": "chore(release): bump version v0.1.5",
   "commits": [
+    {
+      "commit": "d9620b1",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.5"
+    },
+    {
+      "commit": "5d42e3e",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): update version.json build metadata for v0.1.4"
+    },
     {
       "commit": "2ab255a",
       "author": "黄彪",
@@ -27,18 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-16",
       "message": "fix(auth): 补全新用户注册登录审计流水与 Single Domain 门户鉴权分流验证 (ZTB-15)"
-    },
-    {
-      "commit": "7cddeb7",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): bump version v0.1.2"
-    },
-    {
-      "commit": "ea30e8e",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "feat(manager): 增加网站安全与操作审计日志系统 (ZTB-19)"
     }
   ]
 }

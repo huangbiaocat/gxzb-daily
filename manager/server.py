@@ -1541,12 +1541,7 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             return
 
         if path == "/" or path == "/index.html":
-            # Single Domain Portal 鉴权分流：公开访客访问常规情报大屏
-            site_index = get_site_dir() / "index.html"
-            if site_index.exists() and site_index.is_file():
-                self.serve_file(site_index, "text/html")
-                return
-
+            # 控制台首页：默认优先提供管理控制台界面
             mgr_index = STATIC_DIR / "index.html"
             if not mgr_index.exists():
                 for cand in [Path(__file__).resolve().parent / "static" / "index.html", ROOT_DIR / "manager" / "static" / "index.html"]:
@@ -1555,6 +1550,13 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
                         break
             if mgr_index.exists():
                 self.serve_file(mgr_index, "text/html")
+                return
+
+            # 若无管理后台静态资源，兜底尝试情报大屏
+            site_index = get_site_dir() / "index.html"
+            if site_index.exists() and site_index.is_file():
+                self.serve_file(site_index, "text/html")
+                return
             else:
                 fallback_html = f"<html><head><meta charset=\"utf-8\"><title>招投标监控服务运行中</title></head><body style=\"font-family:sans-serif;padding:30px;\"><h2 style=\"color:#1677ff;\">招投标系统控制面板已成功运行</h2><p>未找到静态 index.html 资源文件 (尝试路径: {STATIC_DIR})</p><p>后台 API 正常可用：</p><ul><li><a href=\"/api/status\">/api/status (系统状态)</a></li><li><a href=\"/api/task_state\">/api/task_state (运行进度)</a></li><li><a href=\"/preview\">/preview (大屏展示)</a></li></ul></body></html>"
                 c = fallback_html.encode("utf-8")
