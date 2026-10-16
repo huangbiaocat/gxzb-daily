@@ -1,9 +1,21 @@
 {
-  "version": "v0.1.6",
-  "commit": "2a2c093",
+  "version": "v0.1.7",
+  "commit": "3cc8b4c",
   "date": "2026-10-16",
-  "message": "chore(release): bump version v0.1.6",
+  "message": "chore(release): bump version v0.1.7",
   "commits": [
+    {
+      "commit": "3cc8b4c",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.7"
+    },
+    {
+      "commit": "c9223a2",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): update version.json build metadata for v0.1.6"
+    },
     {
       "commit": "2a2c093",
       "author": "黄彪",
@@ -27,18 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-16",
       "message": "chore(release): update version.json build metadata for v0.1.4"
-    },
-    {
-      "commit": "2ab255a",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): bump version v0.1.4"
-    },
-    {
-      "commit": "ec9a0d4",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "feat(manager): 适配管理后台移动端设备访问体验与底部快捷导航 (ZTB-14)"
     }
   ]
 }
