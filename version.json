@@ -1,9 +1,27 @@
 {
-  "version": "v0.1.15",
-  "commit": "a36e457",
+  "version": "v0.1.16",
+  "commit": "cb0f222",
   "date": "2026-10-16",
-  "message": "chore(release): bump version v0.1.15",
+  "message": "chore(release): bump version v0.1.16",
   "commits": [
+    {
+      "commit": "cb0f222",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.16"
+    },
+    {
+      "commit": "f7fd2bf",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "fix(history): 修复底层单次采集流水日志写入与API查询容错"
+    },
+    {
+      "commit": "9142cb7",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): update version.json build metadata for v0.1.14"
+    },
     {
       "commit": "a36e457",
       "author": "黄彪",
@@ -21,24 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-16",
       "message": "test(notify): 添加交建通群通知与机器人接口单测并更新构建元数据 (ZTB-13)"
-    },
-    {
-      "commit": "dca80a0",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): bump version v0.1.14"
-    },
-    {
-      "commit": "049b035",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "feat(notify): 实现交建通私有化自建应用与群机器人双通道推送及控制台配置 (ZTB-13)"
-    },
-    {
-      "commit": "de385a4",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): update version.json build metadata for v0.1.13"
     }
   ]
 }
