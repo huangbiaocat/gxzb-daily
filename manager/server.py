@@ -2061,7 +2061,9 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             username = post_data.get("username", "").strip()
             password = post_data.get("password", "").strip()
             display_name = post_data.get("display_name", "").strip()
-            ok, msg, user_info = register_user(username, password, display_name)
+            client_ip = self.client_address[0] if self.client_address else ""
+            ua = self.headers.get("User-Agent", "")
+            ok, msg, user_info = register_user(username, password, display_name, ip=client_ip, user_agent=ua)
             if not ok:
                 self._audit("USER_REGISTER", "FAILED", f"普通用户注册失败: {username} ({msg})")
                 self.send_json({"ok": False, "msg": msg})

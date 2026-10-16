@@ -1,9 +1,33 @@
 {
-  "version": "v0.1.0",
-  "commit": "1eaeea4",
+  "version": "v0.1.2",
+  "commit": "7cddeb7",
   "date": "2026-10-16",
-  "message": "fix(batch_scan): 手动采集日期扫描顺序改为由近到远 (ZTB-17)",
+  "message": "chore(release): bump version v0.1.2",
   "commits": [
+    {
+      "commit": "7cddeb7",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.2"
+    },
+    {
+      "commit": "ea30e8e",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "feat(manager): 增加网站安全与操作审计日志系统 (ZTB-19)"
+    },
+    {
+      "commit": "def59c6",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.1"
+    },
+    {
+      "commit": "93fa51b",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "feat(release): 自动版本递增 - bump_version.py + pack_and_upload 集成 (ZTB-18)"
+    },
     {
       "commit": "1eaeea4",
       "author": "黄彪",
@@ -15,30 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-14",
       "message": "feat(auth&ui): 增加主页管理员登录入口及后台鉴权，精简优化控制台顶栏布局"
-    },
-    {
-      "commit": "c67a21b",
-      "author": "黄彪",
-      "date": "2026-10-14",
-      "message": "fix(archive): remove 3-month limit so all collected months render in calendar view"
-    },
-    {
-      "commit": "337c7ca",
-      "author": "黄彪",
-      "date": "2026-10-14",
-      "message": "fix(vps): adapt to pure VPS autonomous hosting and bypass redundant remote upload"
-    },
-    {
-      "commit": "19e463e",
-      "author": "黄彪",
-      "date": "2026-10-14",
-      "message": "chore(release): 规范定义纯 VPS 自治系统初始里程碑版本为 v0.1.0"
-    },
-    {
-      "commit": "8357367",
-      "author": "黄彪",
-      "date": "2026-10-14",
-      "message": "chore: 同步最新打包构建元数据哈希"
     }
   ]
 }

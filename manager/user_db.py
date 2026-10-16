@@ -79,7 +79,7 @@ def hash_password(password: str, salt: Optional[str] = None) -> Tuple[str, str]:
     return hashed, salt
 
 
-def register_user(username: str, password: str, display_name: str = "") -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+def register_user(username: str, password: str, display_name: str = "", ip: str = "", user_agent: str = "") -> Tuple[bool, str, Optional[Dict[str, Any]]]:
     """注册新用户"""
     username = (username or "").strip()
     password = (password or "").strip()
@@ -99,16 +99,25 @@ def register_user(username: str, password: str, display_name: str = "") -> Tuple
         with get_connection() as conn:
             cur = conn.cursor()
             cur.execute("""
-                INSERT INTO portal_users (username, password_hash, salt, display_name, role, status, created_at)
-                VALUES (?, ?, ?, ?, 'user', 'active', ?)
-            """, (username, pwd_hash, salt, display_name, now_str))
+                INSERT INTO portal_users (username, password_hash, salt, display_name, role, status, created_at, last_login_at, login_count)
+                VALUES (?, ?, ?, ?, 'user', 'active', ?, ?, 1)
+            """, (username, pwd_hash, salt, display_name, now_str, now_str))
             user_id = cur.lastrowid
+
+            # 记录注册即自动登录的首次审计日志
+            conn.execute("""
+                INSERT INTO portal_user_logins (user_id, username, login_time, ip_address, user_agent)
+                VALUES (?, ?, ?, ?, ?)
+            """, (user_id, username, now_str, ip[:64], user_agent[:256]))
+
             return True, "注册成功", {
                 "id": user_id,
                 "username": username,
                 "display_name": display_name,
                 "role": "user",
-                "created_at": now_str
+                "created_at": now_str,
+                "last_login_at": now_str,
+                "login_count": 1
             }
     except sqlite3.IntegrityError:
         return False, "该用户名已被注册，请直接登录或换一个", None
