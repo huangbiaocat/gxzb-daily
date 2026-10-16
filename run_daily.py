@@ -540,6 +540,17 @@ def main(argv=None):
         except Exception as exc:
             print("微信推送异常：", exc)
 
+        # 挂载交建通 (中交企业微信私有化) 自建应用与群机器人每日简报推送
+        try:
+            from scripts import jjt_notify
+            jjt_cfg = jjt_notify.load_config()
+            if jjt_cfg.get("default_chatid") or jjt_cfg.get("webhook_url"):
+                print("[交建通推送执行] 正在向中交企业微信群及机器人分发每日简报...")
+                jjt_res = jjt_notify.send_daily_summary(day)
+                print(f"[交建通推送结果] {jjt_res}")
+        except Exception as exc_jjt:
+            print("交建通推送异常：", exc_jjt)
+
     return finish(day, failed_steps, args, res, is_final=is_final)
 
 

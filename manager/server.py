@@ -2183,7 +2183,7 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             "/api/delete_date", "/api/monitor_control", "/api/save_rules", "/api/save_master_rules",
             "/api/restore_master_rules", "/api/restore_snapshot", "/api/unmark_delayed",
             "/api/refresh_index", "/api/fix_tunnel", "/api/test_ssh", "/api/test_wechat",
-            "/api/test_jjt", "/api/resume_task_event", "/api/open_screen"
+            "/api/test_jjt", "/api/save_jjt_config", "/api/resume_task_event", "/api/open_screen"
         }
         if path.startswith("/api/run_") or path in protected_paths:
             if not self.is_authenticated():
@@ -2628,27 +2628,86 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             return
 
         if path == "/api/test_jjt":
-            cmd = [py_exe, "-u", "scripts/jjt_notify.py", "--test"]
-            ok, msg = PROC_MGR.start_task("测试交建通应用群消息推送", cmd)
-            self._audit("TEST_JJT", "SUCCESS" if ok else "FAILED", "测试交建通应用群消息推送")
+            target_type = post_data.get("type", "appchat")
+            webhook_url = post_data.get("webhook_url", "").strip()
+            if target_type == "webhook":
+                cmd = [py_exe, "-u", "scripts/jjt_notify.py", "--webhook", webhook_url or "default"]
+                task_name = "测试交建通群机器人 Webhook 推送"
+            else:
+                cmd = [py_exe, "-u", "scripts/jjt_notify.py", "--test"]
+                task_name = "测试交建通应用群消息推送"
+            ok, msg = PROC_MGR.start_task(task_name, cmd)
+            self._audit("TEST_JJT", "SUCCESS" if ok else "FAILED", f"{task_name}: {target_type}")
             self.send_json({"ok": ok, "msg": msg})
             return
 
-        if path == "/api/jjt_status":
+        if path == "/api/jjt_status" or path == "/api/jjt_config":
             from pathlib import Path
             cfg_file = Path(__file__).resolve().parent.parent / "config_jjt.json"
             has_cfg = cfg_file.exists()
-            chatid = ""
-            corpid = ""
+            cfg_data = {
+                "ok": True,
+                "configured": has_cfg,
+                "corpid": "",
+                "has_corpsecret": False,
+                "api_base_url": "https://jjt.ccccltd.cn/cgi-bin",
+                "default_chatid": "",
+                "webhook_url": "",
+                "site_base_url": "https://ztb.139771.xyz"
+            }
             if has_cfg:
                 try:
                     with open(cfg_file, "r", encoding="utf-8") as f:
                         c = json.load(f)
-                        chatid = c.get("default_chatid", "")
-                        corpid = c.get("corpid", "")
+                        cfg_data["corpid"] = c.get("corpid", "")
+                        cfg_data["has_corpsecret"] = bool(c.get("corpsecret"))
+                        cfg_data["api_base_url"] = c.get("api_base_url", "https://jjt.ccccltd.cn/cgi-bin")
+                        cfg_data["default_chatid"] = c.get("default_chatid", "")
+                        cfg_data["webhook_url"] = c.get("webhook_url", "")
+                        cfg_data["site_base_url"] = c.get("site_base_url", "https://ztb.139771.xyz")
                 except Exception:
                     pass
-            self.send_json({"ok": True, "configured": has_cfg, "has_chatid": bool(chatid), "corpid": corpid})
+            self.send_json(cfg_data)
+            return
+
+        if path == "/api/save_jjt_config":
+            from pathlib import Path
+            cfg_file = Path(__file__).resolve().parent.parent / "config_jjt.json"
+            old_cfg = {}
+            if cfg_file.exists():
+                try:
+                    with open(cfg_file, "r", encoding="utf-8") as f:
+                        old_cfg = json.load(f)
+                except Exception:
+                    pass
+
+            new_corpid = post_data.get("corpid", "").strip()
+            new_secret = post_data.get("corpsecret", "").strip()
+            new_base = post_data.get("api_base_url", "").strip() or "https://jjt.ccccltd.cn/cgi-bin"
+            new_chatid = post_data.get("default_chatid", "").strip()
+            new_webhook = post_data.get("webhook_url", "").strip()
+            new_site_base = post_data.get("site_base_url", "").strip() or "https://ztb.139771.xyz"
+
+            # 如果 secret 为空且之前有值，则保留旧 secret
+            final_secret = new_secret if new_secret else old_cfg.get("corpsecret", "")
+
+            updated_cfg = {
+                "corpid": new_corpid,
+                "corpsecret": final_secret,
+                "api_base_url": new_base,
+                "default_chatid": new_chatid,
+                "webhook_url": new_webhook,
+                "site_base_url": new_site_base
+            }
+
+            try:
+                with open(cfg_file, "w", encoding="utf-8") as f:
+                    json.dump(updated_cfg, f, ensure_ascii=False, indent=2)
+                self._audit("SAVE_JJT_CONFIG", "SUCCESS", f"保存交建通配置成功: corpid={new_corpid}, chatid={new_chatid}")
+                self.send_json({"ok": True, "msg": "交建通配置保存成功并已立即生效！"})
+            except Exception as e:
+                self._audit("SAVE_JJT_CONFIG", "FAILED", f"保存交建通配置异常: {e}")
+                self.send_json({"ok": False, "msg": f"保存失败: {e}"})
             return
 
         if path == "/api/monitor_control":

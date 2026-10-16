@@ -587,6 +587,53 @@
                         </div>
                     </div>
 
+                    <!-- 交建通 / 中交企业微信私有化群通知配置卡片 -->
+                    <div class="space-y-4 pt-4 border-t border-slate-100">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-1.5 h-4 bg-emerald-600 rounded-full"></span>
+                                <h3 class="text-sm font-bold text-slate-800">交建通 / 中交企业微信群与机器人通知</h3>
+                                <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium border border-emerald-200">私有化自建应用 + 群机器人双通道</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button type="button" onclick="testJjtPush('webhook')" class="px-2.5 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition flex items-center space-x-1 cursor-pointer">
+                                    <span>测试群机器人</span>
+                                </button>
+                                <button type="button" onclick="testJjtPush('appchat')" class="px-2.5 py-1 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition flex items-center space-x-1 cursor-pointer">
+                                    <span>测试应用群消息</span>
+                                </button>
+                                <button id="btn-save-jjt" type="button" onclick="saveJjtConfig()" class="px-3 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-xs transition cursor-pointer">
+                                    <span>保存交建通配置</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">交建通 API 域名网关 (API_BASE_URL)</label>
+                                <input id="cfg-jjt-api-base" type="text" placeholder="https://jjt.ccccltd.cn/cgi-bin" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                                <span class="text-[11px] text-slate-400 mt-1 block">默认为中交私有化网关 <code class="text-emerald-700">https://jjt.ccccltd.cn/cgi-bin</code>。</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">群机器人 Webhook 地址 (WEBHOOK_URL)</label>
+                                <input id="cfg-jjt-webhook" type="text" placeholder="https://jjt.ccccltd.cn/cgi-bin/webhook/send?key=... 或直接填 key" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                                <span class="text-[11px] text-slate-400 mt-1 block">群聊添加群机器人获取，支持富文本 Markdown 卡片直接推送。</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">企业 ID (CORPID / 自建应用)</label>
+                                <input id="cfg-jjt-corpid" type="text" placeholder="企业微信/交建通的企业 ID (ww...)" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">自建应用凭据 (CORPSECRET)</label>
+                                <input id="cfg-jjt-corpsecret" type="password" placeholder="留空保持原密码不变，填写可修改" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">自建应用群聊 ID (DEFAULT_CHATID)</label>
+                                <input id="cfg-jjt-chatid" type="text" placeholder="自建应用通过 appchat/create 生成的群聊 ID" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                                <span class="text-[11px] text-slate-400 mt-1 block">以自建应用名义向内部群推送精美图文卡片；若仅使用群机器人 Webhook，此项可留空。</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 微信定时发送与条件推送策略设置 -->
                     <div class="space-y-4 pt-4 border-t border-slate-100">
                         <div class="flex items-center space-x-2">
@@ -2626,6 +2673,7 @@
                 setVal("cfg-backscan-min-delay", data.BACKSCAN_MIN_DELAY || 2);
                 
                 updateRulesCountDisplay();
+                fetchJjtConfig();
 
                 const winElem = document.getElementById("dash-monitor-window");
                 if (winElem) winElem.textContent = `${data.MONITOR_START_TIME || "08:00"} - ${data.MONITOR_END_TIME || "20:00"}`;
@@ -2792,6 +2840,78 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
+            }
+        }
+
+        async function fetchJjtConfig() {
+            try {
+                const res = await fetch("/api/jjt_config");
+                const data = await res.json();
+                if (data.ok) {
+                    setVal("cfg-jjt-api-base", data.api_base_url || "https://jjt.ccccltd.cn/cgi-bin");
+                    setVal("cfg-jjt-webhook", data.webhook_url || "");
+                    setVal("cfg-jjt-corpid", data.corpid || "");
+                    setVal("cfg-jjt-chatid", data.default_chatid || "");
+                    const secInput = document.getElementById("cfg-jjt-corpsecret");
+                    if (secInput) {
+                        secInput.value = "";
+                        secInput.placeholder = data.has_corpsecret ? "已配置 Secret（留空保持不变，填写可修改）" : "尚未配置 Secret";
+                    }
+                }
+            } catch (e) {
+                console.error("加载交建通配置失败:", e);
+            }
+        }
+
+        async function saveJjtConfig() {
+            const btn = document.getElementById("btn-save-jjt");
+            if (btn) { btn.disabled = true; btn.textContent = "保存中..."; }
+            const payload = {
+                api_base_url: (document.getElementById("cfg-jjt-api-base")?.value || "").trim(),
+                webhook_url: (document.getElementById("cfg-jjt-webhook")?.value || "").trim(),
+                corpid: (document.getElementById("cfg-jjt-corpid")?.value || "").trim(),
+                corpsecret: (document.getElementById("cfg-jjt-corpsecret")?.value || "").trim(),
+                default_chatid: (document.getElementById("cfg-jjt-chatid")?.value || "").trim(),
+                site_base_url: (document.getElementById("cfg-site-base-url")?.value || "").trim()
+            };
+            try {
+                const res = await fetch("/api/save_jjt_config", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                const ret = await res.json();
+                if (ret.ok) {
+                    showToast("✓ 交建通群与机器人配置已成功保存！", "success", 4000);
+                    fetchJjtConfig();
+                } else {
+                    showToast("保存失败: " + (ret.msg || ret.error), "error", 5000);
+                }
+            } catch (err) {
+                showToast("保存异常: " + err.message, "error", 5000);
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = "保存交建通配置"; }
+            }
+        }
+
+        async function testJjtPush(type = "appchat") {
+            const label = type === "webhook" ? "群机器人 Webhook" : "应用群卡片";
+            showToast(`正在向交建通下发【${label}】测试推送...`, "info", 3000);
+            const webhookVal = (document.getElementById("cfg-jjt-webhook")?.value || "").trim();
+            try {
+                const res = await fetch("/api/test_jjt", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ type, webhook_url: webhookVal })
+                });
+                const ret = await res.json();
+                if (ret.ok) {
+                    showToast(`✅ 【${label}】测试推送已触发！请在交建通群内查看。`, "success", 5000);
+                } else {
+                    showToast(`❌ 【${label}】触发失败: ${ret.msg || ret.error}`, "error", 5000);
+                }
+            } catch (e) {
+                showToast(`❌ 网络请求失败: ${e.message}`, "error", 5000);
             }
         }
 

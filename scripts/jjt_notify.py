@@ -45,16 +45,30 @@ DEFAULT_API_BASE = "https://jjt.ccccltd.cn/cgi-bin"
 
 
 def load_config() -> dict:
-    """读取本地交建通配置（不入库）"""
-    if not CONFIG_PATH.exists():
-        logger.warning(f"交建通配置文件不存在: {CONFIG_PATH}，请参考 config_jjt.example.json 创建")
-        return {}
+    """读取交建通配置（优先 config_jjt.json，回退环境变量与 .env）"""
+    cfg = {}
     try:
-        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
+        if CONFIG_PATH.exists():
+            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
     except Exception as e:
         logger.error(f"读取交建通配置失败: {e}")
-        return {}
+
+    # 环境变量与默认值回退
+    if not cfg.get("corpid") and os.environ.get("JJT_CORPID"):
+        cfg["corpid"] = os.environ.get("JJT_CORPID")
+    if not cfg.get("corpsecret") and os.environ.get("JJT_CORPSECRET"):
+        cfg["corpsecret"] = os.environ.get("JJT_CORPSECRET")
+    if not cfg.get("api_base_url"):
+        cfg["api_base_url"] = os.environ.get("JJT_API_BASE_URL", DEFAULT_API_BASE)
+    if not cfg.get("default_chatid") and os.environ.get("JJT_DEFAULT_CHATID"):
+        cfg["default_chatid"] = os.environ.get("JJT_DEFAULT_CHATID")
+    if not cfg.get("webhook_url") and os.environ.get("JJT_WEBHOOK_URL"):
+        cfg["webhook_url"] = os.environ.get("JJT_WEBHOOK_URL")
+    if not cfg.get("site_base_url") and os.environ.get("JJT_SITE_BASE_URL"):
+        cfg["site_base_url"] = os.environ.get("JJT_SITE_BASE_URL")
+
+    return cfg
 
 
 def save_config(cfg: dict) -> bool:
@@ -161,6 +175,50 @@ def send_appchat_message(chatid: str, msgtype: str, content_payload: dict, safe:
             return False
     except Exception as e:
         logger.error(f"推送群消息异常: {e}")
+        return False
+
+
+def send_webhook_message(webhook_url_or_key: str, msgtype: str, content_payload: dict) -> bool:
+    """向交建通/企业微信群机器人发送 Webhook 消息
+    支持完整 URL 或纯 key 字符串
+    """
+    cfg = load_config()
+    api_base = cfg.get("api_base_url", DEFAULT_API_BASE).rstrip("/")
+    target_url = (webhook_url_or_key or "").strip()
+
+    if not target_url:
+        target_url = cfg.get("webhook_url", "").strip()
+
+    if not target_url:
+        logger.error("未指定 webhook_url_or_key 且配置中无 webhook_url")
+        return False
+
+    if not target_url.startswith("http://") and not target_url.startswith("https://"):
+        target_url = f"{api_base}/webhook/send?key={target_url}"
+
+    payload = {
+        "msgtype": msgtype,
+        msgtype: content_payload
+    }
+
+    try:
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        req = urllib.request.Request(
+            target_url,
+            data=body,
+            headers={"Content-Type": "application/json; charset=utf-8"}
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+
+        if data.get("errcode") == 0:
+            logger.info("群机器人 Webhook 消息推送成功")
+            return True
+        else:
+            logger.error(f"群机器人 Webhook 消息推送失败: {data}")
+            return False
+    except Exception as e:
+        logger.error(f"群机器人 Webhook 推送异常: {e}")
         return False
 
 
@@ -304,6 +362,101 @@ def send_daily_report_card(day_str: str = None, chatid: str = None) -> bool:
     )
 
 
+def send_daily_summary(day_str: str = None) -> dict:
+    """向所有配置的交建通渠道（应用群聊 + 群机器人）发送每日招投标简报
+    返回各渠道推送结果 dict: {"appchat": bool|None, "webhook": bool|None}
+    """
+    if not day_str:
+        day_str = datetime.now().strftime("%Y-%m-%d")
+
+    cfg = load_config()
+    results = {"appchat": None, "webhook": None}
+
+    # 1. 尝试自建应用群聊卡片推送
+    chatid = cfg.get("default_chatid")
+    if chatid and cfg.get("corpid") and cfg.get("corpsecret"):
+        try:
+            results["appchat"] = send_daily_report_card(day_str=day_str, chatid=chatid)
+        except Exception as e:
+            logger.error(f"应用群聊推送异常: {e}")
+            results["appchat"] = False
+
+    # 2. 尝试群机器人 Webhook 推送
+    webhook_url = cfg.get("webhook_url")
+    if webhook_url:
+        try:
+            site_base = cfg.get("site_base_url", "https://ztb.139771.xyz").rstrip("/")
+            detail_url = f"{site_base}/{day_str}.html"
+            metrics = get_daily_metrics(day_str)
+            now_time = datetime.now().strftime("%H:%M")
+
+            md_content = (
+                f"### 📢 广西招投标每日情报 ({day_str})\n"
+                f"> 发布时间: <font color=\"comment\">{day_str} {now_time}</font>\n\n"
+                f"**本日监测概览**：\n"
+                f"- 监测标讯总量: **<font color=\"info\">{metrics['total_count']}</font>** 条\n"
+                f"- 招标与资格预审公告: **{metrics['total_zb']}** 条\n"
+                f"- 中标候选人与结果公告: **{metrics['total_win']}** 条\n\n"
+                f"👉 [点击此处直接进入系统查看当日完整日报与项目明细]({detail_url})"
+            )
+            results["webhook"] = send_webhook_message(
+                webhook_url_or_key=webhook_url,
+                msgtype="markdown",
+                content_payload={"content": md_content}
+            )
+        except Exception as e:
+            logger.error(f"群机器人推送异常: {e}")
+            results["webhook"] = False
+
+    return results
+
+
+def send_alert(day_str: str = None, message: str = "", step: str = None) -> dict:
+    """向配置的交建通渠道发送告警通知"""
+    if not day_str:
+        day_str = datetime.now().strftime("%Y-%m-%d")
+
+    cfg = load_config()
+    results = {"appchat": None, "webhook": None}
+    now_time = datetime.now().strftime("%H:%M:%S")
+
+    step_info = f"【阶段: {step}】" if step else ""
+    alert_title = f"⚠️ 招投标采集运行告警 {step_info}"
+    md_content = (
+        f"### {alert_title}\n"
+        f"> 告警时间: <font color=\"warning\">{day_str} {now_time}</font>\n\n"
+        f"**告警详情**：\n"
+        f"{message}\n\n"
+        f"> 请登录管理控制台排查运行状态。"
+    )
+
+    chatid = cfg.get("default_chatid")
+    if chatid and cfg.get("corpid") and cfg.get("corpsecret"):
+        try:
+            results["appchat"] = send_appchat_message(
+                chatid=chatid,
+                msgtype="markdown",
+                content_payload={"content": md_content}
+            )
+        except Exception as e:
+            logger.error(f"交建通群聊告警发送异常: {e}")
+            results["appchat"] = False
+
+    webhook_url = cfg.get("webhook_url")
+    if webhook_url:
+        try:
+            results["webhook"] = send_webhook_message(
+                webhook_url_or_key=webhook_url,
+                msgtype="markdown",
+                content_payload={"content": md_content}
+            )
+        except Exception as e:
+            logger.error(f"交建通机器人告警发送异常: {e}")
+            results["webhook"] = False
+
+    return results
+
+
 def main():
     parser = argparse.ArgumentParser(description="交建通 (JJT) 自建应用群通知工具")
     parser.add_argument("--create-chat", action="store_true", help="调用接口创建一个新的群聊")
@@ -314,7 +467,9 @@ def main():
     parser.add_argument("--send-daily", action="store_true", help="推送今日日报卡片到群聊")
     parser.add_argument("--day", type=str, help="指定日报日期 (YYYY-MM-DD)")
     parser.add_argument("--test", action="store_true", help="发送一条测试群消息")
+    parser.add_argument("--webhook", type=str, help="指定群机器人 Webhook URL 或 Key 发送测试消息")
     parser.add_argument("--token", action="store_true", help="测试并打印当前 access_token")
+    parser.add_argument("--alert", type=str, help="发送一条测试告警消息")
 
     args = parser.parse_args()
 
@@ -344,12 +499,28 @@ def main():
 
     if args.send_daily:
         day = args.day or datetime.now().strftime("%Y-%m-%d")
-        print(f"正在向群聊推送 {day} 招投标日报卡片...")
-        ok = send_daily_report_card(day_str=day, chatid=args.chatid)
+        print(f"正在向交建通渠道推送 {day} 招投标日报...")
+        res = send_daily_summary(day_str=day)
+        print(f"推送完成，结果: {res}")
+        return
+
+    if args.alert:
+        day = args.day or datetime.now().strftime("%Y-%m-%d")
+        print(f"正在发送告警通知: {args.alert}...")
+        res = send_alert(day_str=day, message=args.alert, step="测试验证")
+        print(f"告警发送完成，结果: {res}")
+        return
+
+    if args.webhook:
+        print(f"正在向 Webhook 发送测试消息: {args.webhook}...")
+        content = {
+            "content": f"🔔 **交建通/企业微信群机器人联调测试**\n- 测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n- 运行环境: 广西招投标数据中心\n- 状态: 连通正常"
+        }
+        ok = send_webhook_message(webhook_url_or_key=args.webhook, msgtype="markdown", content_payload=content)
         if ok:
-            print("[OK] 日报卡片推送成功！")
+            print("[OK] Webhook 测试消息发送成功！")
         else:
-            print("[FAIL] 日报卡片推送失败")
+            print("[FAIL] Webhook 测试消息发送失败")
         return
 
     if args.test:
