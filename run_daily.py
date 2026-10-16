@@ -581,7 +581,6 @@ def finish(day, failed_steps, args, res=None, is_final=False):
         with get_conn() as conn:
             record_run(
                 conn,
-                run_id=None,
                 day=day,
                 kind="yesterday_final" if is_final else "daily",
                 stats={

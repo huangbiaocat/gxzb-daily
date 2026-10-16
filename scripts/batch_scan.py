@@ -106,6 +106,8 @@ def main():
     print(f"[*] 启动{mode_tag}事件任务：共 {len(target_dates)} 天 ({target_dates[0]} 至 {target_dates[-1]})", flush=True)
     if event_id:
         print(f"[*] 关联事件任务 ID: {event_id}", flush=True)
+        os.environ["GXZB_EVENT_ID"] = event_id
+    os.environ["GXZB_TASK_TYPE"] = "event"
     print("=" * 68)
 
     success_days = []
@@ -122,15 +124,21 @@ def main():
             except Exception:
                 pass
         try:
+            sub_env = os.environ.copy()
+            sub_env["COLLECT_NO_RECORD_RUN"] = "1"
+            sub_env["GXZB_TASK_TYPE"] = "event"
+            if event_id:
+                sub_env["GXZB_EVENT_ID"] = event_id
+
             # 1. 执行单日采集 (含公共资源交易中心与崇左阳光采购)
             print(f"    [步骤 1/3] 抓取当日公告数据 (公共资源 + 崇左阳光采购)...", flush=True)
-            cmd_collect = [py_exe, "-u", str(ROOT_DIR / "scripts" / "collect.py"), "--date", day_str]
-            res1 = subprocess.run(cmd_collect)
+            cmd_collect = [py_exe, "-u", str(ROOT_DIR / "scripts" / "collect.py"), "--date", day_str, "--no-record-run"]
+            res1 = subprocess.run(cmd_collect, env=sub_env)
             if res1.returncode != 0:
                 print(f"    [警告] {day_str} 采集脚本退出码异常: {res1.returncode}", flush=True)
 
             cmd_cz = [py_exe, "-u", str(ROOT_DIR / "scripts" / "collect_cz_ygcg.py"), "--date", day_str]
-            subprocess.run(cmd_cz)
+            subprocess.run(cmd_cz, env=sub_env)
 
             # 2. 数据合并入库 (reconcile)
             print(f"    [步骤 2/3] 合并数据入库 (reconcile)...", flush=True)
@@ -143,7 +151,7 @@ def main():
             # 3. 构建每日 HTML 页面（单日补扫跳过逐日上传 VPS，全量结束后统一发布）
             print(f"    [步骤 3/3] 构建每日日报 HTML 页面...", flush=True)
             cmd_build = [py_exe, "-u", str(ROOT_DIR / "scripts" / "build_daily_page.py"), "--date", day_str, "--no-vps"]
-            res2 = subprocess.run(cmd_build)
+            res2 = subprocess.run(cmd_build, env=sub_env)
             elapsed = time.time() - t_start
 
             # 查询当日抓取公告总数与重点公告数

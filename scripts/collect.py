@@ -222,7 +222,7 @@ def fetch_center(center, day, page_size=None):
 
 
 # ------------------------------------------------------------------ 主流程
-def collect(day, centers=None, save_raw=True, quiet=False, page_size=None):
+def collect(day, centers=None, save_raw=True, quiet=False, page_size=None, record_run=True):
     config.ensure_dirs()
     started_at = config.now_stamp()
     centers = centers or config.CENTERS
@@ -359,7 +359,8 @@ def collect(day, centers=None, save_raw=True, quiet=False, page_size=None):
         pass
 
     fresh = logstore.unseen([r["infoid"] for r in rows])
-    _record_run(day, started_at, reconcile, fetched_sum, len(failed), len(rows))
+    if record_run and os.environ.get("COLLECT_NO_RECORD_RUN") != "1":
+        _record_run(day, started_at, reconcile, fetched_sum, len(failed), len(rows))
     if not quiet:
         print("采集日期        :", day)
         print("过滤口径        : categorynum 前缀 %s (likeType=%s) + 发布时间窗 %s ~ %s" % (
@@ -435,10 +436,11 @@ def main(argv=None):
     ap.add_argument("--centers", default=None, help="交易中心代码，逗号分隔，默认取配置")
     ap.add_argument("--page-size", type=int, default=None, help="每页条数，默认 API_PAGE_SIZE")
     ap.add_argument("--no-raw", action="store_true", help="不保存原始响应")
+    ap.add_argument("--no-record-run", action="store_true", help="不写入底层单次采集流水（如在事件级批量任务中调用）")
     args = ap.parse_args(argv)
     day = args.date or config.today()
     centers = [c.strip() for c in args.centers.split(",")] if args.centers else None
-    result, code = collect(day, centers, save_raw=not args.no_raw, page_size=args.page_size)
+    result, code = collect(day, centers, save_raw=not args.no_raw, page_size=args.page_size, record_run=not args.no_record_run)
     summary = {k: v for k, v in result.items() if k != "reconcile"}
     summary["reconcile_ok"] = result["reconcile"]["aligned"]
     print(json.dumps(summary, ensure_ascii=False))

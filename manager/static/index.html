@@ -1108,14 +1108,21 @@
                 <!-- 子视图 2: 底层单次采集流水 (Raw Runs)            -->
                 <!-- ============================================== -->
                 <div id="history-view-runs" class="hidden space-y-4">
+                    <div class="flex items-center justify-between text-xs text-slate-500 bg-blue-50/70 border border-blue-100 rounded-lg px-3 py-1.5">
+                        <div class="flex items-center gap-1.5 text-blue-700">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            <span class="font-medium">仅记录系统日常定时/自动采集流水；批量扫描与历史回扫请切换至【按事件任务台账】查看</span>
+                        </div>
+                    </div>
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
                         <div class="flex items-center gap-2">
                             <select id="runs-filter-kind" onchange="fetchRunsHistory(0)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-blue-500">
-                                <option value="">全部任务类型</option>
+                                <option value="">全部自动流水类型</option>
                                 <option value="collect">公告采集 (collect)</option>
                                 <option value="fetch_detail">详情爬取 (fetch_detail)</option>
                                 <option value="extract">规则抽取 (extract)</option>
-                                <option value="batch_scan">批量补扫 (batch_scan)</option>
+                                <option value="daily">全流程日报 (daily)</option>
+                                <option value="yesterday_final">昨日终审 (yesterday_final)</option>
                             </select>
                             <input type="date" id="runs-filter-day" onchange="fetchRunsHistory(0)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-blue-500" title="按归档日期过滤">
                             <button onclick="fetchRunsHistory(0)" class="text-xs font-medium px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg border border-blue-200 transition flex items-center space-x-1">
@@ -3833,7 +3840,8 @@
                         "collect": "bg-blue-50 text-blue-700 border-blue-200",
                         "fetch_detail": "bg-indigo-50 text-indigo-700 border-indigo-200",
                         "extract": "bg-purple-50 text-purple-700 border-purple-200",
-                        "batch_scan": "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        "daily": "bg-emerald-50 text-emerald-700 border-emerald-200",
+                        "yesterday_final": "bg-amber-50 text-amber-700 border-amber-200"
                     };
 
                     tbody.innerHTML = runs.map(r => {

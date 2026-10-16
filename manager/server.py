@@ -1651,7 +1651,7 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             return
 
         if path == "/api/runs":
-            # 获取运行历史记录与任务日志
+            # 获取运行历史记录与任务日志（仅展示系统自动定时执行流水，严格剔除按事件任务台账的内容）
             query = parse_qs(parsed.query)
             limit = min(int(query.get("limit", ["30"])[0]), 100)
             offset = max(int(query.get("offset", ["0"])[0]), 0)
@@ -1661,6 +1661,9 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             sql = "SELECT run_id, day, kind, started_at, finished_at, total, ok, failed, skipped, aborted, payload FROM runs"
             params = []
             where_clauses = []
+            # 过滤条件：仅保留自动定时执行内容，剔除历史回扫与事件任务派生内容
+            where_clauses.append("(trigger_type = 'auto' OR trigger_type IS NULL)")
+            where_clauses.append("day >= '2026-09-01'")
             if kind_filter:
                 where_clauses.append("kind = ?")
                 params.append(kind_filter)

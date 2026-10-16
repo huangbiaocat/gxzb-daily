@@ -18,6 +18,7 @@
 """
 import argparse
 import json
+import os
 import sqlite3
 import sys
 import uuid
@@ -111,7 +112,8 @@ CREATE TABLE IF NOT EXISTS runs (
     failed      INTEGER DEFAULT 0,
     skipped     INTEGER DEFAULT 0,
     aborted     INTEGER DEFAULT 0,
-    payload     TEXT
+    payload     TEXT,
+    trigger_type TEXT DEFAULT 'auto'
 );
 CREATE INDEX IF NOT EXISTS idx_runs_day ON runs(day);
 """
@@ -132,6 +134,10 @@ def init_db(conn=None):
     own = conn is None
     conn = conn or connect()
     conn.executescript(SCHEMA)
+    try:
+        conn.execute("ALTER TABLE runs ADD COLUMN trigger_type TEXT DEFAULT 'auto'")
+    except Exception:
+        pass
     conn.commit()
     if own:
         conn.close()
@@ -319,24 +325,90 @@ def rebuild_projects(conn, day=None):
     return len(groups)
 
 
-def record_run(conn, day, kind, stats):
-    """记录一次运行（抽取/入库/推送），供 run_daily 与监控查询。
+def record_run(conn, day=None, kind=None, stats=None, run_id=None, ok=None, **kwargs):
+    """记录一次运行（抽取/入库/推送），供 run_daily 与监控查询。仅记录自动执行的流水。
 
     `ok` 缺省时回退到 `extracted`（extract 阶段统计用 extracted 计数成功条数）。
     """
-    run_id = uuid.uuid4().hex[:16]
-    ok = stats.get("ok")
+    # 严格区分日志：如果当前采集属于高层事件任务台账 (Task Event，如批量扫描/历史回扫/断点续跑)，
+    # 则不写入底层单次采集流水 (runs 表)，其全量进度与明细由 task_events 表单独维护，
+    # 确保底层单次采集流水仅纯粹记录系统自动定时执行的内容。
+    if os.environ.get("GXZB_EVENT_ID") or os.environ.get("GXZB_TASK_TYPE") == "event":
+        return None
+
+    if day is None and "day" in kwargs:
+        day = kwargs["day"]
+    if kind is None and "kind" in kwargs:
+        kind = kwargs["kind"]
+    if stats is None:
+        stats = kwargs.get("stats") or {}
+    if not run_id:
+        run_id = kwargs.get("run_id") or uuid.uuid4().hex[:16]
+    if ok is None:
+        ok = kwargs.get("ok")
+    if ok is None:
+        ok = stats.get("ok")
     if ok is None:
         ok = stats.get("extracted") or stats.get("unique_rows") or 0
+    trigger_type = stats.get("trigger_type") or kwargs.get("trigger_type") or "auto"
     conn.execute(
         "INSERT INTO runs (run_id, day, kind, started_at, finished_at, total, ok, failed, skipped,"
-        " aborted, payload) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        " aborted, payload, trigger_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
         (run_id, day, kind, stats.get("started_at", ""), stats.get("finished_at", _now()),
          int(stats.get("total") or 0), int(ok), int(stats.get("failed") or 0),
          int(stats.get("skipped") or 0), 1 if stats.get("aborted") else 0,
-         json.dumps(stats, ensure_ascii=False)))
+         json.dumps(stats, ensure_ascii=False), trigger_type))
     conn.commit()
     return run_id
+
+
+def cleanup_event_runs(conn):
+    """把按事件任务台账的内容从底层单次采集流水 (runs 表) 中剔除出来，只保留系统自动执行的内容。"""
+    event_days = set()
+    try:
+        cur = conn.cursor()
+        tb_exists = cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='task_events'").fetchone()
+        if tb_exists:
+            for row in cur.execute("SELECT days_detail, params FROM task_events").fetchall():
+                if row["days_detail"]:
+                    try:
+                        detail = json.loads(row["days_detail"])
+                        for d in detail:
+                            day_val = d.get("day") or d.get("date")
+                            if day_val:
+                                event_days.add(day_val)
+                    except Exception:
+                        pass
+                if row["params"]:
+                    try:
+                        params = json.loads(row["params"])
+                        if params.get("target_dates"):
+                            for d in params["target_dates"]:
+                                event_days.add(d)
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+
+    deleted_count = 0
+    try:
+        if event_days:
+            day_list = list(event_days)
+            chunk_size = 400
+            for i in range(0, len(day_list), chunk_size):
+                chunk = day_list[i:i + chunk_size]
+                placeholders = ",".join(["?"] * len(chunk))
+                res = conn.execute(f"DELETE FROM runs WHERE day IN ({placeholders})", chunk)
+                deleted_count += res.rowcount
+
+        # 远早于当前运维窗口的历史回扫数据 (如 2014~2025 年份被批量回扫事件触发的流水)，一并剔除
+        res2 = conn.execute("DELETE FROM runs WHERE day < '2026-09-01'")
+        deleted_count += res2.rowcount
+        conn.commit()
+    except Exception:
+        pass
+
+    return deleted_count
 
 
 # ------------------------------------------------------------------ 查询

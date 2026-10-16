@@ -60,6 +60,7 @@ FILES_TO_PACK = [
     "extractors/rules.py",
     "scripts/reapply_rules.py",
     "scripts/batch_scan.py",
+    "scripts/task_event_db.py",
     "scripts/upgrade_app.py",
     "scripts/bump_version.py",
     "config/focus_rules_master.json",
