@@ -22,7 +22,7 @@ else:
 ROOT_DIR = REPO_ROOT
 
 # ------------------------------------------------------------------ 统一版本
-APP_VERSION = "v0.1.0"
+APP_VERSION = "v0.1.1"
 
 # ------------------------------------------------------------------ .env 解析
 def load_env_file(path=None):
@@ -202,36 +202,89 @@ DETAIL_BODY_CLASS = get("DETAIL_BODY_CLASS", "ewb-details-info")
 DETAIL_TITLE_CLASS = get("DETAIL_TITLE_CLASS", "ewb-details-title")
 
 # ------------------------------------------------------------------ 业务字典
+# ---------------------------------------------------------------------------
+# 官方权威分类映射（工程建设大类 001001）
+# 数据源自自治区公共资源交易平台官方接口 getCategoryList，杜绝人工猜测
+# 可通过 scripts/sync_official_categories.py 自动同步刷新
+# ---------------------------------------------------------------------------
+OFFICIAL_CATEGORIES_FILE = os.path.join(DATA_DIR, "official_categories.json")
+
+def _load_official_categories():
+    if os.path.isfile(OFFICIAL_CATEGORIES_FILE):
+        try:
+            with open(OFFICIAL_CATEGORIES_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+OFFICIAL_TAXONOMY = _load_official_categories()
+
+# 官方标准行业定义（工程建设 001001 下 Level 2，取 categorynum 第 7~9 位）
+# 官方原名：001 房建市政, 002 水利工程, 003 交通工程, 004 铁路工程, 005 其他工程
 INDUSTRY_MAP = {
-    "001": "房建市政工程",
+    "001": "房建市政",
     "002": "水利工程",
     "003": "交通工程",
     "004": "铁路工程",
-    "005": "其他项目",
+    "005": "其他工程",
 }
+if OFFICIAL_TAXONOMY.get("engineering_industries"):
+    for _c, _info in OFFICIAL_TAXONOMY["engineering_industries"].items():
+        INDUSTRY_MAP[_c] = _info.get("name", INDUSTRY_MAP.get(_c, ""))
+
+# 官方标准业务环节定义（Level 3，取 categorynum 末 3 位）
+# 官方原名：
+#   006: 招标项目计划
+#   001: 招标公告
+#   002: 澄清/更正公告
+#   003: 控制价公示
+#   004: 中标候选人公示
+#   005: 中标结果公告
 STAGE_MAP = {
-    "001": "招标计划",
-    "002": "招标公告",
-    "003": "澄清/答疑",
-    "004": "控制价公示",
-    "005": "中标公示",
-    "006": "中标公告",
+    "006": "招标计划",
+    "001": "招标公告",
+    "002": "澄清/答疑",
+    "003": "控制价公示",
+    "004": "中标公示",
+    "005": "中标公告",
 }
+
+OFFICIAL_STAGE_NAMES = {
+    "006": "招标项目计划",
+    "001": "招标公告",
+    "002": "澄清/更正公告",
+    "003": "控制价公示",
+    "004": "中标候选人公示",
+    "005": "中标结果公告",
+}
+if OFFICIAL_TAXONOMY.get("engineering_stages"):
+    for _c, _info in OFFICIAL_TAXONOMY["engineering_stages"].items():
+        OFFICIAL_STAGE_NAMES[_c] = _info.get("name", OFFICIAL_STAGE_NAMES.get(_c, ""))
+
 STAGE_KEY_MAP = {
     "招标计划": "plan",
+    "招标项目计划": "plan",
     "招标公告": "notice",
     "澄清/答疑": "clarify",
+    "澄清/更正公告": "clarify",
     "控制价公示": "control_price",
     "中标公示": "candidate",
+    "中标候选人公示": "candidate",
     "中标公告": "result",
+    "中标结果公告": "result",
 }
 BADGE_CLASS_MAP = {
     "招标计划": "bg-blue-100 text-blue-800 border-blue-200",
+    "招标项目计划": "bg-blue-100 text-blue-800 border-blue-200",
     "招标公告": "bg-emerald-100 text-emerald-800 border-emerald-200",
     "澄清/答疑": "bg-amber-100 text-amber-800 border-amber-200",
+    "澄清/更正公告": "bg-amber-100 text-amber-800 border-amber-200",
     "控制价公示": "bg-purple-100 text-purple-800 border-purple-200",
     "中标公示": "bg-sky-100 text-sky-800 border-sky-200",
+    "中标候选人公示": "bg-sky-100 text-sky-800 border-sky-200",
     "中标公告": "bg-green-100 text-green-800 border-green-200",
+    "中标结果公告": "bg-green-100 text-green-800 border-green-200",
 }
 # 重点预警关键词：标题命中即标记，纯规则判断，不依赖人工
 FOCUS_KEYWORDS = [k.strip() for k in get("FOCUS_KEYWORDS", "").replace("\n", ",").replace("，", ",").split(",") if k.strip()]
