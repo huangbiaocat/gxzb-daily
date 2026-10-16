@@ -1,9 +1,21 @@
 {
-  "version": "v0.1.12",
-  "commit": "e4989c1",
+  "version": "v0.1.13",
+  "commit": "f6de5ed",
   "date": "2026-10-16",
-  "message": "chore(release): bump version v0.1.12",
+  "message": "chore(release): bump version v0.1.13",
   "commits": [
+    {
+      "commit": "f6de5ed",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.13"
+    },
+    {
+      "commit": "77119bb",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): update version.json build metadata for v0.1.12"
+    },
     {
       "commit": "e4989c1",
       "author": "黄彪",
@@ -27,18 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-16",
       "message": "feat(manager): add create and delete functionality for config snapshots"
-    },
-    {
-      "commit": "c89a537",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): update version.json build metadata for v0.1.10"
-    },
-    {
-      "commit": "408cc53",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): bump version v0.1.10"
     }
   ]
 }
