@@ -155,6 +155,16 @@ for it in items:
     else:
         it["link"] = DETAIL_TPL.format(infoid=it["infoid"], categorynum=it["categorynum"])
 
+    # 依据最新官方映射校准业务环节（纠正历史数据中 categorynum 错位问题）
+    if it.get("source") != "崇左阳光采购" and it.get("categorynum"):
+        stage_code = str(it["categorynum"])[-3:]
+        if stage_code in config.STAGE_MAP:
+            it["stage"] = config.STAGE_MAP[stage_code]
+            it["stage_key"] = config.STAGE_KEY_MAP.get(it["stage"], "other")
+    elif it.get("source") == "崇左阳光采购":
+        if it.get("stage") in config.STAGE_KEY_MAP:
+            it["stage_key"] = config.STAGE_KEY_MAP[it["stage"]]
+
     # 规范化行业分类（崇左阳光采购的“房建市政”对齐为“房建市政工程”）
     if it.get("industry") in ("房建市政", "房建市政工程"):
         it["industry"] = "房建市政工程"
@@ -703,9 +713,90 @@ DAILY_CSS = """
             border-color: #cbd5e1;
         }
 
+        .desktop-only { display: inline; }
+        .mobile-only { display: none; }
+
         @media (max-width: 640px) {
+            html, body {
+                overflow-x: hidden;
+            }
+            .desktop-only { display: none !important; }
+            .mobile-only { display: inline !important; }
+            .site-header {
+                padding: 8px 0;
+                width: 100%;
+                overflow: hidden;
+            }
+            .header-inner {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+                padding: 0 12px;
+                box-sizing: border-box;
+                width: 100%;
+                max-width: 100%;
+            }
+            .brand-logo {
+                width: 100%;
+                gap: 8px;
+                min-width: 0;
+            }
+            .brand-icon {
+                width: 32px;
+                height: 32px;
+                flex-shrink: 0;
+            }
+            .brand-text {
+                min-width: 0;
+                overflow: hidden;
+            }
+            .brand-text h1 {
+                font-size: 0.95rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                margin: 0;
+            }
+            .brand-text p {
+                display: none !important;
+            }
+            .header-actions.nav-caps {
+                width: 100%;
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 6px;
+                margin-left: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            .header-actions .btn-back {
+                padding: 6px 2px;
+                font-size: 0.72rem;
+                justify-content: center;
+                text-align: center;
+                white-space: nowrap;
+                min-width: 0;
+                box-sizing: border-box;
+                overflow: hidden;
+            }
+            .header-actions .btn-back svg {
+                width: 12px;
+                height: 12px;
+                margin-right: 2px;
+                flex-shrink: 0;
+            }
+            .header-actions .btn-back span {
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .page-container {
+                padding: 16px 12px 60px;
+                box-sizing: border-box;
+                width: 100%;
+                max-width: 100%;
+                overflow-x: hidden;
+            }
             .filter-row.bottom { flex-direction: column; align-items: flex-start; }
-            .nav-caps { width: 100%; justify-content: flex-start; }
         }
 
         /* ===== 主题11：工程类别标题栏 / 公告类型胶囊标签 / 地市标签（对齐参考图） ===== */
@@ -961,7 +1052,10 @@ __DAILY_CSS__
 </svg>
 </div>
 <div class="brand-text">
-<h1 style="margin: 0;">广西全区招投标公告日报（__DATE__）</h1>
+<h1 style="margin: 0;">
+<span class="desktop-only">广西全区招投标公告日报（__DATE__）</span>
+<span class="mobile-only">全区招投标日报（__DATE_SHORT__）</span>
+</h1>
 <p>全区公共资源交易 · 崇左阳光采购公告每日归档</p>
 </div>
 </a>
@@ -1983,6 +2077,7 @@ html = html.replace("__SCAN_TIME__", scan_time)
 html = html.replace("__LATEST__", latest_pub)
 html = html.replace("__APP_VERSION__", getattr(config, "APP_VERSION", "v0.1.0"))
 html = html.replace("__DATE__", DAY)
+html = html.replace("__DATE_SHORT__", DAY[5:] if len(DAY) >= 10 else DAY)
 html = html.replace("__PREV_URL__", neighbor_url(-1))
 html = html.replace("__NEXT_URL__", neighbor_url(1))
 

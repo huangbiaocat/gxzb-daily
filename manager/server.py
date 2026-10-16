@@ -7,8 +7,11 @@ import http.server
 import hashlib
 import hmac
 import json
+import logging
+import logging.handlers
 import mimetypes
 import os
+import random
 import re
 import shutil
 import socketserver
@@ -35,7 +38,247 @@ try:
 except ImportError:
     config = None
 
+try:
+    from manager.user_db import (
+        init_user_db, register_user, verify_user_login,
+        generate_user_token, verify_user_token,
+        get_user_favorites, add_user_favorite, remove_user_favorite,
+        get_all_users_for_admin, get_login_history_for_admin
+    )
+    init_user_db()
+except Exception as _e:
+    pass
+
 PORT = int(getattr(config, "MANAGER_PORT", os.environ.get("MANAGER_PORT", 8089)))
+
+# ---------------------------------------------------------------------------
+# 日志系统 ── 访问日志(access) + 操作审计(audit)
+# 严格满足要求：访问 IP、请求时间、访问接口、UA、操作记录，保存 >= 6 个月，出事可溯源
+# ---------------------------------------------------------------------------
+LOG_DIR = ROOT_DIR / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_DB_PATH = LOG_DIR / "web_logs.sqlite3"
+
+def _make_logger(name: str, filename: str, fmt: str) -> logging.Logger:
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    if not logger.handlers:
+        handler = logging.handlers.TimedRotatingFileHandler(
+            str(LOG_DIR / filename),
+            when="midnight",
+            interval=1,
+            backupCount=185,  # 至少保存 185 天 (>= 6 个月)
+            encoding="utf-8",
+        )
+        handler.suffix = "%Y-%m-%d"
+        handler.setFormatter(logging.Formatter(fmt))
+        logger.addHandler(handler)
+    return logger
+
+# 访问日志: [时间] IP=... METHOD=... PATH=... STATUS=... DURATION=...ms UA="..."
+access_logger = _make_logger(
+    "manager.access",
+    "access.log",
+    "%(message)s",
+)
+
+# 审计日志: [时间] IP=... ACTION=... STATUS=... PATH=... DETAIL="..." UA="..."
+audit_logger = _make_logger(
+    "manager.audit",
+    "audit.log",
+    "%(message)s",
+)
+
+_log_db_lock = threading.Lock()
+
+def init_log_db():
+    """初始化可溯源轻量级日志库，用于后台快速检索、过滤与统计"""
+    try:
+        with _log_db_lock:
+            with sqlite3.connect(str(LOG_DB_PATH), timeout=10.0) as conn:
+                conn.execute("""
+                CREATE TABLE IF NOT EXISTS web_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    log_type TEXT NOT NULL,        -- 'access' 或 'audit'
+                    ip TEXT NOT NULL,              -- 访问 IP
+                    method TEXT NOT NULL,          -- GET / POST 等
+                    path TEXT NOT NULL,            -- 访问接口/路径
+                    status TEXT NOT NULL,          -- 状态码或 SUCCESS / FAILED
+                    action TEXT NOT NULL,          -- 操作类型 (LOGIN, SAVE_CONFIG, START_TASK 等)
+                    detail TEXT NOT NULL,          -- 操作详情记录
+                    ua TEXT NOT NULL,              -- 客户端 User-Agent
+                    duration_ms INTEGER DEFAULT 0, -- 请求耗时(毫秒)
+                    created_at TEXT NOT NULL       -- 请求时间 (YYYY-MM-DD HH:MM:SS)
+                );
+                """)
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_web_logs_created ON web_logs(created_at);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_web_logs_type ON web_logs(log_type);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_web_logs_action ON web_logs(action);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_web_logs_ip ON web_logs(ip);")
+    except Exception as e:
+        print(f"[Warn] init_log_db error: {e}")
+
+init_log_db()
+
+def record_web_log(log_type: str, ip: str, method: str, path: str, status: str, action: str, detail: str, ua: str, duration_ms: int = 0, created_at: str = None):
+    """双写落盘 SQLite，配合日志文件实现双重备份，超期自动清理"""
+    if not created_at:
+        created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        with _log_db_lock:
+            with sqlite3.connect(str(LOG_DB_PATH), timeout=5.0) as conn:
+                conn.execute(
+                    "INSERT INTO web_logs (log_type, ip, method, path, status, action, detail, ua, duration_ms, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (log_type, ip, method, path, str(status), action, detail, ua, duration_ms, created_at)
+                )
+                # 维持保存 >= 6 个月(185天)策略：每隔一定频率自动清理超期记录
+                if random.random() < 0.01:
+                    cutoff = (datetime.now() - timedelta(days=185)).strftime("%Y-%m-%d %H:%M:%S")
+                    conn.execute("DELETE FROM web_logs WHERE created_at < ?", (cutoff,))
+    except Exception:
+        pass
+
+def get_client_ip(handler) -> str:
+    """提取客户端真实 IP，兼容反代/隧道头部 (X-Forwarded-For, X-Real-IP)"""
+    xff = handler.headers.get("X-Forwarded-For")
+    if xff:
+        parts = [p.strip() for p in xff.split(",") if p.strip()]
+        if parts:
+            return parts[0]
+    x_real = handler.headers.get("X-Real-IP")
+    if x_real and x_real.strip():
+        return x_real.strip()
+    if getattr(handler, "client_address", None):
+        return str(handler.client_address[0])
+    return "127.0.0.1"
+
+def get_user_agent(handler) -> str:
+    """提取客户端 UA"""
+    return handler.headers.get("User-Agent", "-")
+
+def record_access_log(ip: str, method: str, path: str, status: int, duration_ms: int, ua: str):
+    """记录 HTTP 访问日志"""
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{now_str}] IP={ip} METHOD={method} PATH={path} STATUS={status} DURATION={duration_ms}ms UA=\"{ua}\""
+    access_logger.info(line)
+    record_web_log(
+        log_type="access",
+        ip=ip,
+        method=method,
+        path=path,
+        status=str(status),
+        action="-",
+        detail=f"{method} {path} -> {status} ({duration_ms}ms)",
+        ua=ua,
+        duration_ms=duration_ms,
+        created_at=now_str
+    )
+
+def record_audit_log(ip: str, action: str, status: str, path: str, detail: str, ua: str):
+    """记录关键管理操作审计日志"""
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{now_str}] IP={ip} ACTION={action} STATUS={status} PATH={path} DETAIL=\"{detail}\" UA=\"{ua}\""
+    audit_logger.info(line)
+    record_web_log(
+        log_type="audit",
+        ip=ip,
+        method="POST" if not path.startswith("GET") else "GET",
+        path=path,
+        status=status,
+        action=action,
+        detail=detail,
+        ua=ua,
+        duration_ms=0,
+        created_at=now_str
+    )
+
+def query_web_logs(log_type: str = "audit", keyword: str = "", action: str = "", date_start: str = "", date_end: str = "", limit: int = 50, offset: int = 0):
+    """供后台查询与导出安全审计及访问日志"""
+    limit = max(1, min(limit, 500))
+    offset = max(0, offset)
+    where_clauses = []
+    params = []
+
+    if log_type and log_type != "all":
+        where_clauses.append("log_type = ?")
+        params.append(log_type)
+    if action:
+        where_clauses.append("action = ?")
+        params.append(action)
+    if keyword:
+        where_clauses.append("(ip LIKE ? OR action LIKE ? OR path LIKE ? OR detail LIKE ? OR ua LIKE ?)")
+        kw = f"%{keyword}%"
+        params.extend([kw, kw, kw, kw, kw])
+    if date_start:
+        where_clauses.append("created_at >= ?")
+        params.append(f"{date_start} 00:00:00")
+    if date_end:
+        where_clauses.append("created_at <= ?")
+        params.append(f"{date_end} 23:59:59")
+
+    where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+    logs = []
+    total = 0
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    today_requests = 0
+    today_audits = 0
+    today_failed = 0
+
+    try:
+        with _log_db_lock:
+            with sqlite3.connect(str(LOG_DB_PATH), timeout=10.0) as conn:
+                conn.row_factory = sqlite3.Row
+                count_cur = conn.execute(f"SELECT COUNT(*) FROM web_logs {where_sql}", params)
+                total = count_cur.fetchone()[0]
+
+                cur = conn.execute(
+                    f"SELECT id, log_type, ip, method, path, status, action, detail, ua, duration_ms, created_at FROM web_logs {where_sql} ORDER BY id DESC LIMIT ? OFFSET ?",
+                    params + [limit, offset]
+                )
+                for r in cur.fetchall():
+                    logs.append({
+                        "id": r["id"],
+                        "log_type": r["log_type"],
+                        "ip": r["ip"],
+                        "method": r["method"],
+                        "path": r["path"],
+                        "status": r["status"],
+                        "action": r["action"],
+                        "detail": r["detail"],
+                        "ua": r["ua"],
+                        "duration_ms": r["duration_ms"],
+                        "created_at": r["created_at"],
+                    })
+
+                # 统计今日概览指标
+                stat_cur = conn.execute("""
+                    SELECT 
+                        SUM(CASE WHEN log_type='access' THEN 1 ELSE 0 END) as req_cnt,
+                        SUM(CASE WHEN log_type='audit' THEN 1 ELSE 0 END) as audit_cnt,
+                        SUM(CASE WHEN status='FAILED' OR status LIKE '4%' OR status LIKE '5%' THEN 1 ELSE 0 END) as fail_cnt
+                    FROM web_logs WHERE created_at >= ?
+                """, (f"{today_str} 00:00:00",))
+                row = stat_cur.fetchone()
+                if row:
+                    today_requests = row[0] or 0
+                    today_audits = row[1] or 0
+                    today_failed = row[2] or 0
+    except Exception as e:
+        print(f"[Warn] query_web_logs error: {e}")
+
+    return {
+        "total": total,
+        "logs": logs,
+        "limit": limit,
+        "offset": offset,
+        "summary": {
+            "today_requests": today_requests,
+            "today_audits": today_audits,
+            "today_failed": today_failed,
+            "retention_days": 185
+        }
+    }
+
 def get_static_dir() -> Path:
     candidates = []
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
@@ -543,6 +786,32 @@ def get_scheduled_task_status():
         "yesterday_task_enabled": False
     }
     if sys.platform != "win32":
+        if sys.platform.startswith("linux"):
+            try:
+                cp = subprocess.run(["systemctl", "show", "gxzb-daily.timer", "--property=NextElapseUSecRealtime,ActiveState,UnitFileState"], capture_output=True, text=True, timeout=2)
+                if cp.returncode == 0:
+                    info_dict = {}
+                    for line in cp.stdout.splitlines():
+                        if "=" in line:
+                            k, v = line.split("=", 1)
+                            info_dict[k.strip()] = v.strip()
+                    is_active = info_dict.get("ActiveState") == "active"
+                    next_run_raw = info_dict.get("NextElapseUSecRealtime", "")
+                    next_run_std = ""
+                    match = re.search(r"(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})", next_run_raw)
+                    if match:
+                        next_run_std = match.group(1)
+                    return {
+                        "exists": True,
+                        "enabled": is_active,
+                        "state": "就绪 (监控中)" if is_active else "已暂停 / 未启用",
+                        "next_run": next_run_std or next_run_raw or "--",
+                        "next_run_standard": next_run_std,
+                        "yesterday_task_exists": True,
+                        "yesterday_task_enabled": True
+                    }
+            except Exception:
+                pass
         return {
             "exists": True,
             "enabled": True,
@@ -1053,6 +1322,23 @@ def save_config_env(data):
         if sys.platform.startswith("win"):
             ps_cmd = f"$t = Get-ScheduledTask -TaskName 'ZtbCollector_Sync' -ErrorAction SilentlyContinue; if ($t) {{ $t.Triggers[0].Repetition.Interval = 'PT{interval_min}M'; $t | Set-ScheduledTask | Out-Null }}"
             subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd], check=False)
+        elif sys.platform.startswith("linux"):
+            timer_file = "/etc/systemd/system/gxzb-daily.timer"
+            if os.path.exists(timer_file):
+                content = f"""[Unit]
+Description=Run GXZB Daily Task Periodically
+
+[Timer]
+OnCalendar=*-*-* 07..22:00/{interval_min}:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+"""
+                with open(timer_file, "w", encoding="utf-8") as tf:
+                    tf.write(content)
+                subprocess.run(["systemctl", "daemon-reload"], check=False)
+                subprocess.run(["systemctl", "restart", "gxzb-daily.timer"], check=False)
     except Exception:
         pass
 
@@ -1066,6 +1352,44 @@ def save_config_env(data):
     return True
 
 class ManagerHandler(http.server.BaseHTTPRequestHandler):
+    def handle_one_request(self):
+        self._start_time = time.time()
+        super().handle_one_request()
+
+    def get_client_ip(self) -> str:
+        return get_client_ip(self)
+
+    def get_user_agent(self) -> str:
+        return get_user_agent(self)
+
+    def _audit(self, action: str, status: str, detail: str, path: str = None):
+        p = path or getattr(self, "path", "-")
+        record_audit_log(self.get_client_ip(), action, status, p, detail, self.get_user_agent())
+
+    def log_request(self, code='-', size='-'):
+        try:
+            ip = self.get_client_ip()
+            ua = self.get_user_agent()
+            method = getattr(self, "command", "-")
+            path = getattr(self, "path", "-")
+            duration_ms = int((time.time() - getattr(self, "_start_time", time.time())) * 1000)
+            status_code = int(code) if str(code).isdigit() else 200
+            record_access_log(ip, method, path, status_code, duration_ms, ua)
+        except Exception:
+            pass
+
+    def log_message(self, format, *args):
+        # 静默控制台 stderr 刷屏，统一交由 access_logger 与 audit_logger 记录
+        pass
+
+    def log_error(self, format, *args):
+        try:
+            ip = self.get_client_ip()
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            access_logger.error(f"[{now_str}] IP={ip} ERROR: {format % args}")
+        except Exception:
+            pass
+
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
@@ -1101,6 +1425,31 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             return True
         return False
 
+    def get_current_user(self):
+        """检查请求是否通过普通用户鉴权 (Cookie: user_token 或 Header: X-User-Token / Authorization)"""
+        cookie_header = self.headers.get("Cookie", "")
+        if cookie_header:
+            try:
+                cookie = SimpleCookie()
+                cookie.load(cookie_header)
+                if "user_token" in cookie:
+                    u = verify_user_token(cookie["user_token"].value)
+                    if u:
+                        return u
+            except Exception:
+                pass
+        x_tok = self.headers.get("X-User-Token", "").strip()
+        if x_tok:
+            u = verify_user_token(x_tok)
+            if u:
+                return u
+        auth_hdr = self.headers.get("Authorization", "").strip()
+        if auth_hdr.startswith("UserBearer "):
+            u = verify_user_token(auth_hdr[11:].strip())
+            if u:
+                return u
+        return None
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.end_headers()
@@ -1112,6 +1461,34 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def serve_file(self, target, mime=None):
+        """通用静态文件传输方法，支持自动探测 MIME 类型和 UTF-8 编码"""
+        try:
+            target_path = Path(target).resolve()
+            if not target_path.is_file():
+                self.send_error(404, f"File not found: {target_path.name}")
+                return
+            if not mime:
+                ext = target_path.suffix.lower()
+                if ext == ".html":
+                    mime = "text/html; charset=utf-8"
+                elif ext == ".css":
+                    mime = "text/css; charset=utf-8"
+                elif ext == ".js":
+                    mime = "application/javascript; charset=utf-8"
+                elif ext == ".json":
+                    mime = "application/json; charset=utf-8"
+                else:
+                    mime = mimetypes.guess_type(str(target_path))[0] or "application/octet-stream"
+            data = target_path.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", mime)
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+        except Exception as e:
+            self.send_error(500, f"Error reading file: {str(e)}")
 
     def do_HEAD(self):
         self.do_GET()
@@ -1125,20 +1502,59 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        if path == "/" or path == "/index.html":
-            index_file = STATIC_DIR / "index.html"
-            if not index_file.exists():
+        # -------------------------------------------------------------
+        # Single Domain Portal 路由分流与管理后台入口
+        # -------------------------------------------------------------
+        if path == "/admin":
+            self.send_response(301)
+            self.send_header("Location", "/admin/")
+            self.end_headers()
+            return
+
+        if path == "/admin/" or path == "/admin/index.html":
+            mgr_index = STATIC_DIR / "index.html"
+            if not mgr_index.exists():
                 for cand in [Path(__file__).resolve().parent / "static" / "index.html", ROOT_DIR / "manager" / "static" / "index.html"]:
                     if cand.exists():
-                        index_file = cand
+                        mgr_index = cand
                         break
-            if index_file.exists():
-                content = index_file.read_bytes()
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html; charset=utf-8")
-                self.send_header("Content-Length", str(len(content)))
-                self.end_headers()
-                self.wfile.write(content)
+            if mgr_index.exists():
+                self.serve_file(mgr_index, "text/html")
+            else:
+                self.send_error(404, "Admin index.html not found")
+            return
+
+        if path.startswith("/admin/"):
+            # 管理后台静态资源映射（例如 /admin/static/... 或 /admin/style.css）
+            rel = path[len("/admin/"):]
+            target = STATIC_DIR / rel
+            if not target.exists() and rel.startswith("static/"):
+                target = STATIC_DIR / rel[len("static/"):]
+            if target.exists() and target.is_file():
+                self.serve_file(target)
+                return
+            cand = STATIC_DIR / rel
+            if cand.exists() and cand.is_file():
+                self.serve_file(cand)
+                return
+            self.send_error(404, f"Admin asset not found: {rel}")
+            return
+
+        if path == "/" or path == "/index.html":
+            # Single Domain Portal 鉴权分流：公开访客访问常规情报大屏
+            site_index = get_site_dir() / "index.html"
+            if site_index.exists() and site_index.is_file():
+                self.serve_file(site_index, "text/html")
+                return
+
+            mgr_index = STATIC_DIR / "index.html"
+            if not mgr_index.exists():
+                for cand in [Path(__file__).resolve().parent / "static" / "index.html", ROOT_DIR / "manager" / "static" / "index.html"]:
+                    if cand.exists():
+                        mgr_index = cand
+                        break
+            if mgr_index.exists():
+                self.serve_file(mgr_index, "text/html")
             else:
                 fallback_html = f"<html><head><meta charset=\"utf-8\"><title>招投标监控服务运行中</title></head><body style=\"font-family:sans-serif;padding:30px;\"><h2 style=\"color:#1677ff;\">招投标系统控制面板已成功运行</h2><p>未找到静态 index.html 资源文件 (尝试路径: {STATIC_DIR})</p><p>后台 API 正常可用：</p><ul><li><a href=\"/api/status\">/api/status (系统状态)</a></li><li><a href=\"/api/task_state\">/api/task_state (运行进度)</a></li><li><a href=\"/preview\">/preview (大屏展示)</a></li></ul></body></html>"
                 c = fallback_html.encode("utf-8")
@@ -1157,7 +1573,49 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             admin_pw = getattr(config, "ADMIN_PASSWORD", "").strip() if config else ""
             self.send_json({"authenticated": self.is_authenticated(), "has_password": bool(admin_pw)})
             return
-            self.send_json(get_system_status())
+
+        # 普通用户鉴权与关注 API
+        if path == "/api/user/me":
+            user = self.get_current_user()
+            if not user:
+                self.send_json({"authenticated": False, "user": None})
+            else:
+                favs = get_user_favorites(user["id"])
+                self.send_json({
+                    "authenticated": True,
+                    "user": user,
+                    "favorites_count": {
+                        "projects": len(favs["projects"]),
+                        "owners": len(favs["owners"])
+                    }
+                })
+            return
+
+        if path == "/api/user/favorites":
+            user = self.get_current_user()
+            if not user:
+                self.send_json({"ok": False, "error": "unauthorized", "msg": "请先登录普通用户账号"}, status=401)
+                return
+            favs = get_user_favorites(user["id"])
+            self.send_json({"ok": True, "favorites": favs})
+            return
+
+        # 管理员视图：查看所有用户及各自关注的重点项目/重点业主
+        if path == "/api/admin/users":
+            if not self.is_authenticated():
+                self.send_json({"ok": False, "error": "unauthorized", "msg": "需要管理员权限"}, status=401)
+                return
+            users_list = get_all_users_for_admin()
+            self.send_json({"ok": True, "total": len(users_list), "users": users_list})
+            return
+
+        # 管理员视图：查看用户登录审计历史记录流水
+        if path == "/api/admin/user_logins":
+            if not self.is_authenticated():
+                self.send_json({"ok": False, "error": "unauthorized", "msg": "需要管理员权限"}, status=401)
+                return
+            logins = get_login_history_for_admin(limit=200)
+            self.send_json({"ok": True, "total": len(logins), "logins": logins})
             return
 
         if path == "/api/check_upgrade":
@@ -1236,6 +1694,101 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             except Exception as e:
                 runs = []
             self.send_json({"ok": True, "total": total_count, "runs": runs})
+            return
+
+        if path == "/api/task_events":
+            # 获取事件级高层任务台账
+            query = parse_qs(parsed.query)
+            limit = min(int(query.get("limit", ["30"])[0]), 100)
+            offset = max(int(query.get("offset", ["0"])[0]), 0)
+            status_filter = query.get("status", [""])[0].strip() or None
+            task_type_filter = query.get("task_type", [""])[0].strip() or None
+            try:
+                from scripts import task_event_db
+                total, events = task_event_db.list_events(
+                    limit=limit, offset=offset, status=status_filter, task_type=task_type_filter
+                )
+                self.send_json({"ok": True, "total": total, "events": events})
+            except Exception as e:
+                self.send_json({"ok": False, "error": str(e), "total": 0, "events": []})
+            return
+
+        if path == "/api/task_event_detail":
+            # 获取指定事件的全部每日执行明细与统计
+            query = parse_qs(parsed.query)
+            event_id = query.get("event_id", [""])[0].strip()
+            if not event_id:
+                self.send_json({"ok": False, "error": "缺少 event_id 参数"})
+                return
+            try:
+                from scripts import task_event_db
+                event = task_event_db.get_event(event_id)
+                if not event:
+                    self.send_json({"ok": False, "error": "未找到对应的任务事件"})
+                    return
+                unfinished = task_event_db.get_unfinished_dates(event_id)
+                event["unfinished_dates"] = unfinished
+                event["has_unfinished"] = len(unfinished) > 0
+                self.send_json({"ok": True, "event": event})
+            except Exception as e:
+                self.send_json({"ok": False, "error": str(e)})
+            return
+
+        if path == "/api/security_logs":
+            if not self.is_authenticated():
+                self._audit("UNAUTHORIZED", "FAILED", "未授权访问 /api/security_logs")
+                self.send_json({"ok": False, "error": "Unauthorized"}, status=401)
+                return
+            query = parse_qs(parsed.query)
+            log_type = query.get("type", ["audit"])[0].strip()
+            keyword = query.get("keyword", [""])[0].strip()
+            action = query.get("action", [""])[0].strip()
+            date_start = query.get("date_start", [""])[0].strip()
+            date_end = query.get("date_end", [""])[0].strip()
+            try:
+                limit = int(query.get("limit", [50])[0])
+            except ValueError:
+                limit = 50
+            try:
+                offset = int(query.get("offset", [0])[0])
+            except ValueError:
+                offset = 0
+            result = query_web_logs(
+                log_type=log_type,
+                keyword=keyword,
+                action=action,
+                date_start=date_start,
+                date_end=date_end,
+                limit=limit,
+                offset=offset,
+            )
+            result["ok"] = True
+            self.send_json(result)
+            return
+
+        if path == "/api/security_logs/export":
+            if not self.is_authenticated():
+                self._audit("UNAUTHORIZED", "FAILED", "未授权访问 /api/security_logs/export")
+                self.send_json({"ok": False, "error": "Unauthorized"}, status=401)
+                return
+            query = parse_qs(parsed.query)
+            target_type = query.get("type", ["audit"])[0].strip()
+            log_filename = "audit.log" if target_type == "audit" else "access.log"
+            log_filepath = LOG_DIR / log_filename
+            if not log_filepath.exists():
+                content = b""
+            else:
+                try:
+                    with open(log_filepath, "rb") as lf:
+                        content = lf.read()
+                except Exception as e:
+                    content = str(e).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Content-Disposition", f'attachment; filename="{log_filename}"')
+            self.send_header("Content-Length", str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
             return
 
         if path == "/api/search":
@@ -1424,6 +1977,35 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                 self.wfile.write(tips_html.encode("utf-8"))
                 return
 
+        # 根路径通用静态文件查找（优先从公开情报 site_dir 获取，其次从管理后台 STATIC_DIR 获取）
+        rel_path = path.lstrip("/")
+        if rel_path:
+            site_dir = get_site_dir()
+            try:
+                target = (site_dir / rel_path).resolve()
+                if str(target).startswith(str(site_dir.resolve())) and target.is_file():
+                    mime = "text/html; charset=utf-8" if target.suffix.lower() == ".html" else \
+                           "text/css; charset=utf-8" if target.suffix.lower() == ".css" else \
+                           "application/javascript; charset=utf-8" if target.suffix.lower() == ".js" else \
+                           mimetypes.guess_type(str(target))[0] or "application/octet-stream"
+                    data = target.read_bytes()
+                    self.send_response(200)
+                    self.send_header("Content-Type", mime)
+                    self.send_header("Content-Length", str(len(data)))
+                    self.end_headers()
+                    self.wfile.write(data)
+                    return
+            except Exception:
+                pass
+
+            try:
+                target = (STATIC_DIR / rel_path).resolve()
+                if str(target).startswith(str(STATIC_DIR.resolve())) and target.is_file():
+                    self.serve_file(target)
+                    return
+            except Exception:
+                pass
+
         self.send_error(404, "Not Found")
 
     def do_POST(self):
@@ -1442,6 +2024,7 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             req_password = post_data.get("password", "").strip()
             admin_pw = getattr(config, "ADMIN_PASSWORD", "").strip() if config else ""
             if not admin_pw or req_password == admin_pw:
+                self._audit("LOGIN", "SUCCESS", "管理员密码验证成功，颁发会话令牌")
                 token = generate_auth_token(admin_pw)
                 cookie_val = f"auth_token={token}; Path=/; Max-Age=604800; SameSite=Lax"
                 body = json.dumps({"ok": True, "token": token, "msg": "登录成功"}, ensure_ascii=False).encode("utf-8")
@@ -1454,10 +2037,12 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                 self.wfile.write(body)
                 return
             else:
+                self._audit("LOGIN", "FAILED", "管理员密码错误，登录失败")
                 self.send_json({"ok": False, "msg": "管理员密码错误，请重新输入"})
                 return
 
         if path == "/api/logout":
+            self._audit("LOGOUT", "SUCCESS", "管理员退出登录")
             cookie_val = "auth_token=; Path=/; Max-Age=0; SameSite=Lax"
             body = json.dumps({"ok": True, "msg": "已安全退出登录"}, ensure_ascii=False).encode("utf-8")
             self.send_response(200)
@@ -1469,13 +2054,104 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             self.wfile.write(body)
             return
 
+        # -------------------------------------------------------------
+        # 普通用户注册、登录、注销与重点关注 API
+        # -------------------------------------------------------------
+        if path == "/api/user/register":
+            username = post_data.get("username", "").strip()
+            password = post_data.get("password", "").strip()
+            display_name = post_data.get("display_name", "").strip()
+            ok, msg, user_info = register_user(username, password, display_name)
+            if not ok:
+                self._audit("USER_REGISTER", "FAILED", f"普通用户注册失败: {username} ({msg})")
+                self.send_json({"ok": False, "msg": msg})
+                return
+            self._audit("USER_REGISTER", "SUCCESS", f"普通用户注册成功: {username}")
+            token = generate_user_token(user_info["id"], user_info["username"])
+            cookie_val = f"user_token={token}; Path=/; Max-Age=604800; SameSite=Lax"
+            body = json.dumps({"ok": True, "msg": "注册成功并已自动登录", "token": token, "user": user_info}, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Set-Cookie", cookie_val)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        if path == "/api/user/login":
+            username = post_data.get("username", "").strip()
+            password = post_data.get("password", "").strip()
+            client_ip = self.client_address[0] if self.client_address else ""
+            ua = self.headers.get("User-Agent", "")
+            ok, msg, user_info = verify_user_login(username, password, ip=client_ip, user_agent=ua)
+            if not ok:
+                self._audit("USER_LOGIN", "FAILED", f"普通用户登录失败: {username} ({msg})")
+                self.send_json({"ok": False, "msg": msg})
+                return
+            self._audit("USER_LOGIN", "SUCCESS", f"普通用户登录成功: {username}")
+            token = generate_user_token(user_info["id"], user_info["username"])
+            cookie_val = f"user_token={token}; Path=/; Max-Age=604800; SameSite=Lax"
+            body = json.dumps({"ok": True, "msg": "登录成功", "token": token, "user": user_info}, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Set-Cookie", cookie_val)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        if path == "/api/user/logout":
+            self._audit("USER_LOGOUT", "SUCCESS", "普通用户退出登录")
+            cookie_val = "user_token=; Path=/; Max-Age=0; SameSite=Lax"
+            body = json.dumps({"ok": True, "msg": "已退出登录"}, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Set-Cookie", cookie_val)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        if path == "/api/user/favorites/add":
+            user = self.get_current_user()
+            if not user:
+                self.send_json({"ok": False, "error": "unauthorized", "msg": "请先登录普通用户账号"}, status=401)
+                return
+            target_type = post_data.get("target_type", "")
+            target_name = post_data.get("target_name", "")
+            tags = post_data.get("tags", "")
+            ok, msg = add_user_favorite(user["id"], user["username"], target_type, target_name, tags)
+            favs = get_user_favorites(user["id"])
+            self.send_json({"ok": ok, "msg": msg, "favorites": favs})
+            return
+
+        if path == "/api/user/favorites/delete":
+            user = self.get_current_user()
+            if not user:
+                self.send_json({"ok": False, "error": "unauthorized", "msg": "请先登录普通用户账号"}, status=401)
+                return
+            fav_id = post_data.get("id")
+            target_type = post_data.get("target_type", "")
+            target_name = post_data.get("target_name", "")
+            ok, msg = remove_user_favorite(user["id"], favorite_id=fav_id, target_type=target_type, target_name=target_name)
+            favs = get_user_favorites(user["id"])
+            self.send_json({"ok": ok, "msg": msg, "favorites": favs})
+            return
+
         # 敏感写操作与流水线触发鉴权拦截
         protected_paths = {
-            "/api/abort_task", "/api/save_config", "/api/rollback_config",
-            "/api/delete_date", "/api/monitor_control"
+            "/api/abort_task", "/api/stop_task", "/api/save_config", "/api/rollback_config",
+            "/api/delete_date", "/api/monitor_control", "/api/save_rules", "/api/save_master_rules",
+            "/api/restore_master_rules", "/api/restore_snapshot", "/api/unmark_delayed",
+            "/api/refresh_index", "/api/fix_tunnel", "/api/test_ssh", "/api/test_wechat",
+            "/api/test_jjt", "/api/resume_task_event", "/api/open_screen"
         }
         if path.startswith("/api/run_") or path in protected_paths:
             if not self.is_authenticated():
+                self._audit("UNAUTHORIZED", "FAILED", f"未授权尝试访问受保护接口: {path}")
                 self.send_json({"ok": False, "error": "unauthorized", "msg": "未登录或登录已过期，请重新登录管理员账号"}, status=401)
                 return
 
@@ -1502,6 +2178,7 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             else:
                 cmd = [py_exe, "-u", str(ROOT_DIR / "run_daily.py"), "--date", target_date]
             ok, msg = PROC_MGR.start_task(f"全流程日报流水线 ({target_date})", cmd)
+            self._audit("START_TASK", "SUCCESS" if ok else "FAILED", f"启动全流程日报流水线 ({target_date})")
             self.send_json({"ok": ok, "msg": msg})
             return
 
@@ -1514,12 +2191,14 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             else:
                 cmd = [py_exe, "-u", str(ROOT_DIR / "run_daily.py"), "--date", target_date, "--final", "--force"]
             ok, msg = PROC_MGR.start_task(f"昨日标讯最终版扫描与封存流水线 ({target_date})", cmd)
+            self._audit("START_TASK", "SUCCESS" if ok else "FAILED", f"启动昨日标讯最终版流水线 ({target_date})")
             self.send_json({"ok": ok, "msg": msg})
             return
 
         if path == "/api/run_upgrade":
             cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "upgrade_app.py")]
             ok, msg = PROC_MGR.start_task("同步拉取 GitHub 最新版本代码", cmd)
+            self._audit("RUN_UPGRADE", "SUCCESS" if ok else "FAILED", "启动系统在线升级同步代码")
             self.send_json({"ok": ok, "msg": msg})
             return
 
@@ -1527,6 +2206,7 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             target_date = post_data.get("date", "").strip() or date.today().isoformat()
             cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "collect.py"), "--date", target_date]
             ok, msg = PROC_MGR.start_task(f"单步采集公告 ({target_date})", cmd)
+            self._audit("START_TASK", "SUCCESS" if ok else "FAILED", f"启动单步采集公告 ({target_date})")
             self.send_json({"ok": ok, "msg": msg})
             return
 
@@ -1534,6 +2214,7 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             target_date = post_data.get("date", "").strip() or date.today().isoformat()
             cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "collect_cz_ygcg.py"), "--date", target_date]
             ok, msg = PROC_MGR.start_task(f"单采崇左阳光采购 ({target_date})", cmd)
+            self._audit("START_TASK", "SUCCESS" if ok else "FAILED", f"启动单采崇左阳光采购 ({target_date})")
             self.send_json({"ok": ok, "msg": msg})
             return
 
@@ -1541,18 +2222,96 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             target_date = post_data.get("date", "").strip() or date.today().isoformat()
             cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "build_daily_page.py"), "--date", target_date]
             ok, msg = PROC_MGR.start_task(f"重新构建静态页面 ({target_date})", cmd)
+            self._audit("START_TASK", "SUCCESS" if ok else "FAILED", f"启动重新构建静态页面 ({target_date})")
             self.send_json({"ok": ok, "msg": msg})
             return
 
         if path == "/api/run_batch_scan":
             start_date = post_data.get("start_date", "").strip()
             end_date = post_data.get("end_date", "").strip()
+            custom_title = post_data.get("title", "").strip()
             if not start_date or not end_date:
                 self.send_json({"ok": False, "msg": "请同时指定起始补扫日期与截止补扫日期！"})
                 return
+
+            event_id = ""
+            event_title = custom_title
+            try:
+                from scripts import task_event_db
+                from datetime import datetime as _dt, timedelta as _td
+                d_s = _dt.strptime(start_date, "%Y-%m-%d").date()
+                d_e = _dt.strptime(end_date, "%Y-%m-%d").date()
+                if d_s > d_e:
+                    d_s, d_e = d_e, d_s
+                target_dates = []
+                cur_d = d_s
+                while cur_d <= d_e:
+                    target_dates.append(cur_d.isoformat())
+                    cur_d += _td(days=1)
+                
+                if not event_title:
+                    event_title = task_event_db.generate_title(target_dates, "batch_scan")
+
+                event_id = task_event_db.create_event(
+                    task_type="batch_scan",
+                    target_dates=target_dates,
+                    title=event_title,
+                    params={"start_date": start_date, "end_date": end_date}
+                )
+            except Exception as e_evt:
+                print(f"[警告] 创建任务事件失败: {e_evt}")
+
             cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "batch_scan.py"), "--start-date", start_date, "--end-date", end_date]
-            ok, msg = PROC_MGR.start_task(f"历史区间数据补扫 ({start_date} 至 {end_date})", cmd)
-            self.send_json({"ok": ok, "msg": msg})
+            if event_id:
+                cmd.extend(["--event-id", event_id])
+            if event_title:
+                cmd.extend(["--title", event_title])
+
+            task_name = f"批量扫描事件: {event_title}" if event_title else f"历史区间数据补扫 ({start_date} 至 {end_date})"
+            ok, msg = PROC_MGR.start_task(task_name, cmd)
+            self._audit("START_TASK", "SUCCESS" if ok else "FAILED", f"启动区间批量补扫 ({start_date} ~ {end_date}, event_id={event_id})")
+            self.send_json({"ok": ok, "msg": msg, "event_id": event_id})
+            return
+
+        if path == "/api/resume_task_event":
+            # 断点续跑：只对该事件下未完成或失败的日期进行补扫
+            event_id = post_data.get("event_id", "").strip()
+            if not event_id:
+                self.send_json({"ok": False, "msg": "缺少事件 ID (event_id)！"})
+                return
+            try:
+                from scripts import task_event_db
+                event = task_event_db.get_event(event_id)
+                if not event:
+                    self.send_json({"ok": False, "msg": f"未找到 ID 为 {event_id} 的任务事件！"})
+                    return
+                unfinished = task_event_db.get_unfinished_dates(event_id)
+                if not unfinished:
+                    self.send_json({"ok": False, "msg": "该事件包含的所有日期均已成功完成，无需断点续跑！"})
+                    return
+
+                task_event_db.resume_event(event_id)
+
+                dates_str = ",".join(unfinished)
+                cmd = [
+                    py_exe, "-u", str(ROOT_DIR / "scripts" / "batch_scan.py"),
+                    "--event-id", event_id,
+                    "--resume",
+                    "--dates", dates_str,
+                    "--title", event.get("title", "")
+                ]
+                task_name = f"断点续跑: {event.get('title', '')} (剩余 {len(unfinished)} 天)"
+                ok, msg = PROC_MGR.start_task(task_name, cmd)
+                self._audit("RESUME_TASK", "SUCCESS" if ok else "FAILED", f"启动断点续跑事件 {event_id} (剩余 {len(unfinished)} 天)")
+                self.send_json({
+                    "ok": ok,
+                    "msg": f"已启动断点续跑，正在继续完成剩余 {len(unfinished)} 天数据扫描: {', '.join(unfinished[:5])}{'...' if len(unfinished)>5 else ''}" if ok else msg,
+                    "unfinished_count": len(unfinished),
+                    "event_id": event_id
+                })
+            except Exception as e:
+                self._audit("RESUME_TASK", "FAILED", f"断点续跑启动异常: {e}")
+                self.send_json({"ok": False, "msg": f"断点续跑启动异常: {e}"})
             return
 
         if path == "/api/run_backscan":
@@ -1560,12 +2319,14 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             min_delay = int(post_data.get("min_delay", getattr(config, "BACKSCAN_MIN_DELAY", 2)))
             cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "backscan_delayed.py"), "--days", str(days), "--min-delay", str(min_delay)]
             ok, msg = PROC_MGR.start_task(f"历史公告回扫比对 (排查过去 {days} 天滞后公开公告)", cmd)
+            self._audit("START_TASK", "SUCCESS" if ok else "FAILED", f"启动历史公告回扫比对 (过去 {days} 天)")
             self.send_json({"ok": ok, "msg": msg})
             return
 
         if path == "/api/rebuild_baseline":
             cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "scan_record_db.py"), "--rebuild-baseline"]
             ok, msg = PROC_MGR.start_task("同步与校准底边扫描数据库基线", cmd)
+            self._audit("START_TASK", "SUCCESS" if ok else "FAILED", "启动同步与校准底边扫描数据库基线")
             self.send_json({"ok": ok, "msg": msg})
             return
 
@@ -1581,6 +2342,7 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             try:
                 from scripts.unmark_delayed import unmark_notice
                 res = unmark_notice(infoid, date=date_val, notes=notes, rebuild_page=True)
+                self._audit("UNMARK_DELAYED", "SUCCESS" if res.get("ok") else "FAILED", f"人工解除滞后标记 (infoid={infoid}, date={date_val})")
                 self.send_json({"ok": res.get("ok", False), "msg": res.get("message", "操作完成"), "data": res})
             except Exception as e:
                 self.send_json({"ok": False, "msg": f"解除滞后标记失败: {str(e)}"})
@@ -1697,6 +2459,7 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                 vps_text = ""
 
             target_desc = f"{len(target_dates)} 个日期 ({', '.join(target_dates[:3])}{'...' if len(target_dates) > 3 else ''})"
+            self._audit("DELETE_DATA", "SUCCESS", f"删除数据与日报页面: {target_desc}")
             self.send_json({
                 "ok": True,
                 "msg": f"已彻底删除 {target_desc} 的全部数据与日报页面，首页归档已自动同步刷新{vps_text}！",
@@ -1710,6 +2473,7 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                 build_archive = ROOT_DIR / "scripts" / "build_archive_page.py"
                 res_arc = subprocess.run([py_exe, "-u", str(build_archive)], capture_output=True, text=True)
                 if res_arc.returncode != 0:
+                    self._audit("REFRESH_INDEX", "FAILED", f"重新构建首页索引失败: {res_arc.stderr}")
                     self.send_json({"ok": False, "msg": f"重新构建首页索引失败: {res_arc.stderr}"})
                     return
 
@@ -1725,8 +2489,10 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                         else:
                             vps_msg = f" (VPS 同步输出: {res_vps.stderr or res_vps.stdout})"
 
+                self._audit("REFRESH_INDEX", "SUCCESS", "首页归档索引已重新计算生成")
                 self.send_json({"ok": True, "msg": f"首页归档索引已重新计算生成{vps_msg}！"})
             except Exception as e:
+                self._audit("REFRESH_INDEX", "FAILED", f"刷新首页异常: {str(e)}")
                 self.send_json({"ok": False, "msg": f"刷新首页异常: {str(e)}"})
             return
 
@@ -1740,6 +2506,7 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                 cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "reapply_rules.py"), "--date", target_date]
                 task_title = f"按最新重点规则重新标注历史数据 ({target_date})"
             ok, msg = PROC_MGR.start_task(task_title, cmd)
+            self._audit("REAPPLY_RULES", "SUCCESS" if ok else "FAILED", f"按最新规则重新标注: {task_title}")
             self.send_json({"ok": ok, "msg": msg})
             return
 
@@ -1749,6 +2516,7 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                 return
             cmd = [py_exe, "-u", str(ROOT_DIR / "scripts" / "upload_vps.py")]
             ok, msg = PROC_MGR.start_task("同步上传静态文件至 VPS", cmd)
+            self._audit("UPLOAD_VPS", "SUCCESS" if ok else "FAILED", "同步上传静态文件至 VPS")
             self.send_json({"ok": ok, "msg": msg})
             return
 
@@ -1773,15 +2541,18 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             try:
                 res = subprocess.run(ssh_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=12)
                 if res.returncode == 0 and "SSH_TEST_OK" in res.stdout:
+                    self._audit("TEST_SSH", "SUCCESS", f"SSH 连接测试成功: {user}@{host}:{port}")
                     self.send_json({"ok": True, "msg": f"SSH 连通成功！已成功登录 {user}@{host}:{port}。"})
                 else:
                     err_msg = res.stderr.strip() or res.stdout.strip() or "登录鉴权失败"
                     def_key = str(Path.home() / ".ssh" / "id_rsa")
+                    self._audit("TEST_SSH", "FAILED", f"SSH 连接测试失败: {user}@{host}:{port} ({err_msg})")
                     self.send_json({
                         "ok": False,
                         "msg": f"SSH 连接失败: {err_msg}。\n\n【排查建议】\n1. 请检查私钥是否放置于：{def_key}\n2. 或在下方【指定私钥路径】填入私钥文件的绝对路径\n3. 确保云端服务器 ~/.ssh/authorized_keys 中已添加对应公钥。"
                     })
             except Exception as e:
+                self._audit("TEST_SSH", "FAILED", f"测试执行异常: {str(e)}")
                 self.send_json({"ok": False, "msg": f"测试执行异常: {str(e)}"})
             return
 
@@ -1804,44 +2575,99 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             try:
                 from scripts.tunnel_guardian import ensure_tunnel_health
                 status = ensure_tunnel_health(auto_fix=True)
+                self._audit("FIX_TUNNEL", "SUCCESS", f"隧道自愈修复已完成 (alive={status.get('tunnel_alive')})")
                 self.send_json({
                     "ok": True,
                     "msg": f"隧道自愈修复已完成！活跃状态: {status.get('tunnel_alive')}, 发现并清理进程数: {status.get('running_ssh_processes')}",
                     "status": status
                 })
             except Exception as e:
+                self._audit("FIX_TUNNEL", "FAILED", f"隧道修复失败: {str(e)}")
                 self.send_json({"ok": False, "msg": f"隧道修复失败: {str(e)}"})
             return
 
         if path == "/api/test_wechat":
             cmd = [py_exe, "-u", "-c", "import sys; sys.path.insert(0, '.'); from scripts.notify_wechat import test_push; sys.exit(0 if test_push() else 1)"]
             ok, msg = PROC_MGR.start_task("测试微信服务号推送", cmd)
+            self._audit("TEST_WECHAT", "SUCCESS" if ok else "FAILED", "测试微信服务号推送")
             self.send_json({"ok": ok, "msg": msg})
+            return
+
+        if path == "/api/test_jjt":
+            cmd = [py_exe, "-u", "scripts/jjt_notify.py", "--test"]
+            ok, msg = PROC_MGR.start_task("测试交建通应用群消息推送", cmd)
+            self._audit("TEST_JJT", "SUCCESS" if ok else "FAILED", "测试交建通应用群消息推送")
+            self.send_json({"ok": ok, "msg": msg})
+            return
+
+        if path == "/api/jjt_status":
+            from pathlib import Path
+            cfg_file = Path(__file__).resolve().parent.parent / "config_jjt.json"
+            has_cfg = cfg_file.exists()
+            chatid = ""
+            corpid = ""
+            if has_cfg:
+                try:
+                    with open(cfg_file, "r", encoding="utf-8") as f:
+                        c = json.load(f)
+                        chatid = c.get("default_chatid", "")
+                        corpid = c.get("corpid", "")
+                except Exception:
+                    pass
+            self.send_json({"ok": True, "configured": has_cfg, "has_chatid": bool(chatid), "corpid": corpid})
             return
 
         if path == "/api/monitor_control":
             action = post_data.get("action", "").strip()
             if sys.platform != "win32":
+                if sys.platform.startswith("linux"):
+                    try:
+                        if action == "enable":
+                            subprocess.run(["systemctl", "unmask", "gxzb-daily.timer"], check=False)
+                            subprocess.run(["systemctl", "enable", "gxzb-daily.timer"], check=False)
+                            subprocess.run(["systemctl", "start", "gxzb-daily.timer"], check=False)
+                            self._audit("MONITOR_CONTROL", "SUCCESS", "自动化监控已成功开启(Linux)")
+                            self.send_json({"ok": True, "msg": "自动化监控已成功开启！系统将按周期自动轮询采集。"})
+                        elif action == "disable":
+                            subprocess.run(["systemctl", "stop", "gxzb-daily.timer"], check=False)
+                            subprocess.run(["systemctl", "disable", "gxzb-daily.timer"], check=False)
+                            self._audit("MONITOR_CONTROL", "SUCCESS", "自动化监控已暂停(Linux)")
+                            self.send_json({"ok": True, "msg": "自动化监控已暂停！系统将不再按周期自动执行。"})
+                        else:
+                            self._audit("MONITOR_CONTROL", "FAILED", f"未知操作: {action}")
+                            self.send_json({"ok": False, "msg": f"未知操作: {action}"})
+                        return
+                    except Exception as e:
+                        self._audit("MONITOR_CONTROL", "FAILED", f"操作失败: {e}")
+                        self.send_json({"ok": False, "msg": f"操作失败: {e}"})
+                        return
+                self._audit("MONITOR_CONTROL", "SUCCESS", f"模拟设置监控状态为: {action}")
                 self.send_json({"ok": True, "msg": f"当前系统非 Windows，已模拟设置监控状态为: {action}"})
                 return
             try:
                 if action == "enable":
                     cp = subprocess.run(["schtasks", "/change", "/tn", "ZtbCollector_Sync", "/enable"], capture_output=True, timeout=5)
                     if cp.returncode == 0:
+                        self._audit("MONITOR_CONTROL", "SUCCESS", "自动化监控已成功开启(Win)")
                         self.send_json({"ok": True, "msg": "自动化监控已成功开启！系统将按周期自动轮询采集。"})
                     else:
                         err = cp.stderr.decode("gbk", errors="ignore") or cp.stdout.decode("gbk", errors="ignore")
+                        self._audit("MONITOR_CONTROL", "FAILED", f"开启监控失败: {err}")
                         self.send_json({"ok": False, "msg": f"开启监控失败: {err}"})
                 elif action == "disable":
                     cp = subprocess.run(["schtasks", "/change", "/tn", "ZtbCollector_Sync", "/disable"], capture_output=True, timeout=5)
                     if cp.returncode == 0:
+                        self._audit("MONITOR_CONTROL", "SUCCESS", "自动化监控已暂停(Win)")
                         self.send_json({"ok": True, "msg": "自动化监控已暂停。定时任务已停止触发。"})
                     else:
                         err = cp.stderr.decode("gbk", errors="ignore") or cp.stdout.decode("gbk", errors="ignore")
+                        self._audit("MONITOR_CONTROL", "FAILED", f"暂停监控失败: {err}")
                         self.send_json({"ok": False, "msg": f"暂停监控失败: {err}"})
                 else:
+                    self._audit("MONITOR_CONTROL", "FAILED", f"未知操作类型: {action}")
                     self.send_json({"ok": False, "msg": "未知操作类型"})
             except Exception as e:
+                self._audit("MONITOR_CONTROL", "FAILED", f"执行失败: {str(e)}")
                 self.send_json({"ok": False, "msg": f"执行失败: {str(e)}"}, status=500)
             return
 
@@ -1865,29 +2691,36 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                     subprocess.Popen(["open", target_url])
                 else:
                     subprocess.Popen(["xdg-open", target_url])
+                self._audit("OPEN_SCREEN", "SUCCESS", "在大屏展厅窗口打开实时大屏")
                 self.send_json({"ok": True, "msg": "已在大屏展厅窗口打开实时大屏！"})
             except Exception as e:
+                self._audit("OPEN_SCREEN", "FAILED", f"呼起大屏窗口失败: {str(e)}")
                 self.send_json({"ok": False, "msg": f"呼起大屏窗口失败: {str(e)}"}, status=500)
             return
 
         if path == "/api/stop_task":
             ok, msg = PROC_MGR.stop_task()
+            self._audit("STOP_TASK", "SUCCESS" if ok else "FAILED", f"终止后台任务: {msg}")
             self.send_json({"ok": ok, "msg": msg})
             return
 
         if path == "/api/save_config":
             try:
                 save_config_env(post_data)
+                self._audit("SAVE_CONFIG", "SUCCESS", f"配置已保存并重载: {', '.join(sorted(post_data.keys()))}")
                 self.send_json({"ok": True, "msg": "配置已成功保存并重新加载"})
             except Exception as exc:
+                self._audit("SAVE_CONFIG", "FAILED", f"保存配置失败: {str(exc)}")
                 self.send_json({"ok": False, "msg": f"保存失败: {str(exc)}"}, status=500)
             return
 
         if path == "/api/restore_master_rules":
             try:
                 res = restore_master_focus_rules()
+                self._audit("RESTORE_MASTER_RULES", "SUCCESS", "恢复 Master 预设重点规则")
                 self.send_json({"ok": True, "msg": res["message"], "data": res})
             except Exception as exc:
+                self._audit("RESTORE_MASTER_RULES", "FAILED", f"恢复失败: {str(exc)}")
                 self.send_json({"ok": False, "msg": f"恢复失败: {str(exc)}"}, status=500)
             return
 
@@ -1895,8 +2728,10 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             try:
                 snap_name = post_data.get("filename", "")
                 restore_config_snapshot(snap_name)
+                self._audit("RESTORE_SNAPSHOT", "SUCCESS", f"从快照 {snap_name} 恢复配置")
                 self.send_json({"ok": True, "msg": f"已成功从快照 {snap_name} 恢复配置！"})
             except Exception as exc:
+                self._audit("RESTORE_SNAPSHOT", "FAILED", f"恢复快照失败: {str(exc)}")
                 self.send_json({"ok": False, "msg": f"恢复快照失败: {str(exc)}"}, status=500)
             return
 

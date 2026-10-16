@@ -42,28 +42,28 @@ CZ_REGION_CODE = "451400000000"  # 崇左市行政区划代码
 # 4: 候选人公示 -> 中标候选人公示 (001001001005)
 # 5: 结果公告 -> 中标公告 (001001001006)
 CZ_NOTICE_TYPE_MAP = {
-    1: {"stage": "招标公告", "categorynum": "001001001002"},
-    2: {"stage": "澄清/答疑", "categorynum": "001001001003"},
-    3: {"stage": "澄清/答疑", "categorynum": "001001001003"},
-    4: {"stage": "中标公示", "categorynum": "001001001005"},
-    5: {"stage": "中标公告", "categorynum": "001001001006"},
+    1: {"stage": "招标公告", "categorynum": "001001001001"},
+    2: {"stage": "澄清/答疑", "categorynum": "001001001002"},
+    3: {"stage": "澄清/答疑", "categorynum": "001001001002"},
+    4: {"stage": "中标公示", "categorynum": "001001001004"},
+    5: {"stage": "中标公告", "categorynum": "001001001005"},
 }
 
 def get_cz_stage_and_category(ntype: int, title: str = ""):
     t = title.lower()
     if any(k in t for k in ["候选人", "候选"]):
-        return "中标公示", "001001001005"
+        return "中标公示", "001001001004"
     if any(k in t for k in ["中标", "成交", "结果"]):
-        return "中标公告", "001001001006"
+        return "中标公告", "001001001005"
     if any(k in t for k in ["控制价", "最高限价", "招标控制价"]):
-        return "控制价公示", "001001001007"
+        return "控制价公示", "001001001003"
     if any(k in t for k in ["变更", "澄清", "答疑", "补充", "更正", "修改", "废标", "终止", "流标", "异常"]):
-        return "澄清/答疑", "001001001003"
+        return "澄清/答疑", "001001001002"
     if any(k in t for k in ["计划", "意向"]):
-        return "招标计划", "001001001001"
+        return "招标计划", "001001001006"
     if ntype in CZ_NOTICE_TYPE_MAP:
         return CZ_NOTICE_TYPE_MAP[ntype]["stage"], CZ_NOTICE_TYPE_MAP[ntype]["categorynum"]
-    return "招标公告", "001001001002"
+    return "招标公告", "001001001001"
 
 def _open_url(url, timeout=8):
     """带重试、放宽 SSL 验证与双通道代理适应的请求。"""

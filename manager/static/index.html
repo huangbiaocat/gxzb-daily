@@ -98,6 +98,12 @@
                    </svg>
                    <span>运行日志</span>
                </button>
+               <button id="tab-btn-users" onclick="switchTab('users')" class="tab-btn px-2.5 sm:px-3 py-1.5 text-xs font-medium flex items-center space-x-1.5 whitespace-nowrap">
+                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                   </svg>
+                   <span>用户与关注监控</span>
+               </button>
            </nav>
 
             <!-- 顶部跨日期全盘搜索快捷输入框 -->
@@ -135,7 +141,7 @@
                 <div class="h-4 w-px bg-slate-200 mx-0.5"></div>
 
                 <!-- 打开看板（主行动按钮） -->
-                <a href="/preview/" target="_blank" class="text-xs font-medium px-2.5 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center space-x-1 shadow-xs whitespace-nowrap" title="在浏览器新标签页打开数据看板">
+                <a href="/" target="_blank" class="text-xs font-medium px-2.5 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center space-x-1 shadow-xs whitespace-nowrap" title="在浏览器新标签页打开数据看板">
                     <svg class="w-3.5 h-3.5 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                     </svg>
@@ -708,15 +714,15 @@
                 <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
                     <div>
                         <div id="stat-vps-title" class="text-xs font-medium text-slate-500 uppercase tracking-wider">云端同步 VPS</div>
-                        <div class="mt-2 flex items-baseline justify-between">
-                            <span id="stat-vps-status" class="text-base font-semibold text-slate-700">未配置</span>
-                            <span id="stat-vps-badge" class="px-2 py-0.5 rounded text-xs">--</span>
+                        <div class="mt-2 flex items-baseline justify-between gap-1.5">
+                            <span id="stat-vps-status" class="text-base font-semibold text-slate-700 whitespace-nowrap">未配置</span>
+                            <span id="stat-vps-badge" class="px-2 py-0.5 rounded text-xs shrink-0 whitespace-nowrap">--</span>
                         </div>
-                        <div id="stat-vps-desc" class="text-xs text-slate-500 mt-1 truncate">--</div>
+                        <div id="stat-vps-desc" class="text-xs text-slate-500 mt-1 truncate" title="">--</div>
                     </div>
-                    <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                        <span class="text-slate-400 font-medium">最后同步时间:</span>
-                        <span id="stat-vps-time" class="font-mono text-slate-600 font-medium text-[11px]">暂无记录</span>
+                    <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs gap-1.5">
+                        <span id="stat-vps-time-label" class="text-slate-400 font-medium shrink-0 whitespace-nowrap">最后同步时间:</span>
+                        <span id="stat-vps-time" class="font-mono text-slate-600 font-medium text-[11px] truncate text-right">暂无记录</span>
                     </div>
                 </div>
 
@@ -986,78 +992,223 @@
                             </svg>
                             <span>系统运行日志与任务执行记录</span>
                         </h2>
-                        <p class="text-xs text-slate-500 mt-0.5">查看采集爬虫、详情解析、规则重算与批量补扫的历史执行台账</p>
+                        <p class="text-xs text-slate-500 mt-0.5">支持按完整事件（如全月重扫、区间补扫）归档追踪，未完成任务支持一键断点续跑</p>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-2">
-                        <select id="runs-filter-kind" onchange="fetchRunsHistory(0)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-blue-500">
-                            <option value="">全部任务类型</option>
-                            <option value="collect">公告采集 (collect)</option>
-                            <option value="fetch_detail">详情爬取 (fetch_detail)</option>
-                            <option value="extract">规则抽取 (extract)</option>
-                            <option value="batch_scan">批量补扫 (batch_scan)</option>
-                        </select>
-                        <input type="date" id="runs-filter-day" onchange="fetchRunsHistory(0)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-blue-500" title="按归档日期过滤">
-                        <button onclick="fetchRunsHistory(0)" class="text-xs font-medium px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg border border-blue-200 transition flex items-center space-x-1">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                            <span>刷新</span>
+                    <!-- 视图切换器 -->
+                    <div class="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200/80">
+                        <button id="subtab-btn-events" onclick="switchHistorySubtab('events')" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-blue-600 shadow-xs transition flex items-center space-x-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                            <span>按事件任务台账</span>
+                        </button>
+                        <button id="subtab-btn-runs" onclick="switchHistorySubtab('runs')" class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                            <span>底层单次采集流水</span>
+                        </button>
+                        <button id="subtab-btn-security" onclick="switchHistorySubtab('security')" class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            <span>安全审计与访问日志</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- 统计卡片条 -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
-                    <div class="bg-slate-50 rounded-lg p-3 border border-slate-100">
-                        <div class="text-[11px] text-slate-500 font-medium">总记录批次</div>
-                        <div id="runs-stat-total-batches" class="text-lg font-bold text-slate-800 mt-0.5">--</div>
+                <!-- ============================================== -->
+                <!-- 子视图 1: 按事件记录的任务台账 (主视图)            -->
+                <!-- ============================================== -->
+                <div id="history-view-events" class="space-y-4">
+                    <!-- 统计卡片条 -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
+                        <div class="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                            <div class="text-[11px] text-slate-500 font-medium">总事件任务数</div>
+                            <div id="events-stat-total" class="text-lg font-bold text-slate-800 mt-0.5">0</div>
+                        </div>
+                        <div class="bg-emerald-50/60 rounded-lg p-3 border border-emerald-100">
+                            <div class="text-[11px] text-emerald-700 font-medium">全部完成事件</div>
+                            <div id="events-stat-success" class="text-lg font-bold text-emerald-700 mt-0.5">0</div>
+                        </div>
+                        <div class="bg-amber-50/60 rounded-lg p-3 border border-amber-100">
+                            <div class="text-[11px] text-amber-700 font-medium">待续跑 / 存在未完成</div>
+                            <div id="events-stat-unfinished" class="text-lg font-bold text-amber-700 mt-0.5">0</div>
+                        </div>
+                        <div class="bg-indigo-50/60 rounded-lg p-3 border border-indigo-100">
+                            <div class="text-[11px] text-indigo-700 font-medium">累计覆盖扫描天次</div>
+                            <div id="events-stat-days" class="text-lg font-bold text-indigo-700 mt-0.5">0</div>
+                        </div>
                     </div>
-                    <div class="bg-emerald-50/60 rounded-lg p-3 border border-emerald-100">
-                        <div class="text-[11px] text-emerald-700 font-medium">累计成功条目</div>
-                        <div id="runs-stat-total-ok" class="text-lg font-bold text-emerald-700 mt-0.5">--</div>
+
+                    <!-- 事件过滤与操作栏 -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+                        <div class="flex items-center gap-2">
+                            <select id="events-filter-status" onchange="fetchTaskEvents()" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-blue-500">
+                                <option value="">全部事件状态</option>
+                                <option value="success">全部成功 (success)</option>
+                                <option value="partial_failed">部分未完成/待续跑 (partial_failed)</option>
+                                <option value="running">执行中 (running)</option>
+                                <option value="failed">失败 (failed)</option>
+                            </select>
+                            <button onclick="fetchTaskEvents()" class="text-xs font-medium px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg border border-blue-200 transition flex items-center space-x-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                <span>刷新事件列表</span>
+                            </button>
+                        </div>
+                        <button onclick="openBatchScanModal()" class="text-xs font-semibold px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-xs transition flex items-center space-x-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            <span>发起新扫描事件 (如全月重扫)</span>
+                        </button>
                     </div>
-                    <div class="bg-amber-50/60 rounded-lg p-3 border border-amber-100">
-                        <div class="text-[11px] text-amber-700 font-medium">跳过 / 去重数</div>
-                        <div id="runs-stat-total-skipped" class="text-lg font-bold text-amber-700 mt-0.5">--</div>
-                    </div>
-                    <div class="bg-red-50/60 rounded-lg p-3 border border-red-100">
-                        <div class="text-[11px] text-red-600 font-medium">失败 / 异常数</div>
-                        <div id="runs-stat-total-failed" class="text-lg font-bold text-red-600 mt-0.5">--</div>
+
+                    <!-- 事件列表容器 (卡片及可展开每日明细) -->
+                    <div id="events-list-container" class="space-y-3 mt-3">
+                        <div class="p-8 text-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                            正在加载事件任务台账...
+                        </div>
                     </div>
                 </div>
 
-                <!-- 日志表格 -->
-                <div class="overflow-x-auto rounded-lg border border-slate-200 mt-4">
-                    <table class="w-full text-left text-xs text-slate-600">
-                        <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                            <tr>
-                                <th class="px-3 py-2.5">批次 ID</th>
-                                <th class="px-3 py-2.5">任务类别</th>
-                                <th class="px-3 py-2.5">对应日期</th>
-                                <th class="px-3 py-2.5">启动时间</th>
-                                <th class="px-3 py-2.5">耗时</th>
-                                <th class="px-3 py-2.5 text-right">总数</th>
-                                <th class="px-3 py-2.5 text-right">成功</th>
-                                <th class="px-3 py-2.5 text-right">失败</th>
-                                <th class="px-3 py-2.5 text-right">跳过</th>
-                                <th class="px-3 py-2.5 text-center">状态</th>
-                                <th class="px-3 py-2.5 text-right">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="runs-table-body" class="divide-y divide-slate-100">
-                            <tr>
-                                <td colspan="11" class="px-4 py-8 text-center text-slate-400">正在载入历史运行记录...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <!-- ============================================== -->
+                <!-- 子视图 2: 底层单次采集流水 (Raw Runs)            -->
+                <!-- ============================================== -->
+                <div id="history-view-runs" class="hidden space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
+                        <div class="flex items-center gap-2">
+                            <select id="runs-filter-kind" onchange="fetchRunsHistory(0)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-blue-500">
+                                <option value="">全部任务类型</option>
+                                <option value="collect">公告采集 (collect)</option>
+                                <option value="fetch_detail">详情爬取 (fetch_detail)</option>
+                                <option value="extract">规则抽取 (extract)</option>
+                                <option value="batch_scan">批量补扫 (batch_scan)</option>
+                            </select>
+                            <input type="date" id="runs-filter-day" onchange="fetchRunsHistory(0)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-blue-500" title="按归档日期过滤">
+                            <button onclick="fetchRunsHistory(0)" class="text-xs font-medium px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg border border-blue-200 transition flex items-center space-x-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                <span>刷新流水</span>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs text-slate-500">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">共 <b id="runs-stat-total-batches" class="ml-1 text-slate-800">0</b> 批</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium">成功 <b id="runs-stat-total-ok" class="ml-1 text-emerald-800">0</b></span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">跳过 <b id="runs-stat-total-skipped" class="ml-1 text-slate-700">0</b></span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded bg-red-50 text-red-700 font-medium">失败 <b id="runs-stat-total-failed" class="ml-1 text-red-800">0</b></span>
+                        </div>
+                    </div>
+
+                    <!-- 原始单次日志表格 -->
+                    <div class="overflow-x-auto rounded-lg border border-slate-200 mt-2">
+                        <table class="w-full text-left text-xs text-slate-600">
+                            <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                <tr>
+                                    <th class="px-3 py-2.5">批次 ID</th>
+                                    <th class="px-3 py-2.5">任务类别</th>
+                                    <th class="px-3 py-2.5">对应日期</th>
+                                    <th class="px-3 py-2.5">启动时间</th>
+                                    <th class="px-3 py-2.5">耗时</th>
+                                    <th class="px-3 py-2.5 text-right">总数</th>
+                                    <th class="px-3 py-2.5 text-right">成功</th>
+                                    <th class="px-3 py-2.5 text-right">失败</th>
+                                    <th class="px-3 py-2.5 text-right">跳过</th>
+                                    <th class="px-3 py-2.5 text-center">状态</th>
+                                    <th class="px-3 py-2.5 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="runs-table-body" class="divide-y divide-slate-100">
+                                <tr>
+                                    <td colspan="11" class="px-4 py-8 text-center text-slate-400">正在载入历史运行记录...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分页栏 -->
+                    <div class="flex items-center justify-between mt-4 text-xs text-slate-500">
+                        <div id="runs-pagination-info">显示 0 - 0 条，共 0 条</div>
+                        <div class="flex items-center space-x-2">
+                            <button id="btn-runs-prev" onclick="runsPagePrev()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 disabled:opacity-40 disabled:pointer-events-none transition">上一页</button>
+                            <span id="runs-page-current" class="font-medium text-slate-700">第 1 页</span>
+                            <button id="btn-runs-next" onclick="runsPageNext()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 disabled:opacity-40 disabled:pointer-events-none transition">下一页</button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- 分页栏 -->
-                <div class="flex items-center justify-between mt-4 text-xs text-slate-500">
-                    <div id="runs-pagination-info">显示 0 - 0 条，共 0 条</div>
-                    <div class="flex items-center space-x-2">
-                        <button id="btn-runs-prev" onclick="runsPagePrev()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 disabled:opacity-40 disabled:pointer-events-none transition">上一页</button>
-                        <span id="runs-page-current" class="font-medium text-slate-700">第 1 页</span>
-                        <button id="btn-runs-next" onclick="runsPageNext()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 disabled:opacity-40 disabled:pointer-events-none transition">下一页</button>
+                <!-- ============================================== -->
+                <!-- 子视图 3: 安全与操作审计台账 (合规可溯源)       -->
+                <!-- ============================================== -->
+                <div id="history-view-security" class="hidden space-y-4">
+                    <!-- 统计概览条 -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
+                        <div class="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                            <div class="text-[11px] text-slate-500 font-medium">今日访问请求数</div>
+                            <div id="sec-stat-requests" class="text-lg font-bold text-slate-800 mt-0.5">0</div>
+                        </div>
+                        <div class="bg-blue-50/60 rounded-lg p-3 border border-blue-100">
+                            <div class="text-[11px] text-blue-700 font-medium">今日操作审计数</div>
+                            <div id="sec-stat-audits" class="text-lg font-bold text-blue-700 mt-0.5">0</div>
+                        </div>
+                        <div class="bg-rose-50/60 rounded-lg p-3 border border-rose-100">
+                            <div class="text-[11px] text-rose-700 font-medium">拦截/异常尝试</div>
+                            <div id="sec-stat-failed" class="text-lg font-bold text-rose-700 mt-0.5">0</div>
+                        </div>
+                        <div class="bg-emerald-50/60 rounded-lg p-3 border border-emerald-100">
+                            <div class="text-[11px] text-emerald-700 font-medium">合规留存周期</div>
+                            <div id="sec-stat-retention" class="text-lg font-bold text-emerald-700 mt-0.5">&ge;185 天</div>
+                        </div>
+                    </div>
+
+                    <!-- 过滤与搜索工具栏 -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <select id="sec-filter-type" onchange="loadSecurityLogs(0)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-blue-500">
+                                <option value="audit">仅操作审计 (Audit)</option>
+                                <option value="all">全部日志 (All)</option>
+                                <option value="access">仅访问日志 (Access)</option>
+                            </select>
+                            <input type="text" id="sec-filter-keyword" placeholder="搜索 IP / 操作 / 接口 / 详情..." onkeydown="if(event.key==='Enter') loadSecurityLogs(0)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 w-48 sm:w-64 focus:outline-hidden focus:ring-1 focus:ring-blue-500">
+                            <input type="date" id="sec-filter-start" onchange="loadSecurityLogs(0)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-blue-500" title="起始日期">
+                            <span class="text-slate-400 text-xs">至</span>
+                            <input type="date" id="sec-filter-end" onchange="loadSecurityLogs(0)" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-hidden focus:ring-1 focus:ring-blue-500" title="结束日期">
+                            <button onclick="loadSecurityLogs(0)" class="text-xs font-medium px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg border border-blue-200 transition flex items-center space-x-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                <span>查询</span>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="exportSecurityLogs('audit')" class="text-xs font-medium px-3 py-1.5 bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-200 transition flex items-center space-x-1" title="导出并下载 audit.log">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                <span>导出审计日志</span>
+                            </button>
+                            <button onclick="exportSecurityLogs('access')" class="text-xs font-medium px-3 py-1.5 bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-200 transition flex items-center space-x-1" title="导出并下载 access.log">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                <span>导出访问日志</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 安全日志表格 -->
+                    <div class="overflow-x-auto rounded-lg border border-slate-200 mt-2">
+                        <table class="w-full text-left text-xs text-slate-600">
+                            <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                <tr>
+                                    <th class="px-3 py-2.5">请求时间</th>
+                                    <th class="px-3 py-2.5">访问 IP</th>
+                                    <th class="px-3 py-2.5">类型 / 操作</th>
+                                    <th class="px-3 py-2.5">状态</th>
+                                    <th class="px-3 py-2.5">接口路径</th>
+                                    <th class="px-3 py-2.5">操作记录详情</th>
+                                    <th class="px-3 py-2.5">客户端 UA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sec-logs-table-body" class="divide-y divide-slate-100 font-mono">
+                                <tr><td colspan="7" class="p-6 text-center text-slate-400 font-sans">点击查询加载安全日志...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分页工具栏 -->
+                    <div class="flex items-center justify-between pt-2 text-xs text-slate-500 font-sans">
+                        <div id="sec-logs-page-info">显示 0 - 0 共 0 条</div>
+                        <div class="flex items-center gap-1">
+                            <button id="sec-prev-btn" onclick="secPrevPage()" disabled class="px-2.5 py-1 border border-slate-200 rounded bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button>
+                            <button id="sec-next-btn" onclick="secNextPage()" disabled class="px-2.5 py-1 border border-slate-200 rounded bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1149,6 +1300,113 @@
                 <!-- 搜索结果列表 -->
                 <div id="mgr-search-results" class="divide-y divide-slate-100 mt-2">
                     <div class="py-12 text-center text-slate-400 text-xs">正在执行全盘检索...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- 用户中心与重点关注监控面板 (User & Favorites Audit) -->
+        <!-- ============================================== -->
+        <div id="tab-content-users" class="hidden space-y-6">
+            <!-- 顶部核心指标统计 -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <div class="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
+                        <span>注册用户总数</span>
+                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-800" id="stat-total-users">0</div>
+                    <div class="text-[11px] text-slate-400 mt-1">独立门户登录账号</div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <div class="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
+                        <span>活跃登录用户</span>
+                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div class="text-2xl font-bold text-emerald-600" id="stat-active-users">0</div>
+                    <div class="text-[11px] text-slate-400 mt-1">已有登录访问轨迹</div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <div class="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
+                        <span>关注重点项目</span>
+                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    </div>
+                    <div class="text-2xl font-bold text-indigo-600" id="stat-total-fav-projects">0</div>
+                    <div class="text-[11px] text-slate-400 mt-1">用户个性化跟踪项目</div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <div class="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
+                        <span>关注重点业主</span>
+                        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"></path></svg>
+                    </div>
+                    <div class="text-2xl font-bold text-amber-600" id="stat-total-fav-owners">0</div>
+                    <div class="text-[11px] text-slate-400 mt-1">核心招投标主体单位</div>
+                </div>
+            </div>
+
+            <!-- 用户重点项目与重点业主关注看板 -->
+            <div class="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
+                <div class="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                            用户重点项目与重点业主个性化关注看板
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5">管理员可实时查阅所有普通用户的登录活跃度以及他们独立关注跟踪的重点标段和建设单位</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="admin-user-search-input" oninput="filterAdminUsersTable()" placeholder="🔍 筛选用户名/项目/业主..." class="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 w-52 transition text-slate-800">
+                        <button onclick="loadAdminUsersAndLogins()" class="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium rounded-lg text-xs transition flex items-center gap-1 shadow-2xs">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            刷新数据
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50/75 border-b border-slate-100 text-slate-500 font-semibold uppercase tracking-wider">
+                            <tr>
+                                <th class="px-4 py-3 w-16">UID</th>
+                                <th class="px-4 py-3 w-40">用户账号 / 姓名</th>
+                                <th class="px-4 py-3 w-44">最后登录 / 活跃频次</th>
+                                <th class="px-4 py-3">关注的重点项目</th>
+                                <th class="px-4 py-3">关注的重点业主</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-users-table-body" class="divide-y divide-slate-100 text-slate-700">
+                            <tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">正在加载用户关注数据...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 用户登录审计流水历史 -->
+            <div class="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
+                <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            用户登录轨迹与审计流水
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5">记录用户登录时间、终端 IP 与设备环境，严格满足合规审计要求</p>
+                    </div>
+                    <span id="admin-logins-count" class="text-xs text-slate-400 font-medium">共 0 条流水记录</span>
+                </div>
+                <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50/75 border-b border-slate-100 text-slate-500 font-semibold uppercase tracking-wider sticky top-0">
+                            <tr>
+                                <th class="px-4 py-2.5 w-44">登录时间</th>
+                                <th class="px-4 py-2.5 w-36">用户账号</th>
+                                <th class="px-4 py-2.5 w-32">客户端 IP</th>
+                                <th class="px-4 py-2.5">浏览器与设备环境</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-logins-table-body" class="divide-y divide-slate-100 text-slate-600">
+                            <tr><td colspan="4" class="px-4 py-6 text-center text-slate-400">正在载入登录轨迹...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -1331,7 +1589,7 @@
             currentTab = tabId;
             localStorage.setItem("active_tab", tabId);
 
-            const allTabs = ["business", "search", "env", "dashboard", "history"];
+            const allTabs = ["business", "search", "env", "dashboard", "history", "users"];
             allTabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-${t}`);
                 const content = document.getElementById(`tab-content-${t}`);
@@ -1352,10 +1610,168 @@
             });
 
             if (tabId === "history") {
-                fetchRunsHistory(0);
+                if (currentHistorySubtab === "runs") {
+                    fetchRunsHistory(0);
+                } else {
+                    fetchTaskEvents();
+                }
             } else if (tabId === "search") {
                 runMgrSearch();
+            } else if (tabId === "users") {
+                loadAdminUsersAndLogins();
             }
+        }
+
+        // ==============================================
+        // 用户中心与重点关注监控业务逻辑 (User & Favorites Audit)
+        // ==============================================
+        let adminUsersRawData = [];
+        let adminLoginsRawData = [];
+
+        async function loadAdminUsersAndLogins() {
+            const tbodyUsers = document.getElementById("admin-users-table-body");
+            const tbodyLogins = document.getElementById("admin-logins-table-body");
+            if (tbodyUsers) tbodyUsers.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">正在刷新用户与关注数据...</td></tr>`;
+            if (tbodyLogins) tbodyLogins.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-slate-400">正在刷新登录轨迹流水...</td></tr>`;
+
+            try {
+                const [resUsers, resLogins] = await Promise.all([
+                    fetch("/api/admin/users"),
+                    fetch("/api/admin/user_logins")
+                ]);
+
+                if (resUsers.status === 401 || resLogins.status === 401) {
+                    alert("管理权限已过期，请重新登录管理后台");
+                    window.location.reload();
+                    return;
+                }
+
+                const dataUsers = await resUsers.json();
+                const dataLogins = await resLogins.json();
+
+                adminUsersRawData = dataUsers.users || [];
+                adminLoginsRawData = dataLogins.logins || [];
+
+                renderAdminUsersStats(adminUsersRawData);
+                renderAdminUsersTable(adminUsersRawData);
+                renderAdminLoginsTable(adminLoginsRawData);
+            } catch (err) {
+                console.error("加载用户与审计数据失败:", err);
+                if (tbodyUsers) tbodyUsers.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-rose-500">加载失败: ${err.message || err}</td></tr>`;
+                if (tbodyLogins) tbodyLogins.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-rose-500">加载失败: ${err.message || err}</td></tr>`;
+            }
+        }
+
+        function renderAdminUsersStats(users) {
+            const totalUsers = users.length;
+            let activeUsers = 0;
+            let totalProjects = 0;
+            let totalOwners = 0;
+
+            users.forEach(u => {
+                if (u.login_count > 0 || u.last_login_at) activeUsers++;
+                totalProjects += (u.favorite_projects || []).length;
+                totalOwners += (u.favorite_owners || []).length;
+            });
+
+            const elTotal = document.getElementById("stat-total-users");
+            const elActive = document.getElementById("stat-active-users");
+            const elPrj = document.getElementById("stat-total-fav-projects");
+            const elOwner = document.getElementById("stat-total-fav-owners");
+
+            if (elTotal) elTotal.textContent = totalUsers;
+            if (elActive) elActive.textContent = activeUsers;
+            if (elPrj) elPrj.textContent = totalProjects;
+            if (elOwner) elOwner.textContent = totalOwners;
+        }
+
+        function renderAdminUsersTable(users) {
+            const tbody = document.getElementById("admin-users-table-body");
+            if (!tbody) return;
+            if (!users || users.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">暂无注册用户记录</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = users.map(u => {
+                const prjTags = (u.favorite_projects || []).map(p =>
+                    `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200/60 mr-1.5 mb-1" title="关注时间: ${p.created_at || '未知'}${p.tags ? ' | 标签: ' + p.tags : ''}">
+                        <svg class="w-3 h-3 text-blue-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                        ${escapeHtml(p.name)}
+                        ${p.tags ? `<span class="text-[10px] bg-blue-100 text-blue-800 px-1 rounded">${escapeHtml(p.tags)}</span>` : ''}
+                    </span>`
+                ).join('');
+
+                const ownerTags = (u.favorite_owners || []).map(o =>
+                    `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200/60 mr-1.5 mb-1" title="关注时间: ${o.created_at || '未知'}${o.tags ? ' | 标签: ' + o.tags : ''}">
+                        <svg class="w-3 h-3 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                        ${escapeHtml(o.name)}
+                        ${o.tags ? `<span class="text-[10px] bg-amber-100 text-amber-800 px-1 rounded">${escapeHtml(o.tags)}</span>` : ''}
+                    </span>`
+                ).join('');
+
+                const prjContent = prjTags || `<span class="text-slate-400 italic">暂未关注任何项目</span>`;
+                const ownerContent = ownerTags || `<span class="text-slate-400 italic">暂未关注任何业主</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-50/60 transition">
+                        <td class="px-4 py-3 font-mono text-slate-400">#${u.id}</td>
+                        <td class="px-4 py-3">
+                            <div class="font-semibold text-slate-800">${escapeHtml(u.display_name || u.username)}</div>
+                            <div class="text-[11px] text-slate-400 font-mono">@${escapeHtml(u.username)}</div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="text-slate-700 font-medium">${u.last_login_at ? escapeHtml(u.last_login_at) : '<span class="text-slate-400">从未登录</span>'}</div>
+                            <div class="text-[11px] text-slate-400 mt-0.5">累计登录: <span class="font-semibold text-slate-600">${u.login_count || 0}</span> 次</div>
+                        </td>
+                        <td class="px-4 py-3 max-w-xs sm:max-w-md">
+                            <div class="flex flex-wrap items-center">${prjContent}</div>
+                        </td>
+                        <td class="px-4 py-3 max-w-xs sm:max-w-md">
+                            <div class="flex flex-wrap items-center">${ownerContent}</div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderAdminLoginsTable(logins) {
+            const tbody = document.getElementById("admin-logins-table-body");
+            const countEl = document.getElementById("admin-logins-count");
+            if (!tbody) return;
+            if (countEl) countEl.textContent = `共 ${logins.length} 条流水记录`;
+
+            if (!logins || logins.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-slate-400">暂无登录流水数据</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = logins.map(l => `
+                <tr class="hover:bg-slate-50/60 transition">
+                    <td class="px-4 py-2.5 font-mono text-slate-600">${escapeHtml(l.login_time)}</td>
+                    <td class="px-4 py-2.5">
+                        <span class="font-medium text-slate-800">${escapeHtml(l.display_name || l.username)}</span>
+                        <span class="text-[11px] text-slate-400 font-mono ml-1">(@${escapeHtml(l.username)})</span>
+                    </td>
+                    <td class="px-4 py-2.5 font-mono text-slate-500">${escapeHtml(l.ip_address || '127.0.0.1')}</td>
+                    <td class="px-4 py-2.5 text-slate-500 text-[11px] truncate max-w-xs sm:max-w-md" title="${escapeHtml(l.user_agent || '')}">${escapeHtml(l.user_agent || '未知客户端环境')}</td>
+                </tr>
+            `).join('');
+        }
+
+        function filterAdminUsersTable() {
+            const q = (document.getElementById("admin-user-search-input")?.value || "").trim().toLowerCase();
+            if (!q) {
+                renderAdminUsersTable(adminUsersRawData);
+                return;
+            }
+            const filtered = adminUsersRawData.filter(u => {
+                const matchName = (u.username || '').toLowerCase().includes(q) || (u.display_name || '').toLowerCase().includes(q);
+                const matchPrj = (u.favorite_projects || []).some(p => (p.name || '').toLowerCase().includes(q) || (p.tags || '').toLowerCase().includes(q));
+                const matchOwner = (u.favorite_owners || []).some(o => (o.name || '').toLowerCase().includes(q) || (o.tags || '').toLowerCase().includes(q));
+                return matchName || matchPrj || matchOwner;
+            });
+            renderAdminUsersTable(filtered);
         }
 
         // ==============================================
@@ -1831,6 +2247,7 @@
                 const vpsBadge = document.getElementById("stat-vps-badge");
                 const vpsDesc = document.getElementById("stat-vps-desc");
                 const vpsTime = document.getElementById("stat-vps-time");
+                const vpsTimeLabel = document.getElementById("stat-vps-time-label");
                 const vpsTitle = document.getElementById("stat-vps-title");
                 const vpsBanner = document.getElementById("vps-env-banner");
                 const btnSyncTitle = document.getElementById("btn-sync-vps-title");
@@ -1839,36 +2256,44 @@
 
                 if (data.is_on_vps) {
                     if (vpsTitle) vpsTitle.textContent = "站点发布模式";
-                    vpsStatus.textContent = "生产 VPS 原生运行";
+                    vpsStatus.textContent = "Nginx 产物直出";
                     vpsBadge.textContent = "本地自治";
-                    vpsBadge.className = "px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-800 font-semibold";
-                    vpsDesc.textContent = "Nginx 直接承接产物目录，毫秒级生效无需网络上传";
+                    vpsBadge.className = "px-2 py-0.5 rounded text-xs bg-emerald-100 text-emerald-800 font-semibold shrink-0";
+                    vpsDesc.textContent = "直接承接 dist/ 静态产物目录";
+                    vpsDesc.title = "Nginx 直接挂载本地 dist 目录，毫秒级生效无需网络上传";
+                    if (vpsTimeLabel) vpsTimeLabel.textContent = "生效机制:";
                     if (vpsTime) {
-                        vpsTime.textContent = "本地实时响应";
-                        vpsTime.className = "font-mono font-medium text-emerald-600 text-[11px]";
+                        vpsTime.textContent = "本地实时直读";
+                        vpsTime.className = "font-medium text-emerald-600 text-xs";
                     }
                     if (vpsBanner) vpsBanner.classList.remove("hidden");
                     if (btnSyncTitle) btnSyncTitle.textContent = "校验静态产物";
                     if (btnSyncSub) btnSyncSub.textContent = "本地直接生效";
                     if (btnRefreshSub) btnRefreshSub.textContent = "重算索引即时生效";
-                } else if (data.vps && data.vps.auto_upload) {
-                    vpsStatus.textContent = data.vps.host || "已开启";
-                    vpsBadge.textContent = "自动同步";
-                    vpsBadge.className = "px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-800 font-semibold";
-                    vpsDesc.textContent = `路径: ${data.vps.path || "/"}`;
                 } else {
-                    vpsStatus.textContent = "未开启自动同步";
-                    vpsBadge.textContent = "仅本地";
-                    vpsBadge.className = "px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600";
-                    vpsDesc.textContent = data.vps && data.vps.host ? `主机: ${data.vps.host}` : "未配置目标 VPS";
-                }
-                if (vpsTime) {
-                    if (data.vps && data.vps.last_sync_time) {
-                        vpsTime.textContent = data.vps.last_sync_time;
-                        vpsTime.className = "font-mono font-medium text-emerald-600 text-[11px]";
+                    if (vpsTitle) vpsTitle.textContent = "云端同步 VPS";
+                    if (vpsTimeLabel) vpsTimeLabel.textContent = "最后同步:";
+                    if (data.vps && data.vps.auto_upload) {
+                        vpsStatus.textContent = data.vps.host || "已开启";
+                        vpsBadge.textContent = "自动同步";
+                        vpsBadge.className = "px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-800 font-semibold shrink-0";
+                        vpsDesc.textContent = `路径: ${data.vps.path || "/"}`;
+                        vpsDesc.title = data.vps.path || "/";
                     } else {
-                        vpsTime.textContent = "暂无同步记录";
-                        vpsTime.className = "font-mono text-slate-400 text-[11px]";
+                        vpsStatus.textContent = "未开启自动同步";
+                        vpsBadge.textContent = "仅本地";
+                        vpsBadge.className = "px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600 shrink-0";
+                        vpsDesc.textContent = data.vps && data.vps.host ? `主机: ${data.vps.host}` : "未配置目标 VPS";
+                        vpsDesc.title = vpsDesc.textContent;
+                    }
+                    if (vpsTime) {
+                        if (data.vps && data.vps.last_sync_time) {
+                            vpsTime.textContent = data.vps.last_sync_time;
+                            vpsTime.className = "font-mono font-medium text-emerald-600 text-[11px]";
+                        } else {
+                            vpsTime.textContent = "暂无同步记录";
+                            vpsTime.className = "font-mono text-slate-400 text-[11px]";
+                        }
                     }
                 }
 
@@ -2692,18 +3117,37 @@
             const toStr = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
             const endStr = toStr(today);
             let startStr = endStr;
+            let titleStr = "";
 
-            if (type === 'month') {
+            if (type === '2026-02') {
+                startStr = '2026-02-01';
+                endStr = '2026-02-28';
+                titleStr = '2026年02月全月重新扫描';
+            } else if (type === '2026-01') {
+                startStr = '2026-01-01';
+                endStr = '2026-01-31';
+                titleStr = '2026年01月全月重新扫描';
+            } else if (type === '2026-03') {
+                startStr = '2026-03-01';
+                endStr = '2026-03-31';
+                titleStr = '2026年03月全月重新扫描';
+            } else if (type === 'month') {
                 startStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-01`;
+                titleStr = `${today.getFullYear()}年${pad(today.getMonth() + 1)}月当月数据扫描`;
             } else if (type === '7d') {
                 const past = new Date(today.getTime() - 6 * 86400000);
                 startStr = toStr(past);
+                titleStr = `近7天数据补扫 (${startStr} 至 ${endStr})`;
             } else if (type === '30d') {
                 const past = new Date(today.getTime() - 29 * 86400000);
                 startStr = toStr(past);
+                titleStr = `近30天历史补扫 (${startStr} 至 ${endStr})`;
             }
             document.getElementById("batch-start-date").value = startStr;
             document.getElementById("batch-end-date").value = endStr;
+            if (titleStr && document.getElementById("batch-custom-title")) {
+                document.getElementById("batch-custom-title").value = titleStr;
+            }
         }
 
         function closeBatchScanModal() {
@@ -2782,6 +3226,7 @@
             const start = document.getElementById("batch-start-date").value;
             const end = document.getElementById("batch-end-date").value;
             const skipUpload = document.getElementById("batch-skip-upload").checked;
+            const customTitle = (document.getElementById("batch-custom-title")?.value || "").trim();
 
             if (!start || !end) {
                 alert("请完整选择起始与截止日期！");
@@ -2792,7 +3237,7 @@
             switchTab("dashboard");
 
             const logEl = document.getElementById("log-container");
-            logEl.textContent = `[Web Controller] 正在启动 ${start} 至 ${end} 的批量补扫任务...
+            logEl.textContent = `[Web Controller] 正在创建并启动【${customTitle || `${start} 至 ${end} 批量扫描`}】任务...
 `;
 
             try {
@@ -2802,7 +3247,8 @@
                     body: JSON.stringify({
                         start_date: start,
                         end_date: end,
-                        skip_upload: skipUpload
+                        skip_upload: skipUpload,
+                        title: customTitle
                     })
                 });
                 const d = await res.json();
@@ -2814,6 +3260,432 @@
             } catch (err) {
                 logEl.textContent += `[System Error] 请求异常: ${err}
 `;
+            }
+        }
+
+        // ==============================================
+        // 按事件任务台账 (Event-based Task Logs & Resume)
+        // ==============================================
+        let currentHistorySubtab = 'events';
+
+        function switchHistorySubtab(subtab) {
+            currentHistorySubtab = subtab;
+            const btnEvents = document.getElementById("subtab-btn-events");
+            const btnRuns = document.getElementById("subtab-btn-runs");
+            const btnSec = document.getElementById("subtab-btn-security");
+            const viewEvents = document.getElementById("history-view-events");
+            const viewRuns = document.getElementById("history-view-runs");
+            const viewSec = document.getElementById("history-view-security");
+
+            const activeClass = "px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-blue-600 shadow-xs transition flex items-center space-x-1.5";
+            const inactiveClass = "px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5";
+
+            btnEvents.className = (subtab === 'events') ? activeClass : inactiveClass;
+            btnRuns.className = (subtab === 'runs') ? activeClass : inactiveClass;
+            if (btnSec) btnSec.className = (subtab === 'security') ? activeClass : inactiveClass;
+
+            viewEvents.classList.toggle("hidden", subtab !== 'events');
+            viewRuns.classList.toggle("hidden", subtab !== 'runs');
+            if (viewSec) viewSec.classList.toggle("hidden", subtab !== 'security');
+
+            if (subtab === 'events') {
+                fetchTaskEvents();
+            } else if (subtab === 'runs') {
+                fetchRunsHistory(0);
+            } else if (subtab === 'security') {
+                loadSecurityLogs(0);
+            }
+        }
+
+        // ==============================================
+        // 安全审计与访问日志查询逻辑 (可溯源)
+        // ==============================================
+        let secCurrentOffset = 0;
+        const secLimit = 30;
+
+        async function loadSecurityLogs(offset = 0) {
+            secCurrentOffset = offset;
+            const tableBody = document.getElementById("sec-logs-table-body");
+            const typeFilter = document.getElementById("sec-filter-type")?.value || "audit";
+            const kwFilter = document.getElementById("sec-filter-keyword")?.value.trim() || "";
+            const startFilter = document.getElementById("sec-filter-start")?.value || "";
+            const endFilter = document.getElementById("sec-filter-end")?.value || "";
+
+            tableBody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400 font-sans">正在加载安全审计与访问日志...</td></tr>`;
+
+            try {
+                let url = `/api/security_logs?type=${encodeURIComponent(typeFilter)}&limit=${secLimit}&offset=${secCurrentOffset}`;
+                if (kwFilter) url += `&keyword=${encodeURIComponent(kwFilter)}`;
+                if (startFilter) url += `&date_start=${encodeURIComponent(startFilter)}`;
+                if (endFilter) url += `&date_end=${encodeURIComponent(endFilter)}`;
+
+                const res = await fetch(url);
+                if (res.status === 401) {
+                    tableBody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-amber-600 font-sans">需要管理员登录后查看安全日志</td></tr>`;
+                    return;
+                }
+                const data = await res.json();
+                if (!data.ok) {
+                    tableBody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-red-500 font-sans">加载日志失败: ${escapeHtml(data.error || "未知异常")}</td></tr>`;
+                    return;
+                }
+
+                // 更新统计指标卡片
+                if (data.summary) {
+                    const reqEl = document.getElementById("sec-stat-requests");
+                    const auditEl = document.getElementById("sec-stat-audits");
+                    const failEl = document.getElementById("sec-stat-failed");
+                    const retEl = document.getElementById("sec-stat-retention");
+                    if (reqEl) reqEl.textContent = (data.summary.today_requests || 0).toLocaleString();
+                    if (auditEl) auditEl.textContent = (data.summary.today_audits || 0).toLocaleString();
+                    if (failEl) failEl.textContent = (data.summary.today_failed || 0).toLocaleString();
+                    if (retEl) retEl.textContent = `≥${data.summary.retention_days || 185} 天`;
+                }
+
+                const total = data.total || 0;
+                const logs = data.logs || [];
+
+                if (logs.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400 font-sans">没有找到符合条件的安全日志记录</td></tr>`;
+                } else {
+                    tableBody.innerHTML = logs.map(item => {
+                        const isAudit = item.log_type === 'audit';
+                        const isSuccess = item.status === 'SUCCESS' || item.status === '200' || item.status === '204';
+                        const statusBadge = isSuccess
+                            ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">成功 (${escapeHtml(item.status)})</span>`
+                            : `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">拦截/失败 (${escapeHtml(item.status)})</span>`;
+
+                        const actionBadge = isAudit
+                            ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">${escapeHtml(item.action || 'AUDIT')}</span>`
+                            : `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">ACCESS (${escapeHtml(item.method)})</span>`;
+
+                        const uaShort = (item.ua && item.ua.length > 40) ? (item.ua.substring(0, 40) + '...') : (item.ua || '-');
+
+                        return `<tr class="hover:bg-slate-50/70 transition">
+                            <td class="px-3 py-2 text-slate-600 whitespace-nowrap text-[11px]">${escapeHtml(item.created_at)}</td>
+                            <td class="px-3 py-2 font-medium text-slate-900 whitespace-nowrap text-[11px]">
+                                <span class="cursor-pointer hover:underline text-blue-600" onclick="navigator.clipboard.writeText('${escapeHtml(item.ip)}'); alert('已复制 IP: ${escapeHtml(item.ip)}');" title="点击复制">${escapeHtml(item.ip)}</span>
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">${actionBadge}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">${statusBadge}</td>
+                            <td class="px-3 py-2 text-slate-700 whitespace-nowrap text-[11px] font-mono">${escapeHtml(item.path)}</td>
+                            <td class="px-3 py-2 text-slate-700 text-[11px] font-sans break-all max-w-xs sm:max-w-md">${escapeHtml(item.detail)}</td>
+                            <td class="px-3 py-2 text-slate-400 text-[10px] whitespace-nowrap" title="${escapeHtml(item.ua)}">${escapeHtml(uaShort)}</td>
+                        </tr>`;
+                    }).join("");
+                }
+
+                // 更新分页控制
+                const pageStart = total === 0 ? 0 : secCurrentOffset + 1;
+                const pageEnd = Math.min(secCurrentOffset + secLimit, total);
+                const pageInfoEl = document.getElementById("sec-logs-page-info");
+                const prevBtn = document.getElementById("sec-prev-btn");
+                const nextBtn = document.getElementById("sec-next-btn");
+                if (pageInfoEl) pageInfoEl.textContent = `显示 ${pageStart} - ${pageEnd} 共 ${total} 条`;
+                if (prevBtn) prevBtn.disabled = (secCurrentOffset <= 0);
+                if (nextBtn) nextBtn.disabled = (secCurrentOffset + secLimit >= total);
+
+            } catch (err) {
+                tableBody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-red-500 font-sans">网络错误: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        function secPrevPage() {
+            if (secCurrentOffset > 0) {
+                loadSecurityLogs(Math.max(0, secCurrentOffset - secLimit));
+            }
+        }
+
+        function secNextPage() {
+            loadSecurityLogs(secCurrentOffset + secLimit);
+        }
+
+        function exportSecurityLogs(type) {
+            window.open(`/api/security_logs/export?type=${encodeURIComponent(type)}`, '_blank');
+        }
+            } else {
+                btnRuns.className = "px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-blue-600 shadow-xs transition flex items-center space-x-1.5";
+                btnEvents.className = "px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5";
+                viewRuns.classList.remove("hidden");
+                viewEvents.classList.add("hidden");
+                fetchRunsHistory(0);
+            }
+        }
+
+        async function fetchTaskEvents() {
+            const container = document.getElementById("events-list-container");
+            const statusFilter = document.getElementById("events-filter-status")?.value || "";
+            container.innerHTML = `<div class="p-8 text-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">正在查询事件任务列表...</div>`;
+
+            try {
+                let url = `/api/task_events?limit=50`;
+                if (statusFilter) url += `&status=${encodeURIComponent(statusFilter)}`;
+
+                const res = await fetch(url);
+                const data = await res.json();
+                if (!data.ok) {
+                    container.innerHTML = `<div class="p-8 text-center text-red-500 bg-red-50/30 rounded-xl border border-red-100">加载事件失败: ${data.error || "未知异常"}</div>`;
+                    return;
+                }
+
+                const events = data.events || [];
+                
+                let statTotal = data.total || events.length;
+                let statSuccess = 0;
+                let statUnfinished = 0;
+                let statDays = 0;
+
+                events.forEach(e => {
+                    if (e.status === 'success') statSuccess++;
+                    if (e.has_unfinished || e.status === 'partial_failed' || e.status === 'running') statUnfinished++;
+                    statDays += (e.total_days || 0);
+                });
+
+                document.getElementById("events-stat-total").textContent = statTotal;
+                document.getElementById("events-stat-success").textContent = statSuccess;
+                document.getElementById("events-stat-unfinished").textContent = statUnfinished;
+                document.getElementById("events-stat-days").textContent = statDays;
+
+                renderTaskEvents(events);
+            } catch (err) {
+                container.innerHTML = `<div class="p-8 text-center text-red-500 bg-red-50/30 rounded-xl border border-red-100">请求异常: ${err}</div>`;
+            }
+        }
+
+        function renderTaskEvents(events) {
+            const container = document.getElementById("events-list-container");
+            if (!events || events.length === 0) {
+                container.innerHTML = `
+                    <div class="p-10 text-center bg-slate-50/60 rounded-xl border border-dashed border-slate-200 space-y-3">
+                        <div class="text-slate-400">
+                            <svg class="w-10 h-10 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        </div>
+                        <p class="text-xs text-slate-500 font-medium">暂无符合条件的事件任务记录</p>
+                        <button onclick="openBatchScanModal()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-xs transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            <span>立即发起全月重扫或批量扫描任务</span>
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = "";
+            events.forEach(evt => {
+                const tot = evt.total_days || 1;
+                const comp = evt.completed_days || 0;
+                const fail = evt.failed_days || 0;
+                const pend = evt.pending_days || 0;
+                const pct = evt.progress_pct || Math.min(100, Math.round((comp / tot) * 100));
+
+                let statusPill = "";
+                if (evt.status === 'success') {
+                    statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                        <svg class="w-3 h-3 mr-1 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                        全部完成
+                    </span>`;
+                } else if (evt.status === 'running') {
+                    statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 animate-pulse">
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-600 mr-1.5 animate-ping"></span>
+                        执行中
+                    </span>`;
+                } else if (evt.has_unfinished || evt.status === 'partial_failed') {
+                    statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
+                        <svg class="w-3 h-3 mr-1 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        部分未完成 (可续跑)
+                    </span>`;
+                } else if (evt.status === 'failed') {
+                    statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200/80">失败</span>`;
+                } else {
+                    statusPill = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-50 text-slate-600 border border-slate-200">待处理</span>`;
+                }
+
+                const pctComp = Math.round((comp / tot) * 100);
+                const pctFail = Math.round((fail / tot) * 100);
+
+                const days = evt.days_detail || [];
+                let daysRowsHtml = "";
+                days.forEach(d => {
+                    let dayBadge = "";
+                    if (d.status === 'success') {
+                        dayBadge = `<span class="inline-flex items-center text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">成功</span>`;
+                    } else if (d.status === 'failed') {
+                        dayBadge = `<span class="inline-flex items-center text-[11px] font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200/60" title="${d.error || ''}">失败</span>`;
+                    } else if (d.status === 'running') {
+                        dayBadge = `<span class="inline-flex items-center text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 animate-pulse">执行中</span>`;
+                    } else {
+                        dayBadge = `<span class="inline-flex items-center text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">待执行</span>`;
+                    }
+
+                    daysRowsHtml += `
+                        <tr class="hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-0">
+                            <td class="px-3 py-2 font-mono font-medium text-slate-800">${d.day}</td>
+                            <td class="px-3 py-2">${dayBadge}</td>
+                            <td class="px-3 py-2 font-mono text-slate-700">${d.count > 0 ? `${d.count} 条` : (d.status === 'success' ? '0 条' : '--')}</td>
+                            <td class="px-3 py-2 font-mono text-indigo-600 font-medium">${d.focus > 0 ? `${d.focus} 条` : '--'}</td>
+                            <td class="px-3 py-2 font-mono text-slate-500">${d.duration ? `${d.duration}s` : '--'}</td>
+                            <td class="px-3 py-2 text-slate-400 text-[11px]">${d.finished_at ? d.finished_at.split(' ')[1] : '--'}</td>
+                            <td class="px-3 py-2 text-slate-500 text-[11px] max-w-[200px] truncate" title="${d.error || ''}">${d.error ? `<span class="text-red-500 font-mono">${d.error}</span>` : '<span class="text-slate-300">无异常</span>'}</td>
+                            <td class="px-3 py-2 text-right">
+                                <button onclick="runSingleDayFromEvent('${d.day}')" class="px-2 py-0.5 text-[11px] font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition">
+                                    单日重跑
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                let resumeBtnHtml = "";
+                if (evt.has_unfinished || evt.status === 'partial_failed' || (fail > 0 || pend > 0)) {
+                    const remainCount = fail + pend;
+                    resumeBtnHtml = `
+                        <button onclick="resumeTaskEvent('${evt.event_id}', '${encodeURIComponent(evt.title)}')" class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition transform active:scale-95">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>继续完成 (未完 ${remainCount} 天)</span>
+                        </button>
+                    `;
+                }
+
+                html += `
+                    <div class="bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition p-4 sm:p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5">
+                            <div class="flex items-center space-x-2.5 flex-wrap gap-y-1">
+                                <h3 class="text-sm font-bold text-slate-900">${evt.title}</h3>
+                                <span class="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-slate-100 text-slate-600 border border-slate-200">
+                                    ${evt.task_type === 'batch_scan' ? '批量补扫' : evt.task_type}
+                                </span>
+                                ${statusPill}
+                            </div>
+                            <div class="text-[11px] text-slate-400 font-mono">
+                                启动: ${evt.started_at || '--'} ${evt.finished_at ? `| 完成: ${evt.finished_at}` : ''}
+                            </div>
+                        </div>
+
+                        <div class="my-2.5">
+                            <div class="flex items-center justify-between text-xs text-slate-600 mb-1 font-medium">
+                                <div class="flex items-center space-x-3">
+                                    <span>整体完成情况: <b class="text-slate-900">${comp}</b> / ${tot} 天 (${pct}%)</span>
+                                    ${fail > 0 ? `<span class="text-red-600 font-medium">(${fail} 天失败待续扫)</span>` : ''}
+                                </div>
+                                <div class="text-slate-500 font-mono">
+                                    累计采集: <b class="text-indigo-600">${(evt.total_notices || 0).toLocaleString()}</b> 条公告
+                                </div>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2 flex overflow-hidden">
+                                <div class="bg-emerald-500 h-2 transition-all duration-500" style="width: ${pctComp}%" title="已成功: ${comp} 天"></div>
+                                <div class="bg-red-500 h-2 transition-all duration-500" style="width: ${pctFail}%" title="失败: ${fail} 天"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2.5 border-t border-slate-100">
+                            <button onclick="toggleEventDays('${evt.event_id}')" class="inline-flex items-center space-x-1.5 text-xs font-medium text-slate-600 hover:text-blue-600 transition">
+                                <span id="event-toggle-text-${evt.event_id}">查看每日执行明细 (${tot}天)</span>
+                                <svg id="event-toggle-icon-${evt.event_id}" class="w-3.5 h-3.5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div class="flex items-center space-x-2">
+                                ${resumeBtnHtml}
+                                <button onclick="switchTab('dashboard')" class="px-2.5 py-1.5 text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition">
+                                    控制台终端
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="event-days-${evt.event_id}" class="hidden mt-3 pt-3 border-t border-slate-100/80">
+                            <div class="text-xs font-semibold text-slate-800 mb-2 flex items-center justify-between">
+                                <span>包含日期逐日执行台账 (共 ${tot} 天):</span>
+                                <span class="text-[11px] text-slate-400 font-normal">点击右侧按钮可针对单日发起定向重新采集</span>
+                            </div>
+                            <div class="overflow-x-auto rounded-lg border border-slate-200">
+                                <table class="w-full text-left text-xs text-slate-600">
+                                    <thead class="bg-slate-50/80 text-slate-500 font-medium border-b border-slate-200">
+                                        <tr>
+                                            <th class="px-3 py-2">日期</th>
+                                            <th class="px-3 py-2">状态</th>
+                                            <th class="px-3 py-2">采集公告</th>
+                                            <th class="px-3 py-2">重点工程</th>
+                                            <th class="px-3 py-2">耗时</th>
+                                            <th class="px-3 py-2">完成时间</th>
+                                            <th class="px-3 py-2">异常信息</th>
+                                            <th class="px-3 py-2 text-right">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 bg-white">
+                                        ${daysRowsHtml}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function toggleEventDays(eventId) {
+            const el = document.getElementById(`event-days-${eventId}`);
+            const icon = document.getElementById(`event-toggle-icon-${eventId}`);
+            const txt = document.getElementById(`event-toggle-text-${eventId}`);
+            if (!el) return;
+            if (el.classList.contains("hidden")) {
+                el.classList.remove("hidden");
+                if (icon) icon.classList.add("rotate-180");
+                if (txt) txt.textContent = "收起每日执行明细";
+            } else {
+                el.classList.add("hidden");
+                if (icon) icon.classList.remove("rotate-180");
+                if (txt) txt.textContent = "查看每日执行明细";
+            }
+        }
+
+        async function resumeTaskEvent(eventId, encodedTitle) {
+            const title = decodeURIComponent(encodedTitle || "事件任务");
+            if (!confirm(`确定要继续完成【${title}】中未完成或失败的日期吗？\n系统将自动筛选出未成功的日期继续补扫完成。`)) {
+                return;
+            }
+            switchTab("dashboard");
+            const logEl = document.getElementById("log-container");
+            logEl.textContent = `[Web Controller] 正在对事件【${title}】发起断点续跑...\n`;
+
+            try {
+                const res = await fetch("/api/resume_task_event", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ event_id: eventId })
+                });
+                const d = await res.json();
+                if (d.ok) {
+                    logEl.textContent += `[Web Controller] ${d.msg}\n`;
+                    startPollingLog();
+                } else {
+                    alert("启动断点续跑失败: " + d.msg);
+                }
+            } catch (err) {
+                logEl.textContent += `[System Error] 启动异常: ${err}\n`;
+            }
+        }
+
+        async function runSingleDayFromEvent(day) {
+            if (!confirm(`确定要单独针对【${day}】重新采集并重构全流程吗？`)) {
+                return;
+            }
+            switchTab("dashboard");
+            const logEl = document.getElementById("log-container");
+            logEl.textContent = `[Web Controller] 正在单独对 ${day} 启动全流程重新扫描...\n`;
+            try {
+                const res = await fetch("/api/run_collect", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ date: day })
+                });
+                const d = await res.json();
+                if (d.ok) {
+                    startPollingLog();
+                } else {
+                    alert("启动单日采集失败: " + d.msg);
+                }
+            } catch (err) {
+                logEl.textContent += `[System Error] 启动异常: ${err}\n`;
             }
         }
 
@@ -2847,10 +3719,14 @@
                     sumSkipped += r.skipped || 0;
                     sumFailed += r.failed || 0;
                 });
-                document.getElementById("runs-stat-total-batches").textContent = totalRunsCount;
-                document.getElementById("runs-stat-total-ok").textContent = sumOk;
-                document.getElementById("runs-stat-total-skipped").textContent = sumSkipped;
-                document.getElementById("runs-stat-total-failed").textContent = sumFailed;
+                const elBatches = document.getElementById("runs-stat-total-batches");
+                if (elBatches) elBatches.textContent = totalRunsCount;
+                const elOk = document.getElementById("runs-stat-total-ok");
+                if (elOk) elOk.textContent = sumOk;
+                const elSkipped = document.getElementById("runs-stat-total-skipped");
+                if (elSkipped) elSkipped.textContent = sumSkipped;
+                const elFailed = document.getElementById("runs-stat-total-failed");
+                if (elFailed) elFailed.textContent = sumFailed;
 
                 if (runs.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="11" class="px-4 py-8 text-center text-slate-400">没有查找到符合条件的运行记录</td></tr>`;
@@ -3458,11 +4334,18 @@
             </div>
 
             <form id="batch-scan-form" onsubmit="submitBatchScan(event)" class="space-y-4 mt-4">
-                <div class="flex items-center gap-1.5">
-                    <span class="text-[11px] text-slate-500">快捷区间:</span>
-                    <button type="button" onclick="setBatchDateRange('month')" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">本月至今(1日~今天)</button>
-                    <button type="button" onclick="setBatchDateRange('7d')" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">最近7天</button>
-                    <button type="button" onclick="setBatchDateRange('30d')" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">最近30天</button>
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-[11px] text-slate-500 font-medium">全月/快捷:</span>
+                    <button type="button" onclick="setBatchDateRange('2026-02')" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors">2026年2月全月</button>
+                    <button type="button" onclick="setBatchDateRange('2026-01')" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors">2026年1月全月</button>
+                    <button type="button" onclick="setBatchDateRange('2026-03')" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors">2026年3月全月</button>
+                    <button type="button" onclick="setBatchDateRange('month')" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">本月至今</button>
+                    <button type="button" onclick="setBatchDateRange('7d')" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">近7天</button>
+                    <button type="button" onclick="setBatchDateRange('30d')" class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors">近30天</button>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">事件任务标题 (选填)</label>
+                    <input type="text" id="batch-custom-title" placeholder="如：2026年2月全月重新扫描 (留空将自动生成)" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-indigo-500">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>

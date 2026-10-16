@@ -167,6 +167,8 @@ def build_search_page() -> Path:
         gap: 10px;
     }
     .nav-btn {
+        white-space: nowrap;
+        flex-shrink: 0;
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -585,7 +587,73 @@ def build_search_page() -> Path:
     @keyframes spin {
         to { transform: rotate(360deg); }
     }
+
+    .desktop-only { display: inline; }
+    .mobile-only { display: none; }
+
+    @media (max-width: 640px) {
+        html, body {
+            overflow-x: hidden;
+        }
+        .desktop-only { display: none !important; }
+        .mobile-only { display: inline !important; }
+        .header-inner {
+            padding: 10px 12px;
+            gap: 8px;
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 100%;
+        }
+        .brand-group {
+            min-width: 0;
+            flex-shrink: 1;
+            gap: 8px;
+        }
+        .brand-subtitle {
+            display: none !important;
+        }
+        .brand-title {
+            font-size: 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .brand-icon {
+            width: 30px;
+            height: 30px;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .nav-actions {
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .nav-btn {
+            padding: 6px 9px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .main-wrap {
+            padding: 14px 10px 40px;
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        .search-card {
+            padding: 14px;
+        }
+        .filter-meta {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+        }
+        .sort-select {
+            width: 100%;
+        }
+    }
 </style>
+<script src="./search_index.js"></script>
 </head>
 <body>
 
@@ -594,7 +662,10 @@ def build_search_page() -> Path:
         <a class="brand-group" href="./index.html">
             <div class="brand-icon">广</div>
             <div>
-                <div class="brand-title">广西工程建设招投标每日资讯</div>
+                <div class="brand-title">
+                    <span class="desktop-only">广西工程建设招投标每日资讯</span>
+                    <span class="mobile-only">全盘检索中心</span>
+                </div>
                 <div class="brand-subtitle">全盘检索中心 · 覆盖全历史招投标公告</div>
             </div>
         </a>
@@ -994,9 +1065,13 @@ def build_search_page() -> Path:
     // Load data from search_index.json
     async function initData() {
         try {
+            if (window.SEARCH_INDEX_DATA && Array.isArray(window.SEARCH_INDEX_DATA) && window.SEARCH_INDEX_DATA.length > 0) {
+                allData = window.SEARCH_INDEX_DATA;
+            } else {
             const res = await fetch('./search_index.json?v=' + Date.now());
             if (!res.ok) throw new Error('HTTP ' + res.status);
             allData = await res.json();
+            }
             
             // Parse URL parameters (e.g. ?q=水库)
             const params = new URLSearchParams(window.location.search);

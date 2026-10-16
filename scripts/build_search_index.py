@@ -92,6 +92,10 @@ def generate_search_index() -> Dict[str, Any]:
     out_dist = site_dir / "search_index.json"
     out_dist.write_text(json.dumps(all_records, ensure_ascii=False), encoding="utf-8")
     
+    # 同时写入 dist/search_index.js，支持双击本地 file:// 协议直接离线秒开（不受浏览器本地跨域 CORS fetch 阻拦）
+    out_js = site_dir / "search_index.js"
+    out_js.write_text("window.SEARCH_INDEX_DATA = " + json.dumps(all_records, ensure_ascii=False) + ";\n", encoding="utf-8")
+
     # 同时写入 data/search_index.json 供 Manager 或其他服务直接本地高速读取
     data_dir = Path(config.DATA_DIR)
     out_data = data_dir / "search_index.json"

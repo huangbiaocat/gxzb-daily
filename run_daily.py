@@ -478,7 +478,7 @@ def main(argv=None):
     # 7) 自动同步 VPS（可选）
     if getattr(config, "IS_ON_VPS", False):
         banner("7/8", "站点静态产物就地发布 (VPS 自治模式)")
-        print(f"当前直接运行在生产 VPS 本地，产物由 Nginx 实时响应：{SITE_DIR}")
+        print(f"当前直接运行在生产 VPS 本地，产物由 Nginx 实时响应：{config.SITE_DIR}")
     elif getattr(config, "AUTO_UPLOAD_VPS", True):
         banner("7/8", "同步上传静态站点至 VPS")
         rc, ok = run([PY, SCRIPT / "upload_vps.py"], allow_codes=(0,))
@@ -547,6 +547,7 @@ def finish(day, failed_steps, args, res=None, is_final=False):
     res = res or {}
     missing = int(res.get("missing_count") or 0)
     now_stamp = config.now_stamp()
+    today_str = config.today()
     summary = {"date": day, "finished_at": now_stamp,
                "failed_steps": failed_steps, "missing_count": missing,
                "stale_missed_count": int(res.get("stale_missed_count") or 0),

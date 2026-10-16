@@ -886,25 +886,92 @@
             }
         }
 
+        .btn-text-desktop {
+            display: inline;
+        }
+        .btn-text-mobile {
+            display: none;
+        }
+
         @media (max-width: 640px) {
             .header-inner {
-                padding: 0 16px;
+                padding: 0 10px;
+                gap: 6px;
+                height: 56px;
+            }
+            .brand-logo {
+                gap: 6px;
+                min-width: 0;
+            }
+            .brand-icon {
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+            }
+            .brand-icon svg {
+                width: 18px;
+                height: 18px;
+            }
+            .brand-text h1 {
+                font-size: 0.92rem;
+                letter-spacing: -0.2px;
+                white-space: nowrap;
+            }
+            .brand-text p {
+                display: none;
+            }
+            .header-actions {
+                gap: 5px;
+                flex-shrink: 0;
+            }
+            .btn-latest {
+                padding: 5px 8px;
+                font-size: 0.75rem;
+                gap: 4px;
+                height: 32px;
+                white-space: nowrap;
+            }
+            .btn-text-desktop {
+                display: none !important;
+            }
+            .btn-text-mobile {
+                display: inline !important;
+            }
+            .btn-arrow-icon {
+                display: none !important;
             }
             .page-container {
-                padding: 20px 16px 60px;
+                padding: 14px 10px 48px;
             }
             .hero-banner {
-                padding: 24px 20px;
+                padding: 18px 14px;
+                border-radius: 14px;
             }
             .hero-title {
-                font-size: 1.4rem;
+                font-size: 1.25rem;
+            }
+            .hero-desc {
+                font-size: 0.8rem;
+                line-height: 1.45;
+                margin-bottom: 14px;
             }
             .stats-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .stat-box {
+                padding: 10px 10px;
+                border-radius: 8px;
+            }
+            .stat-value {
+                font-size: 1.2rem;
             }
             .filter-section {
                 flex-direction: column;
                 align-items: stretch;
+                padding: 10px;
+                gap: 8px;
+                border-radius: 10px;
             }
             .filter-left, .filter-right {
                 width: 100%;
@@ -919,13 +986,75 @@
                 width: 100%;
                 justify-content: center;
             }
+            .month-calendar-card {
+                padding: 12px 8px;
+                border-radius: 12px;
+                margin-bottom: 16px;
+            }
+            .month-card-header {
+                margin-bottom: 8px;
+                padding-bottom: 8px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+            .month-meta-stats {
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .cal-weekdays-row {
+                grid-template-columns: repeat(7, minmax(0, 1fr));
+                gap: 3px;
+                padding: 0 0 4px;
+                font-size: 0.7rem;
+            }
+            .cal-grid-body {
+                grid-template-columns: repeat(7, minmax(0, 1fr));
+                gap: 3px;
+            }
             .cal-cell {
-                min-height: 64px;
-                padding: 6px;
+                min-height: 52px;
+                padding: 3px 2px;
+                border-radius: 5px;
+                min-width: 0;
+                overflow: hidden;
+            }
+            .cal-cell-header {
+                gap: 2px;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .cal-date-num {
+                font-size: 0.74rem;
+            }
+            .cal-pill-group {
+                gap: 2px;
+            }
+            .cal-pill-alert, .cal-pill-rest {
+                font-size: 0.52rem;
+                padding: 1px 2px;
+                border-radius: 3px;
+                line-height: 1.1;
+            }
+            .cal-pill-nonwork {
+                display: none !important;
             }
             .cal-count-badge {
-                font-size: 0.7rem;
-                padding: 1px 4px;
+                font-size: 0.62rem;
+                padding: 1px 2px;
+                border-radius: 3px;
+                line-height: 1.2;
+                width: 100%;
+                box-sizing: border-box;
+                text-align: center;
+            }
+            .cal-count-badge .unit {
+                display: none !important;
+            }
+            .cal-no-data {
+                font-size: 0.68rem;
             }
             .history-row-item {
                 flex-direction: column;
@@ -1135,6 +1264,115 @@
             color: #0284c7;
             text-decoration: underline;
         }
+
+        /* ===== Auth & Favorites System Styles ===== */
+        .auth-tab-bar {
+            display: flex;
+            background: #f1f5f9;
+            padding: 3px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            gap: 2px;
+        }
+        .auth-tab-btn {
+            flex: 1;
+            text-align: center;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .auth-tab-btn.active {
+            background: #ffffff;
+            color: #0284c7;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .fav-section-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 12px 0 6px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .fav-tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .fav-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.76rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .fav-chip-project {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+        .fav-chip-owner {
+            background: #fffbeb;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+        .fav-chip-del {
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            line-height: 1;
+            margin-left: 2px;
+        }
+        .fav-chip-del:hover {
+            color: #ef4444;
+        }
+        .fav-empty-hint {
+            font-size: 0.76rem;
+            color: #94a3b8;
+            font-style: italic;
+            padding: 6px 0;
+        }
+        .fav-add-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .fav-add-row input, .fav-add-row select {
+            font-size: 0.78rem;
+            padding: 6px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            outline: none;
+        }
+        .fav-add-row input:focus, .fav-add-row select:focus {
+            border-color: #0284c7;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+        }
+        .fav-add-btn {
+            background: #0284c7;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0 12px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+        .fav-add-btn:hover {
+            background: #0369a1;
+        }
     </style>
 </head>
 <body>
@@ -1157,14 +1395,21 @@
 </div>
 </a>
 <div class="header-actions">
-<a class="btn-latest btn-admin-entry" id="btnAdminLogin" href="javascript:void(0)" onclick="openAdminModal()" style="background: #ffffff; color: #475569; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); margin-right: 8px;">
+<a class="btn-latest btn-user-entry" id="btnUserPortal" href="javascript:void(0)" onclick="openUserPortalModal()" style="background: #ffffff; color: #0284c7; border: 1px solid #bae6fd; box-shadow: var(--shadow-sm); margin-right: 4px;">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+<span class="btn-text-desktop" id="userBtnText">登录 / 重点关注</span>
+<span class="btn-text-mobile" id="userBtnTextMobile">关注</span>
+</a>
+<a class="btn-latest btn-admin-entry" id="btnAdminLogin" href="javascript:void(0)" onclick="openAdminModal()" style="background: #ffffff; color: #475569; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); margin-right: 4px;">
 <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><rect height="11" rx="2" ry="2" width="18" x="3" y="11"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-<span id="adminBtnText">管理登录</span>
+<span class="btn-text-desktop" id="adminBtnText">管理后台</span>
+<span class="btn-text-mobile" id="adminBtnTextMobile">管理</span>
 </a>
 <a class="btn-latest" href="./2026-09-08.html" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
 <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
-<span>查看最新简报 (2026-09-08)</span>
-<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><polyline points="9 18 15 12 9 6"></polyline></svg>
+<span class="btn-text-desktop">查看最新简报 (2026-09-08)</span>
+<span class="btn-text-mobile">今日简报</span>
+<svg class="btn-arrow-icon" fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><polyline points="9 18 15 12 9 6"></polyline></svg>
 </a>
 </div>
 </div>

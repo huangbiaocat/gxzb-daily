@@ -25,16 +25,16 @@ class TestPushRulesAndCZ(unittest.TestCase):
     def test_cz_stage_and_category(self):
         stage, cat = get_cz_stage_and_category(1, "某工程招标公告")
         self.assertEqual(stage, "招标公告")
-        self.assertEqual(cat, "001001001002")
+        self.assertEqual(cat, "001001001001")
 
         stage, cat = get_cz_stage_and_category(5, "某工程成交结果公告")
         self.assertEqual(stage, "中标公告")
-        self.assertEqual(cat, "001001001006")
+        self.assertEqual(cat, "001001001005")
 
         # 备选规则识别
         stage, cat = get_cz_stage_and_category(99, "某项目第一中标候选人公示")
         self.assertEqual(stage, "中标公示")
-        self.assertEqual(cat, "001001001005")
+        self.assertEqual(cat, "001001001004")
 
     def test_cz_owner_and_focus_no_amount_threshold(self):
         config.FOCUS_PROJECTS = ["凭祥加工园区"]

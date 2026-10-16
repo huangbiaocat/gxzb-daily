@@ -5,6 +5,13 @@
 .env.local
 *.bak
 
+# ---------- 交建通 / 内部接口机密与参数（绝不入库）----------
+*交建通*
+config_jjt.json
+config_jjt.local.json
+data/jjt_*.json
+!config_jjt.example.json
+
 # ---------- 运行数据（每次跑都会变，不入库）----------
 data/
 logs/
@@ -38,3 +45,6 @@ Thumbs.db
 
 # ---------- 临时压缩包 ----------
 *.zip
+
+# ---------- 本地测试截图 ----------
+screenshots/

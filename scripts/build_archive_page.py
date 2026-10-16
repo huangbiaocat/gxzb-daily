@@ -550,6 +550,603 @@ extra_style = """
             color: #0284c7;
             text-decoration: underline;
         }
+
+        /* ===== Auth & Favorites System Styles ===== */
+        .auth-tab-bar {
+            display: flex;
+            background: #f1f5f9;
+            padding: 3px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            gap: 2px;
+        }
+        .auth-tab-btn {
+            flex: 1;
+            text-align: center;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .auth-tab-btn.active {
+            background: #ffffff;
+            color: #0284c7;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .fav-section-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 12px 0 6px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .fav-tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .fav-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.76rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .fav-chip-project {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+        .fav-chip-owner {
+            background: #fffbeb;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+        .fav-chip-del {
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            line-height: 1;
+            margin-left: 2px;
+        }
+        .fav-chip-del:hover {
+            color: #ef4444;
+        }
+        .fav-empty-hint {
+            font-size: 0.76rem;
+            color: #94a3b8;
+            font-style: italic;
+            padding: 6px 0;
+        }
+        .fav-add-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .fav-add-row input, .fav-add-row select {
+            font-size: 0.78rem;
+            padding: 6px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            outline: none;
+        }
+        .fav-add-row input:focus, .fav-add-row select:focus {
+            border-color: #0284c7;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+        }
+        .fav-add-btn {
+            background: #0284c7;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0 12px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+        .fav-add-btn:hover {
+            background: #0369a1;
+        }
+
+        /* ===== Responsive & Mobile Optimizations ===== */
+        .btn-text-desktop { display: inline; }
+        .btn-text-mobile { display: none; }
+
+        @media (max-width: 640px) {
+            .btn-text-desktop { display: none !important; }
+            .btn-text-mobile { display: inline !important; }
+            .btn-arrow-icon { display: none !important; }
+
+            .site-header {
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                background: rgba(255, 255, 255, 0.96);
+                backdrop-filter: blur(8px);
+                border-bottom: 1px solid var(--border-color, #e2e8f0);
+            }
+            .header-inner {
+                height: auto !important;
+                min-height: 52px;
+                padding: 8px 12px !important;
+                flex-wrap: wrap;
+                gap: 8px;
+                justify-content: space-between;
+            }
+            .brand-logo {
+                gap: 8px;
+                flex-shrink: 1;
+                min-width: 0;
+            }
+            .brand-icon {
+                width: 30px !important;
+                height: 30px !important;
+                border-radius: 8px !important;
+            }
+            .brand-icon svg {
+                width: 17px !important;
+                height: 17px !important;
+            }
+            .brand-text h1 {
+                font-size: 0.95rem !important;
+                font-weight: 700;
+                line-height: 1.25;
+                margin: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .brand-text p {
+                display: none !important;
+            }
+            .header-actions {
+                display: flex !important;
+                align-items: center !important;
+                gap: 5px !important;
+                flex-shrink: 0 !important;
+            }
+            .btn-latest {
+                padding: 6px 9px !important;
+                font-size: 0.76rem !important;
+                gap: 4px !important;
+                border-radius: 6px !important;
+                white-space: nowrap !important;
+                margin-right: 0 !important;
+                box-shadow: none !important;
+            }
+            .btn-latest svg {
+                width: 13px !important;
+                height: 13px !important;
+            }
+
+            .page-container {
+                padding: 12px 10px 48px !important;
+            }
+
+            .hero-banner {
+                padding: 14px 12px !important;
+                margin-bottom: 12px !important;
+                border-radius: 12px !important;
+            }
+            .hero-badge {
+                font-size: 0.65rem !important;
+                padding: 2px 7px !important;
+                margin-bottom: 6px !important;
+            }
+            .hero-title {
+                font-size: 1.2rem !important;
+                line-height: 1.3 !important;
+                margin-bottom: 4px !important;
+            }
+            .hero-desc {
+                font-size: 0.78rem !important;
+                line-height: 1.45 !important;
+                margin-bottom: 10px !important;
+            }
+
+            /* Stats 2x2 grid on mobile */
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px !important;
+                margin-top: 10px !important;
+            }
+            .stat-box {
+                padding: 9px 10px !important;
+                border-radius: 8px !important;
+            }
+            .sb-label {
+                font-size: 0.7rem !important;
+                margin-bottom: 2px !important;
+            }
+            .sb-value {
+                font-size: 1.15rem !important;
+            }
+            .sb-unit {
+                font-size: 0.72rem !important;
+                margin-left: 2px !important;
+            }
+
+            /* Filter Section on mobile */
+            .filter-section {
+                padding: 10px !important;
+                margin-bottom: 12px !important;
+                border-radius: 10px !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
+            }
+            .filter-left {
+                width: 100% !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+            .search-input-wrap {
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                position: relative;
+            }
+            .search-input {
+                width: 100% !important;
+                height: 36px !important;
+                font-size: 0.8rem !important;
+                padding-left: 32px !important;
+                box-sizing: border-box !important;
+            }
+            .filter-right {
+                width: 100% !important;
+                justify-content: stretch !important;
+            }
+            .density-legend {
+                display: none !important;
+            }
+            .view-switcher {
+                width: 100% !important;
+                display: flex !important;
+                background: #f1f5f9;
+                padding: 3px;
+                border-radius: 8px;
+            }
+            .view-btn {
+                flex: 1 !important;
+                justify-content: center !important;
+                padding: 7px 10px !important;
+                font-size: 0.8rem !important;
+                border-radius: 6px !important;
+            }
+
+            /* Month Calendar Card on mobile */
+            .month-calendar-card {
+                padding: 10px 6px !important;
+                border-radius: 10px !important;
+                margin-bottom: 12px !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                box-sizing: border-box !important;
+            }
+            .year-calendar-grid {
+                padding: 8px 4px !important;
+                gap: 12px !important;
+            }
+
+            .archive-hint {
+                white-space: normal !important;
+                word-break: break-all !important;
+                line-height: 1.45 !important;
+                font-size: 0.74rem !important;
+                display: block !important;
+                padding: 2px 2px !important;
+            }
+
+            .month-card-header {
+                margin-bottom: 8px !important;
+                padding-bottom: 8px !important;
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 6px !important;
+            }
+            .month-stats-group {
+                width: 100% !important;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 4px !important;
+            }
+            .stat-pill {
+                font-size: 0.68rem !important;
+                padding: 2px 6px !important;
+            }
+            .cal-weekdays-row {
+                display: grid !important;
+                grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+                gap: 2px !important;
+                margin-bottom: 4px !important;
+                padding: 0 !important;
+                text-align: center !important;
+            }
+            .cal-weekdays-row span {
+                padding: 3px 0 !important;
+                font-size: 0.68rem !important;
+                display: block !important;
+                text-align: center !important;
+            }
+            .cal-grid-body {
+                display: grid !important;
+                grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+                gap: 2px !important;
+                width: 100% !important;
+            }
+            .cal-cell {
+                min-height: 48px !important;
+                padding: 2px 1px !important;
+                border-radius: 4px !important;
+                min-width: 0 !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+            }
+            .cal-cell-header {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                width: 100% !important;
+                margin-bottom: 2px !important;
+            }
+            .cal-date-num {
+                font-size: 0.76rem !important;
+                font-weight: 700 !important;
+                line-height: 1 !important;
+            }
+            .cal-pill-group {
+                display: flex !important;
+                align-items: center !important;
+                gap: 2px !important;
+            }
+            .cal-pill-today {
+                font-size: 0.5rem !important;
+                padding: 1px 3px !important;
+                border-radius: 3px !important;
+                line-height: 1 !important;
+            }
+            .cal-pill-delayed, .cal-pill-final {
+                font-size: 0.5rem !important;
+                padding: 1px 2px !important;
+                line-height: 1 !important;
+            }
+            .cal-cell-body {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                justify-content: flex-end !important;
+                gap: 1px !important;
+                width: 100% !important;
+                margin-top: auto !important;
+            }
+            .cal-count-badge {
+                font-size: 0.60rem !important;
+                padding: 1px 0 !important;
+                text-align: center !important;
+                border-radius: 3px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                display: block !important;
+                white-space: nowrap !important;
+                line-height: 1.15 !important;
+                letter-spacing: -0.2px !important;
+            }
+            .cal-count-badge .unit {
+                font-size: 0.52rem !important;
+            }
+            .cal-meta-line {
+                font-size: 0.52rem !important;
+                text-align: center !important;
+                line-height: 1.1 !important;
+                display: block !important;
+                width: 100% !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+                margin-top: 1px !important;
+            }
+            .cal-meta-zero {
+                display: none !important;
+            }
+            .cal-meta-focus {
+                color: #dc2626 !important;
+                font-weight: 800 !important;
+                font-size: 0.52rem !important;
+                background: rgba(220, 38, 38, 0.08) !important;
+                border-radius: 2px !important;
+                padding: 0 1px !important;
+                white-space: nowrap !important;
+            }
+
+            /* History row list view on mobile */
+            .history-row-item {
+                padding: 10px 10px !important;
+                margin-bottom: 8px !important;
+                border-radius: 8px !important;
+                gap: 8px !important;
+            }
+            .date-calendar-box {
+                width: 42px !important;
+                height: 42px !important;
+                border-radius: 6px !important;
+                flex-shrink: 0 !important;
+            }
+            .dc-month {
+                font-size: 0.62rem !important;
+            }
+            .dc-day {
+                font-size: 1.1rem !important;
+            }
+            .dm-primary {
+                font-size: 0.85rem !important;
+            }
+            .dm-secondary {
+                display: none !important;
+            }
+            .cat-tag {
+                font-size: 0.68rem !important;
+                padding: 2px 5px !important;
+            }
+            .item-col-metrics {
+                width: 100% !important;
+                justify-content: space-between !important;
+                padding-top: 6px !important;
+                border-top: 1px dashed #e2e8f0 !important;
+                margin-top: 4px !important;
+            }
+            .metric-chip {
+                font-size: 0.7rem !important;
+                padding: 2px 5px !important;
+            }
+            .metrics-visual .count-value {
+                font-size: 1.1rem !important;
+            }
+            .action-arrow {
+                display: none !important;
+            }
+        }
+
+        /* ===== 年度分组折叠/展开样式 ===== */
+        .calendar-years-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .year-archive-group {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #ffffff;
+            overflow: hidden;
+            transition: all 0.25s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .year-archive-group.current-year {
+            border-color: rgba(2, 132, 199, 0.35);
+            box-shadow: 0 4px 12px -2px rgba(2, 132, 199, 0.08);
+        }
+
+        .year-group-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 13px 20px;
+            background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+            cursor: pointer;
+            user-select: none;
+            list-style: none;
+            transition: background 0.2s ease;
+        }
+
+        .year-group-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .year-group-summary:hover {
+            background: linear-gradient(180deg, #f1f5f9, #e2e8f0);
+        }
+
+        .year-archive-group.current-year .year-group-summary {
+            background: linear-gradient(180deg, #f0f9ff, #e0f2fe);
+        }
+
+        .year-summary-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .year-title {
+            font-size: 1.12rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.01em;
+        }
+
+        .year-badge {
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            line-height: 1.4;
+        }
+
+        .year-badge-current {
+            background: #0284c7;
+            color: #ffffff;
+        }
+
+        .year-badge-past {
+            background: #64748b;
+            color: #ffffff;
+        }
+
+        .year-stat-text {
+            font-size: 0.82rem;
+            color: #64748b;
+            margin-left: 4px;
+        }
+
+        .year-summary-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #64748b;
+            font-size: 0.82rem;
+        }
+
+        .year-toggle-arrow {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: transform 0.25s ease;
+        }
+
+        .year-archive-group[open] .year-toggle-arrow {
+            transform: rotate(180deg);
+        }
+
+        .year-archive-group[open] .year-toggle-hint-open {
+            display: inline;
+        }
+        .year-archive-group[open] .year-toggle-hint-closed {
+            display: none;
+        }
+        .year-archive-group:not([open]) .year-toggle-hint-open {
+            display: none;
+        }
+        .year-archive-group:not([open]) .year-toggle-hint-closed {
+            display: inline;
+        }
+
+        .year-calendar-grid {
+            padding: 20px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+        }
     </style>
 """
 
@@ -685,7 +1282,60 @@ for ym in months:
         )
     )
 
-calendar_html = "\n".join(month_cards)
+# 按年份分组构建折叠面板（本年展开，往年折叠）
+current_year = today_str[:4]
+years_in_data = sorted({ym[:4] for ym in months}, reverse=True)
+if current_year not in years_in_data and years_in_data:
+    current_year = years_in_data[0]
+
+year_card_map = {}
+for card in month_cards:
+    m_ym = card.split('data-year-month="')[1][:7]
+    yr = m_ym[:4]
+    year_card_map.setdefault(yr, []).append(card)
+
+year_sections = []
+for yr in years_in_data:
+    cards = year_card_map.get(yr, [])
+    if not cards:
+        continue
+    is_curr = (yr == current_year)
+    yr_days = [d for d in days if d["date"].startswith(yr)]
+    yr_day_cnt = len(yr_days)
+    yr_notices = sum(d["total"] for d in yr_days)
+    yr_focus = sum(d.get("focus_count", 0) for d in yr_days)
+
+    open_attr = " open" if is_curr else ""
+    curr_cls = " current-year" if is_curr else " past-year"
+    badge_html = (
+        '<span class="year-badge year-badge-current">本年</span>'
+        if is_curr else
+        '<span class="year-badge year-badge-past">往年归档</span>'
+    )
+    stat_desc = f"{len(cards)} 个月份 · {yr_day_cnt} 天已归档 · {comma(yr_notices)} 条公告"
+    if yr_focus > 0:
+        stat_desc += f" · 重点关注 {comma(yr_focus)}"
+
+    group_html = f"""<details class="year-archive-group{curr_cls}"{open_attr} data-year="{yr}">
+  <summary class="year-group-summary">
+    <div class="year-summary-left">
+      <span class="year-title">{yr} 年度</span>
+      {badge_html}
+      <span class="year-stat-text">{stat_desc}</span>
+    </div>
+    <div class="year-summary-right">
+      <span class="year-toggle-hint year-toggle-hint-open">点击折叠</span>
+      <span class="year-toggle-hint year-toggle-hint-closed">点击展开</span>
+      <svg class="year-toggle-arrow" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </div>
+  </summary>
+  <div class="calendar-grid-container year-calendar-grid">
+    {''.join(cards)}
+  </div>
+</details>"""
+    year_sections.append(group_html)
+
+calendar_html = "\n".join(year_sections)
 
 # ---------- 清单视图 ----------
 rows = []
@@ -796,18 +1446,26 @@ PAGE = """<!DOCTYPE html>
 </div>
 </a>
 <div class="header-actions">
+<a class="btn-latest btn-user-entry" id="btnUserPortal" href="javascript:void(0)" onclick="openUserPortalModal()" style="background: #ffffff; color: #0284c7; border: 1px solid #bae6fd;">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+<span class="btn-text-desktop" id="userBtnText">登录 / 重点关注</span>
+<span class="btn-text-mobile" id="userBtnTextMobile">关注</span>
+</a>
 <a class="btn-latest btn-admin-entry" id="btnAdminLogin" href="javascript:void(0)" onclick="openAdminModal()">
 <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><rect height="11" rx="2" ry="2" width="18" x="3" y="11"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-<span id="adminBtnText">管理登录</span>
+<span class="btn-text-desktop" id="adminBtnText">管理后台</span>
+<span class="btn-text-mobile" id="adminBtnTextMobile">管理</span>
 </a>
-<a class="btn-latest" href="./search.html" style="background: #ffffff; color: var(--primary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); margin-right: 8px;">
+<a class="btn-latest" id="btnGlobalSearch" href="./search.html" style="background: #ffffff; color: var(--primary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
 <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>
-<span>全站搜索</span>
+<span class="btn-text-desktop">全站搜索</span>
+<span class="btn-text-mobile">搜索</span>
 </a>
-<a class="btn-latest" href="./{latest_date}.html" data-latest-date="{latest_date}" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
+<a class="btn-latest" id="btnTodayBrief" href="./{latest_date}.html" data-latest-date="{latest_date}" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
 <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
-<span class="btn-latest-text">{latest_btn_text}</span>
-<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><polyline points="9 18 15 12 9 6"></polyline></svg>
+<span class="btn-text-desktop btn-latest-text">{latest_btn_text}</span>
+<span class="btn-text-mobile btn-latest-mobile-text">今日简报</span>
+<svg class="btn-arrow-icon" fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><polyline points="9 18 15 12 9 6"></polyline></svg>
 </a>
 </div>
 </div>
@@ -890,7 +1548,7 @@ PAGE = """<!DOCTYPE html>
 </div>
 <!-- View 1: Calendar View -->
 <div class="view-panel active" id="viewCalendar">
-<div class="calendar-grid-container">
+<div class="calendar-years-wrapper">
 {calendar_html}
 </div>
 </div>
@@ -981,6 +1639,29 @@ PAGE = """<!DOCTYPE html>
         }
     }
 })();
+
+// 搜索逻辑增强：当检索命中往年月份时自动展开对应年份，清除搜索时恢复默认折叠状态
+(function() {
+    var searchInput = document.getElementById('archiveSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            var query = e.target.value.trim().toLowerCase();
+            var yearGroups = document.querySelectorAll('.year-archive-group');
+            if (!query) {
+                yearGroups.forEach(function(grp) {
+                    grp.open = grp.classList.contains('current-year');
+                });
+            } else {
+                yearGroups.forEach(function(grp) {
+                    var visibleCards = grp.querySelectorAll('.month-calendar-card:not([style*="display: none"])');
+                    if (visibleCards.length > 0) {
+                        grp.open = true;
+                    }
+                });
+            }
+        });
+    }
+})();
 </script>
 {admin_modal_html}
 {admin_modal_script}
@@ -989,18 +1670,75 @@ PAGE = """<!DOCTYPE html>
 """
 
 admin_modal_html = """
-<!-- 管理员安全登录弹窗 -->
-<div id="adminLoginModal" class="admin-modal-overlay" style="display: none;" onclick="handleAdminModalBackdrop(event)">
+<!-- 多身份统一鉴权弹窗 (普通用户登录 / 免费注册 / 管理员通道) -->
+<div id="authModal" class="admin-modal-overlay" style="display: none;" onclick="handleAuthModalBackdrop(event)">
   <div class="admin-modal-card">
-    <button type="button" class="admin-modal-close" onclick="closeAdminModal()" aria-label="关闭">&times;</button>
+    <button type="button" class="admin-modal-close" onclick="closeAuthModal()" aria-label="关闭">&times;</button>
     <div class="admin-modal-header">
       <div class="admin-modal-icon">
-        <svg fill="none" height="24" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="24"><rect height="11" rx="2" ry="2" width="18" x="3" y="11"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <svg fill="none" height="24" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
       </div>
-      <h3 class="admin-modal-title">管理员安全登录</h3>
-      <p class="admin-modal-subtitle">广西招投标数据监控与自动化运维后台</p>
+      <h3 class="admin-modal-title" id="authModalTitle">用户登录与个性化关注</h3>
+      <p class="admin-modal-subtitle" id="authModalSubtitle">建立专属重点项目与重点业主跟踪库</p>
     </div>
-    <form class="admin-modal-form" onsubmit="handleAdminLogin(event)">
+
+    <!-- 顶部分栏切换 -->
+    <div class="auth-tab-bar">
+      <button type="button" class="auth-tab-btn active" id="tabBtnUserLogin" onclick="switchAuthTab('login')">用户登录</button>
+      <button type="button" class="auth-tab-btn" id="tabBtnUserRegister" onclick="switchAuthTab('register')">免费注册</button>
+      <button type="button" class="auth-tab-btn" id="tabBtnAdminPortal" onclick="switchAuthTab('admin')">管理后台通道</button>
+    </div>
+
+    <!-- Tab 1: 普通用户登录 -->
+    <form id="formUserLogin" class="admin-modal-form" onsubmit="handleUserLogin(event)">
+      <div class="admin-form-group">
+        <label for="userLoginUsername" class="admin-form-label">用户账号</label>
+        <div class="admin-input-wrapper">
+          <input type="text" id="userLoginUsername" class="admin-form-input" placeholder="请输入您的账号" autocomplete="username" required />
+        </div>
+      </div>
+      <div class="admin-form-group">
+        <label for="userLoginPassword" class="admin-form-label">登录密码</label>
+        <div class="admin-input-wrapper">
+          <input type="password" id="userLoginPassword" class="admin-form-input" placeholder="请输入密码" autocomplete="current-password" required />
+        </div>
+      </div>
+      <div id="userLoginTip" class="admin-login-tip" style="display: none;"></div>
+      <button type="submit" id="btnUserLoginSubmit" class="admin-btn-submit">
+        <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+        <span>登录账号</span>
+      </button>
+    </form>
+
+    <!-- Tab 2: 普通用户注册 -->
+    <form id="formUserRegister" class="admin-modal-form" style="display: none;" onsubmit="handleUserRegister(event)">
+      <div class="admin-form-group">
+        <label for="userRegUsername" class="admin-form-label">注册账号 (3-32位字符)</label>
+        <div class="admin-input-wrapper">
+          <input type="text" id="userRegUsername" class="admin-form-input" placeholder="英文字母、数字或手机号" autocomplete="username" required />
+        </div>
+      </div>
+      <div class="admin-form-group">
+        <label for="userRegDisplayName" class="admin-form-label">姓名 / 称呼 (可选)</label>
+        <div class="admin-input-wrapper">
+          <input type="text" id="userRegDisplayName" class="admin-form-input" placeholder="例如：张经理 / 华西项目部" />
+        </div>
+      </div>
+      <div class="admin-form-group">
+        <label for="userRegPassword" class="admin-form-label">设置密码 (至少6位)</label>
+        <div class="admin-input-wrapper">
+          <input type="password" id="userRegPassword" class="admin-form-input" placeholder="请设置安全密码" autocomplete="new-password" required />
+        </div>
+      </div>
+      <div id="userRegTip" class="admin-login-tip" style="display: none;"></div>
+      <button type="submit" id="btnUserRegSubmit" class="admin-btn-submit" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+        <svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16"><path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+        <span>立即注册开通独立关注库</span>
+      </button>
+    </form>
+
+    <!-- Tab 3: 管理员通道 -->
+    <form id="formAdminPortal" class="admin-modal-form" style="display: none;" onsubmit="handleAdminLogin(event)">
       <div class="admin-form-group">
         <label for="adminPasswordInput" class="admin-form-label">管理员密码</label>
         <div class="admin-input-wrapper">
@@ -1021,42 +1759,397 @@ admin_modal_html = """
     </form>
   </div>
 </div>
+
+<!-- 用户专属：重点项目与重点业主关注中心抽屉/面板 -->
+<div id="favoritesModal" class="admin-modal-overlay" style="display: none;" onclick="handleFavModalBackdrop(event)">
+  <div class="admin-modal-card" style="max-width: 480px;">
+    <button type="button" class="admin-modal-close" onclick="closeFavoritesModal()" aria-label="关闭">&times;</button>
+    <div class="admin-modal-header" style="text-align: left; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 14px;">
+      <div>
+        <h3 class="admin-modal-title" style="font-size: 1.05rem;">⭐ 我的重点关注中心</h3>
+        <p class="admin-modal-subtitle" id="favModalUserGreeting">正在加载专属关注数据...</p>
+      </div>
+      <button type="button" onclick="handleUserLogout()" class="admin-direct-link" style="color: #ef4444; border: 1px solid #fee2e2; background: #fef2f2; padding: 4px 8px; border-radius: 6px;">退出登录</button>
+    </div>
+
+    <!-- 关注列表展示 -->
+    <div>
+      <div class="fav-section-title">
+        <span>📌 关注的重点项目 (<span id="favProjectsCount">0</span>)</span>
+      </div>
+      <div id="favProjectsList" class="fav-tag-list">
+        <div class="fav-empty-hint">暂未关注任何项目</div>
+      </div>
+
+      <div class="fav-section-title">
+        <span>🏢 关注的重点业主单位 (<span id="favOwnersCount">0</span>)</span>
+      </div>
+      <div id="favOwnersList" class="fav-tag-list">
+        <div class="fav-empty-hint">暂未关注任何业主单位</div>
+      </div>
+    </div>
+
+    <!-- 快捷新增关注 -->
+    <form onsubmit="handleAddFavoriteSubmit(event)" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #f1f5f9;">
+      <div class="fav-section-title" style="margin-top: 0;">
+        <span>➕ 添加新关注</span>
+      </div>
+      <div class="fav-add-row">
+        <select id="favAddType" style="width: 105px;">
+          <option value="project">重点项目</option>
+          <option value="owner">重点业主</option>
+        </select>
+        <input type="text" id="favAddName" placeholder="关注名称/关键词 (如: 平陆运河)" style="flex: 1;" required />
+        <input type="text" id="favAddTag" placeholder="备注标签 (可选)" style="width: 90px;" />
+        <button type="submit" id="btnFavAddSubmit" class="fav-add-btn">关注</button>
+      </div>
+      <div id="favAddTip" class="admin-login-tip" style="display: none; margin-top: 8px;"></div>
+    </form>
+  </div>
+</div>
 """
 
 admin_modal_script = """
 <script>
-function openAdminModal() {
-    var modal = document.getElementById('adminLoginModal');
-    if (!modal) return;
-    modal.style.display = 'flex';
-    var input = document.getElementById('adminPasswordInput');
-    if (input) {
-        input.value = '';
-        setTimeout(function() { input.focus(); }, 120);
+var currentUserState = null;
+var isAdminState = false;
+
+function openUserPortalModal() {
+    if (currentUserState && currentUserState.username) {
+        openFavoritesModal();
+    } else {
+        openAuthModal('login');
     }
-    var tip = document.getElementById('adminLoginTip');
-    if (tip) tip.style.display = 'none';
 }
 
-function closeAdminModal() {
-    var modal = document.getElementById('adminLoginModal');
+function openAdminModal() {
+    if (isAdminState) {
+        window.location.href = '/admin/';
+        return;
+    }
+    openAuthModal('admin');
+}
+
+function openAuthModal(defaultTab) {
+    var modal = document.getElementById('authModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    switchAuthTab(defaultTab || 'login');
+}
+
+function closeAuthModal() {
+    var modal = document.getElementById('authModal');
     if (modal) modal.style.display = 'none';
 }
 
-function handleAdminModalBackdrop(e) {
-    if (e.target.id === 'adminLoginModal') {
-        closeAdminModal();
+function handleAuthModalBackdrop(e) {
+    if (e.target.id === 'authModal') {
+        closeAuthModal();
+    }
+}
+
+function openFavoritesModal() {
+    var modal = document.getElementById('favoritesModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    loadUserFavorites();
+}
+
+function closeFavoritesModal() {
+    var modal = document.getElementById('favoritesModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function handleFavModalBackdrop(e) {
+    if (e.target.id === 'favoritesModal') {
+        closeFavoritesModal();
+    }
+}
+
+function switchAuthTab(tab) {
+    var btnLogin = document.getElementById('tabBtnUserLogin');
+    var btnReg = document.getElementById('tabBtnUserRegister');
+    var btnAdmin = document.getElementById('tabBtnAdminPortal');
+    var formLogin = document.getElementById('formUserLogin');
+    var formReg = document.getElementById('formUserRegister');
+    var formAdmin = document.getElementById('formAdminPortal');
+    var title = document.getElementById('authModalTitle');
+    var subtitle = document.getElementById('authModalSubtitle');
+
+    [btnLogin, btnReg, btnAdmin].forEach(function(b) { if (b) b.classList.remove('active'); });
+    [formLogin, formReg, formAdmin].forEach(function(f) { if (f) f.style.display = 'none'; });
+
+    if (tab === 'register') {
+        if (btnReg) btnReg.classList.add('active');
+        if (formReg) formReg.style.display = 'block';
+        if (title) title.innerText = '免费注册专属账户';
+        if (subtitle) subtitle.innerText = '开设独立重点项目与重点业主关注跟踪库';
+        var rInput = document.getElementById('userRegUsername');
+        if (rInput) setTimeout(function() { rInput.focus(); }, 100);
+    } else if (tab === 'admin') {
+        if (btnAdmin) btnAdmin.classList.add('active');
+        if (formAdmin) formAdmin.style.display = 'block';
+        if (title) title.innerText = '管理员安全登录';
+        if (subtitle) subtitle.innerText = '直达系统运维调度与用户审计控制后台';
+        var aInput = document.getElementById('adminPasswordInput');
+        if (aInput) setTimeout(function() { aInput.focus(); }, 100);
+    } else {
+        if (btnLogin) btnLogin.classList.add('active');
+        if (formLogin) formLogin.style.display = 'block';
+        if (title) title.innerText = '用户登录';
+        if (subtitle) subtitle.innerText = '登录后可查看和管理您关注的重点标段和业主';
+        var lInput = document.getElementById('userLoginUsername');
+        if (lInput) setTimeout(function() { lInput.focus(); }, 100);
     }
 }
 
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeAdminModal();
+    if (e.key === 'Escape') {
+        closeAuthModal();
+        closeFavoritesModal();
+    }
 });
 
 function togglePasswordVisibility() {
     var input = document.getElementById('adminPasswordInput');
     if (!input) return;
     input.type = (input.type === 'password') ? 'text' : 'password';
+}
+
+async function handleUserLogin(e) {
+    e.preventDefault();
+    var uInput = document.getElementById('userLoginUsername');
+    var pInput = document.getElementById('userLoginPassword');
+    var tip = document.getElementById('userLoginTip');
+    var btn = document.getElementById('btnUserLoginSubmit');
+    if (!uInput || !pInput) return;
+
+    btn.disabled = true;
+    if (tip) tip.style.display = 'none';
+
+    try {
+        var res = await fetch('/api/user/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: uInput.value.trim(), password: pInput.value.trim() })
+        });
+        var data = await res.json();
+        if (data.ok) {
+            currentUserState = data.user;
+            updateUserPortalUI(data.user);
+            closeAuthModal();
+            openFavoritesModal();
+        } else {
+            if (tip) {
+                tip.className = 'admin-login-tip tip-error';
+                tip.innerText = data.msg || '登录失败，请检查账号密码';
+                tip.style.display = 'block';
+            }
+        }
+    } catch (err) {
+        if (tip) {
+            tip.className = 'admin-login-tip tip-error';
+            tip.innerText = '连接服务器失败: ' + err.message;
+            tip.style.display = 'block';
+        }
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function handleUserRegister(e) {
+    e.preventDefault();
+    var uInput = document.getElementById('userRegUsername');
+    var dInput = document.getElementById('userRegDisplayName');
+    var pInput = document.getElementById('userRegPassword');
+    var tip = document.getElementById('userRegTip');
+    var btn = document.getElementById('btnUserRegSubmit');
+    if (!uInput || !pInput) return;
+
+    btn.disabled = true;
+    if (tip) tip.style.display = 'none';
+
+    try {
+        var res = await fetch('/api/user/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: uInput.value.trim(),
+                display_name: dInput ? dInput.value.trim() : '',
+                password: pInput.value.trim()
+            })
+        });
+        var data = await res.json();
+        if (data.ok) {
+            currentUserState = data.user;
+            updateUserPortalUI(data.user);
+            closeAuthModal();
+            openFavoritesModal();
+        } else {
+            if (tip) {
+                tip.className = 'admin-login-tip tip-error';
+                tip.innerText = data.msg || '注册失败';
+                tip.style.display = 'block';
+            }
+        }
+    } catch (err) {
+        if (tip) {
+            tip.className = 'admin-login-tip tip-error';
+            tip.innerText = '请求服务失败: ' + err.message;
+            tip.style.display = 'block';
+        }
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function handleUserLogout() {
+    try {
+        await fetch('/api/user/logout', { method: 'POST' });
+    } catch (e) {}
+    currentUserState = null;
+    updateUserPortalUI(null);
+    closeFavoritesModal();
+}
+
+function updateUserPortalUI(user) {
+    var btn = document.getElementById('btnUserPortal');
+    var txt = document.getElementById('userBtnText');
+    var mob = document.getElementById('userBtnTextMobile');
+    var greeting = document.getElementById('favModalUserGreeting');
+
+    if (user && user.username) {
+        var name = user.display_name || user.username;
+        if (txt) txt.innerText = '⭐ ' + name;
+        if (mob) mob.innerText = '关注';
+        if (btn) {
+            btn.style.background = '#f0f9ff';
+            btn.style.borderColor = '#0284c7';
+            btn.style.color = '#0284c7';
+        }
+        if (greeting) greeting.innerText = '你好，' + name + ' (@' + user.username + ')！以下为您专属关注清单：';
+    } else {
+        if (txt) txt.innerText = '登录 / 重点关注';
+        if (mob) mob.innerText = '关注';
+        if (btn) {
+            btn.style.background = '#ffffff';
+            btn.style.borderColor = '#bae6fd';
+            btn.style.color = '#0284c7';
+        }
+    }
+}
+
+async function loadUserFavorites() {
+    var prjList = document.getElementById('favProjectsList');
+    var ownerList = document.getElementById('favOwnersList');
+    var prjCount = document.getElementById('favProjectsCount');
+    var ownerCount = document.getElementById('favOwnersCount');
+
+    if (prjList) prjList.innerHTML = '<div class="fav-empty-hint">正在加载关注数据...</div>';
+    if (ownerList) ownerList.innerHTML = '<div class="fav-empty-hint">正在加载关注数据...</div>';
+
+    try {
+        var res = await fetch('/api/user/favorites');
+        if (res.status === 401) {
+            closeFavoritesModal();
+            openAuthModal('login');
+            return;
+        }
+        var data = await res.json();
+        var favs = data.favorites || { projects: [], owners: [] };
+
+        if (prjCount) prjCount.innerText = favs.projects.length;
+        if (ownerCount) ownerCount.innerText = favs.owners.length;
+
+        if (prjList) {
+            if (favs.projects.length === 0) {
+                prjList.innerHTML = '<div class="fav-empty-hint">暂无关注的项目。可使用下方表单添加。</div>';
+            } else {
+                prjList.innerHTML = favs.projects.map(function(p) {
+                    return '<span class="fav-chip fav-chip-project">' +
+                        escapeHtmlStr(p.name) +
+                        (p.tags ? ' <span style="opacity:0.8;">(' + escapeHtmlStr(p.tags) + ')</span>' : '') +
+                        '<span class="fav-chip-del" onclick="handleDeleteFavorite(' + p.id + ', \\'project\\')" title="取消关注">&times;</span>' +
+                        '</span>';
+                }).join('');
+            }
+        }
+
+        if (ownerList) {
+            if (favs.owners.length === 0) {
+                ownerList.innerHTML = '<div class="fav-empty-hint">暂无关注的业主。可使用下方表单添加。</div>';
+            } else {
+                ownerList.innerHTML = favs.owners.map(function(o) {
+                    return '<span class="fav-chip fav-chip-owner">' +
+                        escapeHtmlStr(o.name) +
+                        (o.tags ? ' <span style="opacity:0.8;">(' + escapeHtmlStr(o.tags) + ')</span>' : '') +
+                        '<span class="fav-chip-del" onclick="handleDeleteFavorite(' + o.id + ', \\'owner\\')" title="取消关注">&times;</span>' +
+                        '</span>';
+                }).join('');
+            }
+        }
+    } catch (err) {
+        if (prjList) prjList.innerHTML = '<div class="fav-empty-hint" style="color:#ef4444;">加载失败: ' + err.message + '</div>';
+    }
+}
+
+async function handleAddFavoriteSubmit(e) {
+    e.preventDefault();
+    var typeSel = document.getElementById('favAddType');
+    var nameInput = document.getElementById('favAddName');
+    var tagInput = document.getElementById('favAddTag');
+    var tip = document.getElementById('favAddTip');
+    var btn = document.getElementById('btnFavAddSubmit');
+    if (!typeSel || !nameInput || !nameInput.value.trim()) return;
+
+    btn.disabled = true;
+    if (tip) tip.style.display = 'none';
+
+    try {
+        var res = await fetch('/api/user/favorites/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                target_type: typeSel.value,
+                target_name: nameInput.value.trim(),
+                tags: tagInput ? tagInput.value.trim() : ''
+            })
+        });
+        var data = await res.json();
+        if (data.ok) {
+            nameInput.value = '';
+            if (tagInput) tagInput.value = '';
+            loadUserFavorites();
+        } else {
+            if (tip) {
+                tip.className = 'admin-login-tip tip-error';
+                tip.innerText = data.msg || '添加关注失败';
+                tip.style.display = 'block';
+            }
+        }
+    } catch (err) {
+        if (tip) {
+            tip.className = 'admin-login-tip tip-error';
+            tip.innerText = '网络请求异常: ' + err.message;
+            tip.style.display = 'block';
+        }
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function handleDeleteFavorite(favId, targetType) {
+    if (!confirm('确定要取消此项关注吗？')) return;
+    try {
+        await fetch('/api/user/favorites/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: favId, target_type: targetType })
+        });
+        loadUserFavorites();
+    } catch (err) {
+        alert('取消关注失败: ' + err.message);
+    }
 }
 
 async function handleAdminLogin(e) {
@@ -1087,12 +2180,12 @@ async function handleAdminLogin(e) {
             }
             if (tip) {
                 tip.className = 'admin-login-tip tip-success';
-                tip.innerText = '验证成功，正在进入管理后台...';
+                tip.innerText = '验证成功，正在直达管理后台...';
                 tip.style.display = 'block';
             }
             setTimeout(function() {
                 window.location.href = '/admin/';
-            }, 350);
+            }, 300);
         } else {
             if (tip) {
                 tip.className = 'admin-login-tip tip-error';
@@ -1115,12 +2208,30 @@ async function handleAdminLogin(e) {
     }
 }
 
-// 自动检测管理员鉴权状态
-(function checkAdminAuth() {
+function escapeHtmlStr(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// 自动检测用户登录态与管理员鉴权状态
+(function checkAuthStates() {
+    // 1. 普通用户检测
+    fetch('/api/user/me')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data && data.authenticated && data.user) {
+                currentUserState = data.user;
+                updateUserPortalUI(data.user);
+            }
+        })
+        .catch(function() {});
+
+    // 2. 管理员状态检测
     fetch('/api/check_auth')
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data && data.authenticated) {
+                isAdminState = true;
                 var btn = document.getElementById('btnAdminLogin');
                 var txt = document.getElementById('adminBtnText');
                 if (txt) txt.innerText = '管理后台';
@@ -1181,3 +2292,11 @@ print("月历卡片:", page.count('class="month-calendar-card"'), "| 可点日�
 print("清单行:", page.count("history-row-item"), "| 类别标签:", page.count('class="cat-tag"'))
 print("交叉链接: 指向单日页", len(re.findall(r'href="\./\d{4}-\d{2}-\d{2}\.html"', page)))
 print("div balance:", page.count("<div"), page.count("</div>"))
+
+# ---------- 自动同步全盘检索索引与页面 ----------
+try:
+    from scripts.build_search_page import build_search_page
+    build_search_page()
+    print("全盘检索门户及索引同步生成成功: dist/search.html, dist/search_index.json, dist/search_index.js")
+except Exception as _e:
+    print(f"全盘检索门户生成跳过或异常: {_e}")

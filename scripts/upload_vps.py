@@ -117,7 +117,7 @@ def main():
         print(f"[VPS] rsync 执行未成功，降级使用 scp 上传...")
 
     items = []
-    for name in ["index.html", "archive.html", "search.html", "search_index.json"]:
+    for name in ["index.html", "archive.html", "search.html", "search_index.json", "search_index.js"]:
         p = dist / name
         if p.exists():
             items.append(str(p))

@@ -283,6 +283,38 @@ def ensure_tunnel_health(auto_fix=True):
     3. 如果进程数 == 0，立即启动隧道
     4. 执行自动修复和状态留存
     """
+    is_on_vps = False
+    try:
+        import config
+        is_on_vps = getattr(config, "IS_ON_VPS", False)
+    except Exception:
+        pass
+
+    if is_on_vps:
+        # VPS 属于服务端角色，无需发起对自身的 SSH 隧道
+        # 检测 18080 (反向代理) 或 22022 (反向 SSH) 是否有采集端连入
+        target_alive = False
+        ssh_alive = False
+        for port in (18080, 22022):
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.settimeout(1.0)
+                    if s.connect_ex(("127.0.0.1", port)) == 0:
+                        if port == 18080:
+                            target_alive = True
+                        if port == 22022:
+                            ssh_alive = True
+            except Exception:
+                pass
+        tunnel_alive = target_alive or ssh_alive
+        if tunnel_alive:
+            print("[Guardian] 运行于 VPS 服务端模式，已检测到采集端反向隧道活跃")
+        else:
+            print("[Guardian] 运行于 VPS 服务端模式，采集端反向隧道当前未接入（不影响本地任务运行）")
+        net_info = get_network_info()
+        status = save_device_status(net_info, tunnel_alive, 1 if tunnel_alive else 0)
+        return status
+
     procs = find_tunnel_processes()
     count = len(procs)
     tunnel_alive = False

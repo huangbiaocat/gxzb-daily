@@ -1,44 +1,44 @@
 {
   "version": "v0.1.0",
-  "commit": "3867c46",
-  "date": "2026-10-14",
-  "message": "fix(release): 全面统一系统内各模块版本号至 v0.1.0",
+  "commit": "1eaeea4",
+  "date": "2026-10-16",
+  "message": "fix(batch_scan): 手动采集日期扫描顺序改为由近到远 (ZTB-17)",
   "commits": [
     {
-      "commit": "3867c46",
+      "commit": "1eaeea4",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "fix(batch_scan): 手动采集日期扫描顺序改为由近到远 (ZTB-17)"
+    },
+    {
+      "commit": "aef8fa9",
       "author": "黄彪",
       "date": "2026-10-14",
-      "message": "fix(release): 全面统一系统内各模块版本号至 v0.1.0"
+      "message": "feat(auth&ui): 增加主页管理员登录入口及后台鉴权，精简优化控制台顶栏布局"
     },
     {
-      "commit": "1f66848",
+      "commit": "c67a21b",
       "author": "黄彪",
-      "date": "2026-10-12",
-      "message": "feat(release): 升级至 v0.1.0，全面整合阿里云 VPS 部署与自动化发布"
+      "date": "2026-10-14",
+      "message": "fix(archive): remove 3-month limit so all collected months render in calendar view"
     },
     {
-      "commit": "988e20b",
+      "commit": "337c7ca",
       "author": "黄彪",
-      "date": "2026-10-12",
-      "message": "feat(release): 升级版本至 v0.3.8 并同步检索增强与VPS配置"
+      "date": "2026-10-14",
+      "message": "fix(vps): adapt to pure VPS autonomous hosting and bypass redundant remote upload"
     },
     {
-      "commit": "114c859",
+      "commit": "19e463e",
       "author": "黄彪",
-      "date": "2026-10-08",
-      "message": "chore: 同步 version.json 最新 commit 哈希"
+      "date": "2026-10-14",
+      "message": "chore(release): 规范定义纯 VPS 自治系统初始里程碑版本为 v0.1.0"
     },
     {
-      "commit": "5fb4d06",
+      "commit": "8357367",
       "author": "黄彪",
-      "date": "2026-10-08",
-      "message": "chore: 同步 version.json 最新 commit 哈希"
-    },
-    {
-      "commit": "a77a08e",
-      "author": "黄彪",
-      "date": "2026-10-08",
-      "message": "feat(release): 升级至 v0.3.7，单日归档页重点与预警筛选调整为互斥模式"
+      "date": "2026-10-14",
+      "message": "chore: 同步最新打包构建元数据哈希"
     }
   ]
 }
