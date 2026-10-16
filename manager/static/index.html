@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>招投标数据中心控制台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -37,6 +37,45 @@
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.06);
             font-weight: 600;
         }
+        /* Mobile bottom navigation */
+        .mobile-bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 40;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+            padding: 4px 0 env(safe-area-inset-bottom, 4px);
+        }
+        @media (max-width: 767px) {
+            .mobile-bottom-nav { display: flex; }
+            body { padding-bottom: 68px; }
+            footer { padding-bottom: 72px; }
+        }
+        .mob-tab {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 2px 4px;
+            color: #94a3b8;
+            font-size: 10px;
+            font-weight: 500;
+            line-height: 1;
+            gap: 3px;
+            transition: color 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+        .mob-tab svg { width: 20px; height: 20px; }
+        .mob-tab.active { color: #2563eb; font-weight: 600; }
+        .mob-tab:active { color: #1d4ed8; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
@@ -52,12 +91,12 @@
                 </div>
                 <div class="shrink-0">
                     <div class="flex items-center space-x-1.5 sm:space-x-2">
-                        <h1 class="text-sm sm:text-base font-bold text-slate-900 leading-tight whitespace-nowrap">招投标数据中心控制台</h1>
-                        <span id="app-version-badge" class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap">v0.1.0</span>
+                        <h1 class="text-xs sm:text-base font-bold text-slate-900 leading-tight whitespace-nowrap"><span class="sm:hidden">招投标控制台</span><span class="hidden sm:inline">招投标数据中心控制台</span></h1>
+                        <span id="app-version-badge" class="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap">v0.1.0</span>
                         <!-- 实时全区雷达扫描状态指示器（静默常驻，带动态扫描动效，点击直达监控调度） -->
                         <div id="top-radar-indicator" onclick="switchTab('dashboard')" class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-all bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100 whitespace-nowrap" title="点击前往监控调度：全区雷达扫描中">
                             <span id="radar-char-top" class="font-mono text-xs font-bold text-emerald-600 select-none">◜</span>
-                            <span id="top-radar-text" class="text-[10px] sm:text-[11px] font-medium">雷达监控中</span>
+                            <span id="top-radar-text" class="text-[10px] sm:text-[11px] font-medium"><span class="hidden sm:inline">雷达</span>监控中</span>
                         </div>
                     </div>
                     <p class="hidden xl:block text-[11px] text-slate-400 mt-0.5 leading-none whitespace-nowrap">Tender Data Control & Settings Center</p>
@@ -115,7 +154,7 @@
            <!-- 右侧操作栏：整齐优雅，杜绝折行与挤压 -->
            <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
                 <!-- 清理指定日期内容（图标按钮，带明确提示） -->
-                <button onclick="openDeleteDateModal()" class="p-1.5 sm:px-2.5 sm:py-1.5 bg-white text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-slate-200 transition flex items-center space-x-1 shadow-2xs whitespace-nowrap" title="彻底删除指定日期的全部采集数据与日报">
+                <button onclick="openDeleteDateModal()" class="hidden md:flex p-1.5 sm:px-2.5 sm:py-1.5 bg-white text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-slate-200 transition items-center space-x-1 shadow-2xs whitespace-nowrap" title="彻底删除指定日期的全部采集数据与日报">
                     <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>
@@ -123,7 +162,7 @@
                 </button>
 
                 <!-- 同步升级 -->
-                <button onclick="openUpgradeModal()" id="btn-top-upgrade" class="text-xs font-medium px-2 sm:px-2.5 py-1.5 bg-white text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg border border-slate-200 transition flex items-center space-x-1 shadow-2xs whitespace-nowrap" title="检查并从 GitHub 同步升级新版本">
+                <button onclick="openUpgradeModal()" id="btn-top-upgrade" class="hidden md:flex text-xs font-medium px-2 sm:px-2.5 py-1.5 bg-white text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg border border-slate-200 transition items-center space-x-1 shadow-2xs whitespace-nowrap" title="检查并从 GitHub 同步升级新版本">
                     <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                     </svg>
@@ -138,10 +177,10 @@
                 </button>
 
                 <!-- 分割线 -->
-                <div class="h-4 w-px bg-slate-200 mx-0.5"></div>
+                <div class="hidden md:block h-4 w-px bg-slate-200 mx-0.5"></div>
 
                 <!-- 打开看板（主行动按钮） -->
-                <a href="/" target="_blank" class="text-xs font-medium px-2.5 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center space-x-1 shadow-xs whitespace-nowrap" title="在浏览器新标签页打开数据看板">
+                <a href="/" target="_blank" class="hidden sm:flex text-xs font-medium px-2.5 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition items-center space-x-1 shadow-xs whitespace-nowrap" title="在浏览器新标签页打开数据看板">
                     <svg class="w-3.5 h-3.5 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                     </svg>
@@ -149,7 +188,7 @@
                 </a>
 
                 <!-- 公开首页 -->
-                <a href="/" class="text-xs font-medium px-2.5 sm:px-3 py-1.5 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition flex items-center space-x-1 shadow-2xs whitespace-nowrap" title="返回招标简报公开首页">
+                <a href="/" class="hidden lg:flex text-xs font-medium px-2.5 sm:px-3 py-1.5 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition items-center space-x-1 shadow-2xs whitespace-nowrap" title="返回招标简报公开首页">
                     <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                     </svg>
@@ -157,7 +196,7 @@
                 </a>
 
                 <!-- 退出登录 -->
-                <button id="btn-top-logout" onclick="handleLogout()" class="text-xs font-medium px-2.5 py-1.5 text-red-600 hover:text-red-700 bg-white hover:bg-red-50 border border-red-200 rounded-lg transition flex items-center space-x-1 shadow-2xs whitespace-nowrap" title="退出管理员登录状态">
+                <button id="btn-top-logout" onclick="handleLogout()" class="hidden md:flex text-xs font-medium px-2.5 py-1.5 text-red-600 hover:text-red-700 bg-white hover:bg-red-50 border border-red-200 rounded-lg transition items-center space-x-1 shadow-2xs whitespace-nowrap" title="退出管理员登录状态">
                     <svg class="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                     </svg>
@@ -168,13 +207,13 @@
     </header>
 
     <!-- 主体区域 -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         <!-- ============================================== -->
         <!-- TAB 1: 重点跟踪信息管理 (独立单页，重点项目/业主/预警词与金额门槛 + 触发推送多规则) -->
         <!-- ============================================== -->
         <div id="tab-content-business" class="space-y-6">
-            <div class="bg-white p-6 sm:p-8 rounded-xl border border-slate-200/80 shadow-sm space-y-6">
+            <div class="bg-white p-4 sm:p-8 rounded-xl border border-slate-200/80 shadow-sm space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
                     <div>
                         <h2 class="text-lg font-bold text-slate-900">重点跟踪信息与触发推送管理</h2>
@@ -189,7 +228,7 @@
                 <form id="business-form" onsubmit="saveConfig(event)" class="space-y-8">
                     <!-- 重点跟踪核心规则 -->
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div class="flex items-center space-x-2">
                                 <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span>
                                 <h3 class="text-sm font-bold text-slate-800">重点跟踪核心规则</h3>
@@ -1418,6 +1457,59 @@
         · <span class="text-slate-400">已接入: 广西公共资源交易平台 · 崇左阳光采购服务平台</span>
     </footer>
 
+    <!-- Mobile bottom tab navigation -->
+    <nav id="mobile-bottom-nav" class="mobile-bottom-nav">
+        <button id="mob-btn-business" onclick="switchTab('business')" class="mob-tab active">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+            <span>跟踪</span>
+        </button>
+        <button id="mob-btn-search" onclick="switchTab('search')" class="mob-tab">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke-width="2"></circle><line x1="21" y1="21" x2="16.65" y2="16.65" stroke-width="2"></line></svg>
+            <span>检索</span>
+        </button>
+        <button id="mob-btn-dashboard" onclick="switchTab('dashboard')" class="mob-tab">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            <span>监控</span>
+        </button>
+        <button id="mob-btn-env" onclick="switchTab('env')" class="mob-tab">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            <span>配置</span>
+        </button>
+        <button id="mob-btn-more" onclick="toggleMobileMoreMenu()" class="mob-tab">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            <span>更多</span>
+        </button>
+    </nav>
+
+    <!-- Mobile "more" overlay menu -->
+    <div id="mobile-more-overlay" class="fixed inset-0 z-[39] bg-slate-900/50 backdrop-blur-sm hidden" onclick="closeMobileMoreMenu()"></div>
+    <div id="mobile-more-menu" class="fixed bottom-[68px] left-0 right-0 z-[41] bg-white rounded-t-2xl border-t border-slate-200 shadow-2xl transform translate-y-full transition-transform duration-200 ease-out" style="padding-bottom:env(safe-area-inset-bottom, 0px)">
+        <div class="p-4 space-y-1">
+            <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-3"></div>
+            <button onclick="switchTab('history');closeMobileMoreMenu()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>运行日志</span>
+            </button>
+            <button onclick="switchTab('users');closeMobileMoreMenu()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <span>用户与关注监控</span>
+            </button>
+            <div class="border-t border-slate-100 my-2"></div>
+            <button onclick="openDeleteDateModal();closeMobileMoreMenu()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition">
+                <svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                <span>清理指定日期</span>
+            </button>
+            <button onclick="openUpgradeModal();closeMobileMoreMenu()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition">
+                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                <span>同步升级</span>
+            </button>
+            <button onclick="handleLogout();closeMobileMoreMenu()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50 active:bg-red-100 transition">
+                <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                <span>退出登录</span>
+            </button>
+        </div>
+    </div>
+
     <script>
         let pollTimer = null;
         let currentMonitorEnabled = true;
@@ -1608,6 +1700,20 @@
                     }
                 }
             });
+
+            // Sync mobile bottom nav active state
+            const mobTabs = ["business", "search", "dashboard", "env", "more"];
+            mobTabs.forEach(mt => {
+                const mb = document.getElementById(`mob-btn-${mt}`);
+                if (mb) mb.classList.remove("active");
+            });
+            const activeMob = document.getElementById(`mob-btn-${tabId}`);
+            if (activeMob) {
+                activeMob.classList.add("active");
+            } else if (tabId === "history" || tabId === "users") {
+                const moreBtn = document.getElementById("mob-btn-more");
+                if (moreBtn) moreBtn.classList.add("active");
+            }
 
             if (tabId === "history") {
                 if (currentHistorySubtab === "runs") {
@@ -3403,14 +3509,6 @@
         function exportSecurityLogs(type) {
             window.open(`/api/security_logs/export?type=${encodeURIComponent(type)}`, '_blank');
         }
-            } else {
-                btnRuns.className = "px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-blue-600 shadow-xs transition flex items-center space-x-1.5";
-                btnEvents.className = "px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5";
-                viewRuns.classList.remove("hidden");
-                viewEvents.classList.add("hidden");
-                fetchRunsHistory(0);
-            }
-        }
 
         async function fetchTaskEvents() {
             const container = document.getElementById("events-list-container");
@@ -4249,7 +4347,7 @@
     <!-- 滞后公开公告管理与纠错弹窗 (Delayed Review Modal) -->
     <!-- ============================================== -->
     <div id="delayed-review-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full p-6 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
             <!-- 头部 -->
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
                 <div class="flex items-center space-x-2.5">
@@ -4287,8 +4385,8 @@
             </div>
 
             <!-- 数据统计与操作栏 -->
-            <div class="mt-3 flex items-center justify-between bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-2.5 text-xs shrink-0">
-                <div class="flex items-center gap-4">
+            <div class="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-50 border border-slate-200/80 rounded-xl px-3.5 sm:px-4 py-2.5 text-xs shrink-0">
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
                     <div>当前确证滞后: <span id="modal-delayed-count" class="font-bold text-rose-600 text-sm">--</span> 条</div>
                     <div class="text-slate-400">|</div>
                     <div>底边存证: <span id="modal-baseline-count" class="font-bold text-slate-700">--</span> 条</div>
@@ -4315,7 +4413,7 @@
     </div>
 
    <div id="batch-scan-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-150">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center space-x-2">
                     <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
@@ -4389,7 +4487,7 @@
     <!-- 历史回扫排查弹窗 (Backscan Modal)              -->
     <!-- ============================================== -->
     <div id="backscan-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl border border-purple-200 max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
+        <div class="bg-white rounded-2xl shadow-2xl border border-purple-200 max-w-md w-full p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-150">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center space-x-2">
                     <div class="p-2 bg-purple-50 text-purple-600 rounded-lg">
@@ -4450,7 +4548,7 @@
 
     <!-- 运行详情弹窗 -->
     <div id="run-detail-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center space-x-2">
                     <div class="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
@@ -4481,7 +4579,7 @@
 
     <!-- 系统版本对比与在线升级弹窗 (Upgrade Modal) -->
     <div id="upgrade-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xl w-full p-6 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[92vh] overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xl w-full p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[92vh] overflow-hidden">
             <!-- 头部 -->
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 flex-shrink-0">
                 <div class="flex items-center space-x-3">
@@ -4645,7 +4743,7 @@
     <!-- 删除日期内容弹窗 (Delete Date Modal)            -->
     <!-- ============================================== -->
     <div id="delete-date-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 animate-in fade-in zoom-in-95 duration-150">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-150">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center space-x-2">
                     <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
@@ -4729,7 +4827,7 @@
     <!-- ============================================== -->
     <div id="modal-config-snapshots" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-200">
-            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                 <div class="flex items-center space-x-2">
                     <div class="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -4759,7 +4857,7 @@
     <!-- 管理员身份安全拦截弹窗 (Admin Auth Overlay)     -->
     <!-- ============================================== -->
     <div id="admin-auth-overlay" class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm p-6 space-y-4 text-center animate-in fade-in zoom-in-95 duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm p-4 sm:p-6 space-y-4 text-center animate-in fade-in zoom-in-95 duration-200">
             <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl mx-auto flex items-center justify-center">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
@@ -4788,3 +4886,25 @@
 
 </body>
 </html>
+        // Mobile "more" bottom-sheet controls
+        function toggleMobileMoreMenu() {
+            const menu = document.getElementById("mobile-more-menu");
+            const overlay = document.getElementById("mobile-more-overlay");
+            if (!menu || !overlay) return;
+            const isOpen = !menu.classList.contains("translate-y-full");
+            if (isOpen) {
+                closeMobileMoreMenu();
+            } else {
+                menu.classList.remove("translate-y-full");
+                menu.style.transform = "translateY(0)";
+                overlay.classList.remove("hidden");
+            }
+        }
+        function closeMobileMoreMenu() {
+            const menu = document.getElementById("mobile-more-menu");
+            const overlay = document.getElementById("mobile-more-overlay");
+            if (menu) { menu.classList.add("translate-y-full"); menu.style.transform = ""; }
+            if (overlay) overlay.classList.add("hidden");
+        }
+
+        function switchTab(tabId) {

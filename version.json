@@ -1,9 +1,21 @@
 {
-  "version": "v0.1.2",
-  "commit": "7cddeb7",
+  "version": "v0.1.3",
+  "commit": "8d8ebbe",
   "date": "2026-10-16",
-  "message": "chore(release): bump version v0.1.2",
+  "message": "chore(release): bump version v0.1.3",
   "commits": [
+    {
+      "commit": "8d8ebbe",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.3"
+    },
+    {
+      "commit": "3d48b34",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "fix(auth): 补全新用户注册登录审计流水与 Single Domain 门户鉴权分流验证 (ZTB-15)"
+    },
     {
       "commit": "7cddeb7",
       "author": "黄彪",
@@ -27,18 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-16",
       "message": "feat(release): 自动版本递增 - bump_version.py + pack_and_upload 集成 (ZTB-18)"
-    },
-    {
-      "commit": "1eaeea4",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "fix(batch_scan): 手动采集日期扫描顺序改为由近到远 (ZTB-17)"
-    },
-    {
-      "commit": "aef8fa9",
-      "author": "黄彪",
-      "date": "2026-10-14",
-      "message": "feat(auth&ui): 增加主页管理员登录入口及后台鉴权，精简优化控制台顶栏布局"
     }
   ]
 }
