@@ -61,11 +61,33 @@ FILES_TO_PACK = [
     "scripts/reapply_rules.py",
     "scripts/batch_scan.py",
     "scripts/upgrade_app.py",
+    "scripts/bump_version.py",
     "config/focus_rules_master.json",
 ]
 
 def main():
-    # 自动生成版本与提交元数据 version.json
+    # ---- 第 0 步: 自动递增版本号、commit、push ----
+    skip_bump = os.environ.get("SKIP_BUMP") == "1"
+    if not skip_bump:
+        print("[Release] 自动递增版本号 ...")
+        bump_rc = subprocess.run(
+            [sys.executable, str(REPO / "scripts" / "bump_version.py")],
+            cwd=str(REPO),
+        ).returncode
+        if bump_rc != 0:
+            print("[Release] 版本递增失败，中止发布")
+            return bump_rc
+        # 重新加载 config 以获取新版本号
+        import importlib
+        importlib.reload(config)
+
+    print("[Release] 推送到 GitHub ...")
+    push_rc = subprocess.run(["git", "push", "origin", "main"], cwd=str(REPO)).returncode
+    if push_rc != 0:
+        print("[Release] git push 失败，中止发布")
+        return push_rc
+
+    # ---- 第 1 步: 自动生成版本与提交元数据 version.json ----
     import json
     commit = ""
     date = ""
