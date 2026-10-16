@@ -1,9 +1,21 @@
 {
-  "version": "v0.1.16",
-  "commit": "cb0f222",
+  "version": "v0.1.17",
+  "commit": "4ab46e6",
   "date": "2026-10-16",
-  "message": "chore(release): bump version v0.1.16",
+  "message": "chore(release): bump version v0.1.17",
   "commits": [
+    {
+      "commit": "4ab46e6",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.17"
+    },
+    {
+      "commit": "8f65bfd",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "test(batch_scan): 添加断点续跑CLI与全局标准库导入校验单测并更新构建元数据 (ZTB-24)"
+    },
     {
       "commit": "cb0f222",
       "author": "黄彪",
@@ -27,18 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-16",
       "message": "chore(release): bump version v0.1.15"
-    },
-    {
-      "commit": "a0e80ff",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "test(jjt): 完善交建通单测缓存清理逻辑 (ZTB-13)"
-    },
-    {
-      "commit": "b6931fc",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "test(notify): 添加交建通群通知与机器人接口单测并更新构建元数据 (ZTB-13)"
     }
   ]
 }
