@@ -48,7 +48,14 @@ def main():
 
     try:
         target_dates = []
-        if args.dates.strip():
+        if getattr(args, "resume", False) and args.event_id.strip():
+            try:
+                from scripts import task_event_db
+                target_dates = task_event_db.get_unfinished_dates(args.event_id.strip())
+                target_dates = list(reversed(target_dates))
+            except Exception as e_ev:
+                print(f"[警告] 从事件 ID 加载未完成日期失败: {e_ev}")
+        elif args.dates.strip():
             raw_dates = [d.strip() for d in args.dates.split(",") if d.strip()]
             for rd in raw_dates:
                 try:
@@ -133,12 +140,19 @@ def main():
             # 1. 执行单日采集 (含公共资源交易中心与崇左阳光采购)
             print(f"    [步骤 1/3] 抓取当日公告数据 (公共资源 + 崇左阳光采购)...", flush=True)
             cmd_collect = [py_exe, "-u", str(ROOT_DIR / "scripts" / "collect.py"), "--date", day_str, "--no-record-run"]
-            res1 = subprocess.run(cmd_collect, env=sub_env)
-            if res1.returncode != 0:
-                print(f"    [警告] {day_str} 采集脚本退出码异常: {res1.returncode}", flush=True)
+            try:
+                res1 = subprocess.run(cmd_collect, env=sub_env, timeout=180)
+                if res1.returncode != 0:
+                    print(f"    [警告] {day_str} 采集脚本退出码异常: {res1.returncode}", flush=True)
+            except subprocess.TimeoutExpired:
+                print(f"    [超时] {day_str} 公共资源采集超时 (180s)，强制中断进入下一步", flush=True)
+                res1 = None
 
             cmd_cz = [py_exe, "-u", str(ROOT_DIR / "scripts" / "collect_cz_ygcg.py"), "--date", day_str]
-            subprocess.run(cmd_cz, env=sub_env)
+            try:
+                subprocess.run(cmd_cz, env=sub_env, timeout=90)
+            except subprocess.TimeoutExpired:
+                print(f"    [超时] {day_str} 崇左阳光采购采集超时 (90s)，跳过", flush=True)
 
             # 2. 数据合并入库 (reconcile)
             print(f"    [步骤 2/3] 合并数据入库 (reconcile)...", flush=True)
@@ -151,7 +165,11 @@ def main():
             # 3. 构建每日 HTML 页面（单日补扫跳过逐日上传 VPS，全量结束后统一发布）
             print(f"    [步骤 3/3] 构建每日日报 HTML 页面...", flush=True)
             cmd_build = [py_exe, "-u", str(ROOT_DIR / "scripts" / "build_daily_page.py"), "--date", day_str, "--no-vps"]
-            res2 = subprocess.run(cmd_build, env=sub_env)
+            try:
+                res2 = subprocess.run(cmd_build, env=sub_env, timeout=60)
+            except subprocess.TimeoutExpired:
+                print(f"    [超时] {day_str} 静态页生成超时 (60s)，跳过", flush=True)
+                res2 = None
             elapsed = time.time() - t_start
 
             # 查询当日抓取公告总数与重点公告数

@@ -1,9 +1,27 @@
 {
-  "version": "v0.1.10",
-  "commit": "408cc53",
+  "version": "v0.1.11",
+  "commit": "7f15590",
   "date": "2026-10-16",
-  "message": "chore(release): bump version v0.1.10",
+  "message": "chore(release): bump version v0.1.11",
   "commits": [
+    {
+      "commit": "7f15590",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.11"
+    },
+    {
+      "commit": "e4853d1",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "feat(manager): add create and delete functionality for config snapshots"
+    },
+    {
+      "commit": "c89a537",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): update version.json build metadata for v0.1.10"
+    },
     {
       "commit": "408cc53",
       "author": "黄彪",
@@ -21,24 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-16",
       "message": "feat(history): 严格区分自动执行流水与事件任务台账并剔除历史派生记录 (ZTB-21)"
-    },
-    {
-      "commit": "e8d355c",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): bump version v0.1.8"
-    },
-    {
-      "commit": "64c4595",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): update version.json build metadata for v0.1.7"
-    },
-    {
-      "commit": "3cc8b4c",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): bump version v0.1.7"
     }
   ]
 }
