@@ -16,12 +16,22 @@ class TestJjtNotify(unittest.TestCase):
         self.old_env = os.environ.copy()
         if hasattr(jjt_notify, "_token_cache"):
             jjt_notify._token_cache.clear()
+        if jjt_notify.TOKEN_CACHE_PATH.exists():
+            try:
+                jjt_notify.TOKEN_CACHE_PATH.unlink()
+            except Exception:
+                pass
 
     def tearDown(self):
         os.environ.clear()
         os.environ.update(self.old_env)
         if hasattr(jjt_notify, "_token_cache"):
             jjt_notify._token_cache.clear()
+        if jjt_notify.TOKEN_CACHE_PATH.exists():
+            try:
+                jjt_notify.TOKEN_CACHE_PATH.unlink()
+            except Exception:
+                pass
 
     def test_load_config_fallback(self):
         """测试从环境变量加载交建通配置的回退机制"""
