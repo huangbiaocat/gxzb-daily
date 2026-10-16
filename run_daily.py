@@ -326,6 +326,18 @@ def main(argv=None):
         print("    （如需手动强制执行，可加 --force 参数）")
         return 0
 
+    # 声明高优先级锁：告知手动长周期任务（批量补扫/规则重算）在此期间挂起避让
+    priority_lock = None
+    try:
+        from scripts.priority_lock import PriorityLock
+        priority_lock = PriorityLock(
+            task_name="定时终版封存" if is_final else f"定时日更监控 ({day})",
+            details={"day": day, "is_final": is_final}
+        )
+        priority_lock.acquire()
+    except Exception as exc_lock:
+        print("[*] 优先级锁声明跳过/异常:", exc_lock)
+
     # 日间正常监控时段（如早晨 08:00 开机）：若昨日终版尚未封存（夜间电脑关机），自动先补跑昨日终版封存
     if not args.date and not is_final and getattr(config, "ENABLE_YESTERDAY_FINAL", True) and not final_marker.exists():
         print(f"[*] 检测到昨日 ({yesterday_str}) 终版尚未封存（夜间可能休眠/关机），先补跑昨日最终版归档...")
@@ -607,6 +619,11 @@ def finish(day, failed_steps, args, res=None, is_final=False):
 
     print("\n" + "=" * 68)
     print("任务结束 | 失败步骤：%s" % ("、".join(failed_steps) if failed_steps else "无"))
+    if priority_lock:
+        try:
+            priority_lock.release()
+        except Exception:
+            pass
     if failed_steps:
         print("退出码 1（需人工排查）")
         return 1

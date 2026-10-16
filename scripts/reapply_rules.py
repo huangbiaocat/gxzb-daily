@@ -188,6 +188,13 @@ def main():
     print(f"开始根据最新业务配置重标历史数据，共 {len(dates_to_process)} 个日期...")
     results = []
     for day in dates_to_process:
+        # 检查是否有高优先级定时日更任务正在运行，若有则挂起让道
+        try:
+            from scripts.priority_lock import wait_for_priority_task
+            wait_for_priority_task()
+        except Exception:
+            pass
+
         print(f"-> 正在处理 {day} ...")
         res = reapply_for_date(day)
         results.append(res)

@@ -122,6 +122,13 @@ def main():
     failed_days = []
 
     for idx, day_str in enumerate(target_dates, 1):
+        # 检查是否有高优先级定时日更任务正在运行，若有则挂起让道
+        try:
+            from scripts.priority_lock import wait_for_priority_task
+            wait_for_priority_task()
+        except Exception:
+            pass
+
         t_start = time.time()
         pct = int(idx / len(target_dates) * 100)
         print(f"\n" + "-" * 50, flush=True)
@@ -220,6 +227,13 @@ def main():
                     )
                 except Exception:
                     pass
+
+        # 单日处理完毕，进入下一日前再次检查让道锁
+        try:
+            from scripts.priority_lock import wait_for_priority_task
+            wait_for_priority_task()
+        except Exception:
+            pass
 
     # 4. 全部补扫完成后，全量重构归档总表（index.html）
     print("\n" + "=" * 68, flush=True)
