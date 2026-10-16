@@ -1,44 +1,44 @@
 {
-  "version": "v0.1.7",
-  "commit": "3cc8b4c",
+  "version": "v0.1.10",
+  "commit": "408cc53",
   "date": "2026-10-16",
-  "message": "chore(release): bump version v0.1.7",
+  "message": "chore(release): bump version v0.1.10",
   "commits": [
+    {
+      "commit": "408cc53",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.10"
+    },
+    {
+      "commit": "a4dbed8",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.9"
+    },
+    {
+      "commit": "2d516cf",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "feat(history): 严格区分自动执行流水与事件任务台账并剔除历史派生记录 (ZTB-21)"
+    },
+    {
+      "commit": "e8d355c",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): bump version v0.1.8"
+    },
+    {
+      "commit": "64c4595",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "chore(release): update version.json build metadata for v0.1.7"
+    },
     {
       "commit": "3cc8b4c",
       "author": "黄彪",
       "date": "2026-10-16",
       "message": "chore(release): bump version v0.1.7"
-    },
-    {
-      "commit": "c9223a2",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): update version.json build metadata for v0.1.6"
-    },
-    {
-      "commit": "2a2c093",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): bump version v0.1.6"
-    },
-    {
-      "commit": "5b16ff5",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "fix(portal): 修复首页登录与管理按钮被误写为今日简报链接及控制台根路由问题 (ZTB-20)"
-    },
-    {
-      "commit": "d9620b1",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): bump version v0.1.5"
-    },
-    {
-      "commit": "5d42e3e",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): update version.json build metadata for v0.1.4"
     }
   ]
 }
