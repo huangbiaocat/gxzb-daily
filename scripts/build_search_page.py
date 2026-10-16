@@ -670,6 +670,10 @@ def build_search_page() -> Path:
             </div>
         </a>
         <div class="nav-actions">
+            <a class="nav-btn" href="./index.html?open_user=1" id="searchUserBtn" title="专属重点跟踪配置" style="color: #2563eb; font-weight: 600;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span id="searchUserLabel">重点配置</span>
+            </a>
             <a class="nav-btn" href="./index.html">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
                 返回归档
@@ -1088,6 +1092,100 @@ def build_search_page() -> Path:
                     activeTag = urlTag;
                 }
             }
+
+            // 检测普通用户登录态并应用个性化重点跟踪规则
+            try {
+                const userCfgRes = await fetch('/api/user/config');
+                if (userCfgRes.ok) {
+                    const userCfgData = await userCfgRes.json();
+                    if (userCfgData && userCfgData.ok && userCfgData.config) {
+                        const cfg = userCfgData.config;
+                        const uLabel = document.getElementById('searchUserLabel');
+                        if (uLabel) uLabel.innerText = '专属跟踪已生效';
+                        const pRules = (cfg.focus_projects || []).map(s => String(s).trim().toLowerCase()).filter(Boolean);
+                        const oRules = (cfg.focus_owners || []).map(s => String(s).trim().toLowerCase()).filter(Boolean);
+                        const kwRules = (cfg.alert_keywords || []).map(s => String(s).trim().toLowerCase()).filter(Boolean);
+                        const minAmt = (typeof cfg.alert_min_amount === 'number') ? cfg.alert_min_amount : 1000.0;
+
+                        allData.forEach(item => {
+                            const titleLower = (item.title || '').toLowerCase();
+                            const purchaserLower = ((item.purchaser || item.owner || '') + ' ' + (item.areaname || '')).toLowerCase();
+                            let amt = (typeof item.amount === 'number') ? item.amount : 0;
+                            if (!amt && item.title) {
+                                const m = item.title.match(/([0-9]+(?:\\.[0-9]+)?)\\s*(?:万元|万)/);
+                                if (m) amt = parseFloat(m[1]);
+                            }
+
+                            let isProj = false;
+                            let isOwner = false;
+                            let isAlert = false;
+                            let matchedProj = '';
+                            let matchedOwner = '';
+                            let matchedKw = '';
+                            const tags = [];
+                            const reasons = [];
+
+                            // 1. 重点项目强规则
+                            for (let i = 0; i < pRules.length; i++) {
+                                const p = pRules[i];
+                                if (titleLower.includes(p)) {
+                                    isProj = true;
+                                    matchedProj = p;
+                                    break;
+                                }
+                                if (p.length >= 6) {
+                                    const mid = Math.floor(p.length / 2);
+                                    if (titleLower.includes(p.slice(0, mid)) && titleLower.includes(p.slice(mid))) {
+                                        isProj = true;
+                                        matchedProj = p;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (isProj) {
+                                tags.push('重点项目');
+                                reasons.push('命中专属重点项目：' + matchedProj);
+                            }
+
+                            // 2. 重点业主强规则
+                            for (let j = 0; j < oRules.length; j++) {
+                                const o = oRules[j];
+                                if (titleLower.includes(o) || purchaserLower.includes(o)) {
+                                    isOwner = true;
+                                    matchedOwner = o;
+                                    break;
+                                }
+                            }
+                            if (isOwner) {
+                                tags.push('重点业主');
+                                reasons.push('命中专属重点业主：' + matchedOwner);
+                            }
+
+                            // 3. 通用预警与金额门槛
+                            if (!isProj && !isOwner && kwRules.length > 0) {
+                                for (let k = 0; k < kwRules.length; k++) {
+                                    const kw = kwRules[k];
+                                    if (titleLower.includes(kw)) {
+                                        if (amt >= minAmt && minAmt > 0) {
+                                            isAlert = true;
+                                            matchedKw = kw;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (isAlert) {
+                                    tags.push('重点预警');
+                                    reasons.push('命中预警词【' + matchedKw + '】且金额 ' + amt + '万 >= 门槛 ' + minAmt + '万');
+                                }
+                            }
+
+                            item.is_focus = (isProj || isOwner || isAlert) ? 1 : 0;
+                            item.focus_tags = tags;
+                            item.focus_reason = reasons;
+                        });
+                    }
+                }
+            } catch (uErr) {}
 
             applyFilters();
         } catch (err) {

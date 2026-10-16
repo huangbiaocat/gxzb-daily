@@ -1760,51 +1760,119 @@ admin_modal_html = """
   </div>
 </div>
 
-<!-- 用户专属：重点项目与重点业主关注中心抽屉/面板 -->
+<!-- 用户专属重点跟踪规则与配置中心 (个性化重点项目 / 重点业主 / 预警关键词 / 历史快照) -->
 <div id="favoritesModal" class="admin-modal-overlay" style="display: none;" onclick="handleFavModalBackdrop(event)">
-  <div class="admin-modal-card" style="max-width: 480px;">
+  <div class="admin-modal-card" style="max-width: 860px; width: 95%;">
     <button type="button" class="admin-modal-close" onclick="closeFavoritesModal()" aria-label="关闭">&times;</button>
     <div class="admin-modal-header" style="text-align: left; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 14px;">
       <div>
-        <h3 class="admin-modal-title" style="font-size: 1.05rem;">⭐ 我的重点关注中心</h3>
-        <p class="admin-modal-subtitle" id="favModalUserGreeting">正在加载专属关注数据...</p>
+        <h3 class="admin-modal-title" style="margin: 0; font-size: 1.15rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+          <span>🎯</span>
+          <span>我的重点跟踪规则配置中心</span>
+          <span id="favUserBadge" style="font-size: 0.78rem; font-weight: 600; padding: 2px 8px; border-radius: 9999px; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;"></span>
+        </h3>
+        <p class="admin-modal-subtitle" style="margin: 4px 0 0; font-size: 0.82rem; color: #64748b;">
+          已启用专属跟踪：登录后标讯将按您的独立配置实时匹配与标记，不再沿用系统默认规则
+        </p>
       </div>
-      <button type="button" onclick="handleUserLogout()" class="admin-direct-link" style="color: #ef4444; border: 1px solid #fee2e2; background: #fef2f2; padding: 4px 8px; border-radius: 6px;">退出登录</button>
-    </div>
-
-    <!-- 关注列表展示 -->
-    <div>
-      <div class="fav-section-title">
-        <span>📌 关注的重点项目 (<span id="favProjectsCount">0</span>)</span>
-      </div>
-      <div id="favProjectsList" class="fav-tag-list">
-        <div class="fav-empty-hint">暂未关注任何项目</div>
-      </div>
-
-      <div class="fav-section-title">
-        <span>🏢 关注的重点业主单位 (<span id="favOwnersCount">0</span>)</span>
-      </div>
-      <div id="favOwnersList" class="fav-tag-list">
-        <div class="fav-empty-hint">暂未关注任何业主单位</div>
+      <div>
+        <button type="button" onclick="handleUserLogout()" class="fav-action-btn" style="color: #ef4444; border: 1px solid #fecaca; background: #fff5f5; font-size: 0.78rem; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-weight: 500;">退出登录</button>
       </div>
     </div>
 
-    <!-- 快捷新增关注 -->
-    <form onsubmit="handleAddFavoriteSubmit(event)" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #f1f5f9;">
-      <div class="fav-section-title" style="margin-top: 0;">
-        <span>➕ 添加新关注</span>
+    <!-- 顶部四项子功能切换 -->
+    <div class="auth-tab-bar" style="margin-bottom: 16px; border-radius: 8px;">
+      <button type="button" class="auth-tab-btn active" id="favTabBtnProjects" onclick="switchFavTab('projects')">
+        <span>1 重点跟踪项目 (<span id="favProjectsCount">0</span>)</span>
+      </button>
+      <button type="button" class="auth-tab-btn" id="favTabBtnOwners" onclick="switchFavTab('owners')">
+        <span>2 重点跟踪业主 (<span id="favOwnersCount">0</span>)</span>
+      </button>
+      <button type="button" class="auth-tab-btn" id="favTabBtnAlerts" onclick="switchFavTab('alerts')">
+        <span>3 通用预警 ＆ 金额门槛</span>
+      </button>
+      <button type="button" class="auth-tab-btn" id="favTabBtnSnapshots" onclick="switchFavTab('snapshots')">
+        <span>4 历史配置快照 (<span id="favSnapshotsCount">0</span>)</span>
+      </button>
+    </div>
+
+    <!-- Tab 1: 重点跟踪项目清单 (FOCUS_PROJECTS) -->
+    <div id="favPanelProjects" class="fav-tab-panel">
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 0.82rem; color: #475569; line-height: 1.5;">
+        <strong style="color: #0284c7;">【独立强规则】</strong> 只要标讯标题命中指定项目名称，即无条件判定为重点标讯（不受金额门槛限制）。已支持智能模糊匹配与分词匹配。
       </div>
-      <div class="fav-add-row">
-        <select id="favAddType" style="width: 105px;">
-          <option value="project">重点项目</option>
-          <option value="owner">重点业主</option>
-        </select>
-        <input type="text" id="favAddName" placeholder="关注名称/关键词 (如: 平陆运河)" style="flex: 1;" required />
-        <input type="text" id="favAddTag" placeholder="备注标签 (可选)" style="width: 90px;" />
-        <button type="submit" id="btnFavAddSubmit" class="fav-add-btn">关注</button>
+      <div class="fav-quick-add-row" style="display: flex; gap: 8px; margin-bottom: 10px;">
+        <input type="text" id="favSingleProjectInput" placeholder="输入单个重点项目名称（例如：平陆运河工程建设）" style="flex: 1; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" onkeydown="if(event.key==='Enter'){event.preventDefault();addSingleProject();}" />
+        <button type="button" onclick="addSingleProject()" class="fav-add-btn" style="padding: 7px 14px; background: #0284c7; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">+ 添加项目</button>
       </div>
-      <div id="favAddTip" class="admin-login-tip" style="display: none; margin-top: 8px;"></div>
-    </form>
+      <div style="margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 0.82rem; font-weight: 600; color: #334155;">当前项目清单 (支持标签点击 × 快速删除，或切换批量编辑)：</span>
+        <button type="button" id="btnToggleBatchProjects" onclick="toggleBatchEdit('projects')" style="font-size: 0.78rem; color: #0284c7; background: none; border: none; cursor: pointer; text-decoration: underline;">切换批量文本编辑</button>
+      </div>
+      <div id="favProjectsTagContainer" class="fav-tag-list" style="max-height: 200px; overflow-y: auto; padding: 10px; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; display: flex; flex-wrap: wrap; gap: 6px;"></div>
+      <div id="favProjectsBatchContainer" style="display: none; margin-top: 6px;">
+        <textarea id="favProjectsTextarea" rows="8" placeholder="每行一个重点项目名称，或使用逗号分隔" style="width: 100%; box-sizing: border-box; padding: 8px; font-family: monospace; font-size: 0.83rem; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+      </div>
+    </div>
+
+    <!-- Tab 2: 重点跟踪业主名单 (FOCUS_OWNERS) -->
+    <div id="favPanelOwners" class="fav-tab-panel" style="display: none;">
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 0.82rem; color: #475569; line-height: 1.5;">
+        <strong style="color: #0284c7;">【独立强规则】</strong> 当招标人、业主单位或标讯标题包含指定业主单位全称或简称时，直接判定为重点标讯（不受金额门槛限制）。
+      </div>
+      <div class="fav-quick-add-row" style="display: flex; gap: 8px; margin-bottom: 10px;">
+        <input type="text" id="favSingleOwnerInput" placeholder="输入单个业主单位全称或简称（例如：南宁轨道交通集团有限公司）" style="flex: 1; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" onkeydown="if(event.key==='Enter'){event.preventDefault();addSingleOwner();}" />
+        <button type="button" onclick="addSingleOwner()" class="fav-add-btn" style="padding: 7px 14px; background: #0284c7; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600;">+ 添加业主</button>
+      </div>
+      <div style="margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 0.82rem; font-weight: 600; color: #334155;">当前业主名单 (支持点击 × 快速删除，或切换批量编辑)：</span>
+        <button type="button" id="btnToggleBatchOwners" onclick="toggleBatchEdit('owners')" style="font-size: 0.78rem; color: #0284c7; background: none; border: none; cursor: pointer; text-decoration: underline;">切换批量文本编辑</button>
+      </div>
+      <div id="favOwnersTagContainer" class="fav-tag-list" style="max-height: 200px; overflow-y: auto; padding: 10px; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; display: flex; flex-wrap: wrap; gap: 6px;"></div>
+      <div id="favOwnersBatchContainer" style="display: none; margin-top: 6px;">
+        <textarea id="favOwnersTextarea" rows="8" placeholder="每行一个业主名称，或使用逗号分隔" style="width: 100%; box-sizing: border-box; padding: 8px; font-family: monospace; font-size: 0.83rem; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+      </div>
+    </div>
+
+    <!-- Tab 3: 常规通用预警关键词 ＆ 激活金额门槛 -->
+    <div id="favPanelAlerts" class="fav-tab-panel" style="display: none;">
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 0.82rem; color: #475569; line-height: 1.5;">
+        <strong style="color: #f59e0b;">【通用预警门槛联动】</strong> 当标讯标题命中通用预警关键词，且标讯金额达到或超过激活门槛时，触发大额预警判定。
+      </div>
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.84rem; font-weight: 600; color: #334155; margin-bottom: 6px;">激活金额门槛 (单位：万元)：</label>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="number" id="favAlertMinAmount" step="10" min="0" placeholder="1000" style="width: 160px; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" />
+          <span style="font-size: 0.82rem; color: #64748b;">万元及以上（设为 0 表示不限制金额，命中关键词即预警）</span>
+        </div>
+      </div>
+      <div>
+        <label style="display: block; font-size: 0.84rem; font-weight: 600; color: #334155; margin-bottom: 6px;">通用预警关键词列表 (一行一个或逗号分隔)：</label>
+        <textarea id="favAlertKeywordsTextarea" rows="5" placeholder="EPC, 设计施工总承包, 特许经营, 产业园, 智慧, 全过程工程咨询" style="width: 100%; box-sizing: border-box; padding: 8px; font-size: 0.83rem; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+      </div>
+    </div>
+
+    <!-- Tab 4: 历史配置快照 -->
+    <div id="favPanelSnapshots" class="fav-tab-panel" style="display: none;">
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 0.82rem; color: #475569; line-height: 1.5;">
+        <strong style="color: #6366f1;">【安全快照与回滚机制】</strong> 每次保存都会自动生成专属历史版本快照。如需恢复先前的配置，点击对应版本右侧的「一键回滚」即可。
+      </div>
+      <div id="favSnapshotsListContainer" style="max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+        <div class="fav-empty-hint">暂无历史配置快照</div>
+      </div>
+    </div>
+
+    <!-- 底部操作栏与保存 -->
+    <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 220px;">
+        <input type="text" id="favSaveNoteInput" placeholder="修改说明/备注 (可选，例如: 增加五象智慧交通规则)" style="width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.82rem;" />
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" onclick="closeFavoritesModal()" class="admin-btn-cancel" style="padding: 7px 14px; font-size: 0.83rem; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer;">关闭</button>
+        <button type="button" id="btnSaveFullConfig" onclick="saveUserFullConfigSubmit()" style="padding: 7px 18px; font-size: 0.83rem; font-weight: 600; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #fff; border: none; border-radius: 6px; cursor: pointer;">💾 保存专属规则并生成快照</button>
+      </div>
+    </div>
+    <div id="favActionTip" class="admin-login-tip" style="display: none; margin-top: 10px;"></div>
   </div>
 </div>
 """
@@ -1852,7 +1920,11 @@ function openFavoritesModal() {
     var modal = document.getElementById('favoritesModal');
     if (!modal) return;
     modal.style.display = 'flex';
-    loadUserFavorites();
+    var userBadge = document.getElementById('favUserBadge');
+    if (userBadge && currentUserState) {
+        userBadge.innerText = (currentUserState.display_name || currentUserState.username) + ' (@' + currentUserState.username + ')';
+    }
+    loadUserFullConfig();
 }
 
 function closeFavoritesModal() {
@@ -2039,116 +2111,312 @@ function updateUserPortalUI(user) {
     }
 }
 
-async function loadUserFavorites() {
-    var prjList = document.getElementById('favProjectsList');
-    var ownerList = document.getElementById('favOwnersList');
-    var prjCount = document.getElementById('favProjectsCount');
-    var ownerCount = document.getElementById('favOwnersCount');
+var currentUserConfig = {
+    focus_projects: [],
+    focus_owners: [],
+    alert_keywords: [],
+    alert_min_amount: 1000.0,
+    snapshots: []
+};
+var favActiveTab = 'projects';
 
-    if (prjList) prjList.innerHTML = '<div class="fav-empty-hint">正在加载关注数据...</div>';
-    if (ownerList) ownerList.innerHTML = '<div class="fav-empty-hint">正在加载关注数据...</div>';
+function switchFavTab(tabKey) {
+    favActiveTab = tabKey;
+    var tabIds = ['projects', 'owners', 'alerts', 'snapshots'];
+    tabIds.forEach(function(k) {
+        var btn = document.getElementById('favTabBtn' + k.charAt(0).toUpperCase() + k.slice(1));
+        var panel = document.getElementById('favPanel' + k.charAt(0).toUpperCase() + k.slice(1));
+        if (btn) btn.classList.toggle('active', k === tabKey);
+        if (panel) panel.style.display = (k === tabKey) ? 'block' : 'none';
+    });
+}
 
+function toggleBatchEdit(type) {
+    var isPrj = type === 'projects';
+    var tagBox = document.getElementById(isPrj ? 'favProjectsTagContainer' : 'favOwnersTagContainer');
+    var batchBox = document.getElementById(isPrj ? 'favProjectsBatchContainer' : 'favOwnersBatchContainer');
+    var textarea = document.getElementById(isPrj ? 'favProjectsTextarea' : 'favOwnersTextarea');
+    var btn = document.getElementById(isPrj ? 'btnToggleBatchProjects' : 'btnToggleBatchOwners');
+
+    if (!batchBox || !tagBox || !textarea) return;
+    var isBatchShowing = batchBox.style.display !== 'none';
+    if (isBatchShowing) {
+        // 从文本域同步回列表
+        var text = textarea.value.replace(/\\r\\n/g, '\\n').replace(/，/g, ',');
+        var list = [];
+        if (text.indexOf('\\n') !== -1) {
+            list = text.split('\\n').map(function(s) { return s.trim(); }).filter(Boolean);
+        } else {
+            list = text.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+        }
+        // 去重
+        var seen = {};
+        var deduped = [];
+        list.forEach(function(item) {
+            if (!seen[item]) { seen[item] = true; deduped.push(item); }
+        });
+        if (isPrj) {
+            currentUserConfig.focus_projects = deduped;
+            renderFavProjectsUI();
+        } else {
+            currentUserConfig.focus_owners = deduped;
+            renderFavOwnersUI();
+        }
+        batchBox.style.display = 'none';
+        tagBox.style.display = 'flex';
+        if (btn) btn.innerText = '切换批量文本编辑';
+    } else {
+        // 展开批量编辑
+        var curList = isPrj ? currentUserConfig.focus_projects : currentUserConfig.focus_owners;
+        textarea.value = curList.join('\\n');
+        batchBox.style.display = 'block';
+        tagBox.style.display = 'none';
+        if (btn) btn.innerText = '完成文本编辑 (切回标签视图)';
+    }
+}
+
+function renderFavProjectsUI() {
+    var tagBox = document.getElementById('favProjectsTagContainer');
+    var countEl = document.getElementById('favProjectsCount');
+    var textarea = document.getElementById('favProjectsTextarea');
+    var list = currentUserConfig.focus_projects || [];
+    if (countEl) countEl.innerText = list.length;
+    if (textarea) textarea.value = list.join('\\n');
+    if (tagBox) {
+        if (list.length === 0) {
+            tagBox.innerHTML = '<div class="fav-empty-hint">暂未配置任何重点项目，可通过上方快速添加或批量导入</div>';
+        } else {
+            tagBox.innerHTML = list.map(function(p, idx) {
+                return '<span class="fav-chip fav-chip-project">' +
+                    escapeHtmlStr(p) +
+                    '<span class="fav-chip-del" onclick="removeSingleProject(' + idx + ')" title="移除此项">&times;</span>' +
+                    '</span>';
+            }).join('');
+        }
+    }
+}
+
+function renderFavOwnersUI() {
+    var tagBox = document.getElementById('favOwnersTagContainer');
+    var countEl = document.getElementById('favOwnersCount');
+    var textarea = document.getElementById('favOwnersTextarea');
+    var list = currentUserConfig.focus_owners || [];
+    if (countEl) countEl.innerText = list.length;
+    if (textarea) textarea.value = list.join('\\n');
+    if (tagBox) {
+        if (list.length === 0) {
+            tagBox.innerHTML = '<div class="fav-empty-hint">暂未配置任何重点业主单位，可通过上方快速添加或批量导入</div>';
+        } else {
+            tagBox.innerHTML = list.map(function(o, idx) {
+                return '<span class="fav-chip fav-chip-owner">' +
+                    escapeHtmlStr(o) +
+                    '<span class="fav-chip-del" onclick="removeSingleOwner(' + idx + ')" title="移除此项">&times;</span>' +
+                    '</span>';
+            }).join('');
+        }
+    }
+}
+
+function renderFavAlertsUI() {
+    var amtInput = document.getElementById('favAlertMinAmount');
+    var kwArea = document.getElementById('favAlertKeywordsTextarea');
+    if (amtInput) amtInput.value = (currentUserConfig.alert_min_amount !== undefined) ? currentUserConfig.alert_min_amount : 1000;
+    if (kwArea) {
+        var kws = currentUserConfig.alert_keywords || [];
+        kwArea.value = kws.join(', ');
+    }
+}
+
+function renderFavSnapshotsUI() {
+    var container = document.getElementById('favSnapshotsListContainer');
+    var countEl = document.getElementById('favSnapshotsCount');
+    var snaps = currentUserConfig.snapshots || [];
+    if (countEl) countEl.innerText = snaps.length;
+    if (!container) return;
+    if (snaps.length === 0) {
+        container.innerHTML = '<div class="fav-empty-hint">暂无历史配置快照。保存当前配置后将自动生成第一份快照。</div>';
+        return;
+    }
+    container.innerHTML = snaps.map(function(s) {
+        var triggerBadge = '<span style="padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; background: #e0f2fe; color: #0369a1;">手动保存</span>';
+        if (s.trigger === 'rollback') {
+            triggerBadge = '<span style="padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; background: #fef3c7; color: #b45309;">快照回滚</span>';
+        } else if (s.trigger === 'auto_save') {
+            triggerBadge = '<span style="padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; background: #f1f5f9; color: #475569;">自动备份</span>';
+        }
+        var noteHtml = s.note ? ('<div style="font-size: 0.78rem; color: #475569; margin-top: 4px;">备注: ' + escapeHtmlStr(s.note) + '</div>') : '';
+        return '<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">' +
+            '<div style="flex: 1;">' +
+                '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">' +
+                    triggerBadge +
+                    '<span style="font-size: 0.82rem; font-weight: 600; color: #1e293b;">' + escapeHtmlStr(s.created_at) + '</span>' +
+                '</div>' +
+                '<div style="font-size: 0.78rem; color: #64748b;">' +
+                    '项目 ' + s.focus_projects_count + ' 项 · 业主 ' + s.focus_owners_count + ' 家 · 预警词 ' + s.alert_keywords_count + ' 个 · 门槛 ' + s.alert_min_amount + '万' +
+                '</div>' +
+                noteHtml +
+            '</div>' +
+            '<div>' +
+                '<button type="button" onclick="handleRollbackSnapshot(\\'' + s.snapshot_id + '\\')" style="padding: 5px 12px; font-size: 0.78rem; font-weight: 600; background: #f8fafc; color: #0284c7; border: 1px solid #bae6fd; border-radius: 6px; cursor: pointer;">一键回滚</button>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+function addSingleProject() {
+    var input = document.getElementById('favSingleProjectInput');
+    if (!input || !input.value.trim()) return;
+    var val = input.value.trim();
+    if (currentUserConfig.focus_projects.indexOf(val) === -1) {
+        currentUserConfig.focus_projects.push(val);
+        renderFavProjectsUI();
+    }
+    input.value = '';
+    input.focus();
+}
+
+function removeSingleProject(idx) {
+    currentUserConfig.focus_projects.splice(idx, 1);
+    renderFavProjectsUI();
+}
+
+function addSingleOwner() {
+    var input = document.getElementById('favSingleOwnerInput');
+    if (!input || !input.value.trim()) return;
+    var val = input.value.trim();
+    if (currentUserConfig.focus_owners.indexOf(val) === -1) {
+        currentUserConfig.focus_owners.push(val);
+        renderFavOwnersUI();
+    }
+    input.value = '';
+    input.focus();
+}
+
+function removeSingleOwner(idx) {
+    currentUserConfig.focus_owners.splice(idx, 1);
+    renderFavOwnersUI();
+}
+
+async function loadUserFullConfig() {
     try {
-        var res = await fetch('/api/user/favorites');
+        var res = await fetch('/api/user/config');
         if (res.status === 401) {
             closeFavoritesModal();
             openAuthModal('login');
             return;
         }
         var data = await res.json();
-        var favs = data.favorites || { projects: [], owners: [] };
-
-        if (prjCount) prjCount.innerText = favs.projects.length;
-        if (ownerCount) ownerCount.innerText = favs.owners.length;
-
-        if (prjList) {
-            if (favs.projects.length === 0) {
-                prjList.innerHTML = '<div class="fav-empty-hint">暂无关注的项目。可使用下方表单添加。</div>';
-            } else {
-                prjList.innerHTML = favs.projects.map(function(p) {
-                    return '<span class="fav-chip fav-chip-project">' +
-                        escapeHtmlStr(p.name) +
-                        (p.tags ? ' <span style="opacity:0.8;">(' + escapeHtmlStr(p.tags) + ')</span>' : '') +
-                        '<span class="fav-chip-del" onclick="handleDeleteFavorite(' + p.id + ', \\'project\\')" title="取消关注">&times;</span>' +
-                        '</span>';
-                }).join('');
-            }
+        if (data.ok && data.config) {
+            currentUserConfig.focus_projects = data.config.focus_projects || [];
+            currentUserConfig.focus_owners = data.config.focus_owners || [];
+            currentUserConfig.alert_keywords = data.config.alert_keywords || [];
+            currentUserConfig.alert_min_amount = (data.config.alert_min_amount !== undefined) ? data.config.alert_min_amount : 1000.0;
         }
 
-        if (ownerList) {
-            if (favs.owners.length === 0) {
-                ownerList.innerHTML = '<div class="fav-empty-hint">暂无关注的业主。可使用下方表单添加。</div>';
-            } else {
-                ownerList.innerHTML = favs.owners.map(function(o) {
-                    return '<span class="fav-chip fav-chip-owner">' +
-                        escapeHtmlStr(o.name) +
-                        (o.tags ? ' <span style="opacity:0.8;">(' + escapeHtmlStr(o.tags) + ')</span>' : '') +
-                        '<span class="fav-chip-del" onclick="handleDeleteFavorite(' + o.id + ', \\'owner\\')" title="取消关注">&times;</span>' +
-                        '</span>';
-                }).join('');
-            }
+        var snapRes = await fetch('/api/user/config_snapshots');
+        if (snapRes.ok) {
+            var snapData = await snapRes.json();
+            currentUserConfig.snapshots = snapData.snapshots || [];
         }
+
+        renderFavProjectsUI();
+        renderFavOwnersUI();
+        renderFavAlertsUI();
+        renderFavSnapshotsUI();
     } catch (err) {
-        if (prjList) prjList.innerHTML = '<div class="fav-empty-hint" style="color:#ef4444;">加载失败: ' + err.message + '</div>';
+        console.error('加载用户独立配置异常:', err);
     }
 }
 
-async function handleAddFavoriteSubmit(e) {
-    e.preventDefault();
-    var typeSel = document.getElementById('favAddType');
-    var nameInput = document.getElementById('favAddName');
-    var tagInput = document.getElementById('favAddTag');
-    var tip = document.getElementById('favAddTip');
-    var btn = document.getElementById('btnFavAddSubmit');
-    if (!typeSel || !nameInput || !nameInput.value.trim()) return;
-
-    btn.disabled = true;
+async function saveUserFullConfigSubmit() {
+    var btn = document.getElementById('btnSaveFullConfig');
+    var tip = document.getElementById('favActionTip');
+    var noteInput = document.getElementById('favSaveNoteInput');
+    if (btn) btn.disabled = true;
     if (tip) tip.style.display = 'none';
 
+    // 如果处于批量文本编辑态，先完成文本解析
+    var pBatch = document.getElementById('favProjectsBatchContainer');
+    if (pBatch && pBatch.style.display !== 'none') toggleBatchEdit('projects');
+    var oBatch = document.getElementById('favOwnersBatchContainer');
+    if (oBatch && oBatch.style.display !== 'none') toggleBatchEdit('owners');
+
+    // 收集预警门槛和关键词
+    var amtInput = document.getElementById('favAlertMinAmount');
+    var kwArea = document.getElementById('favAlertKeywordsTextarea');
+    var minAmt = amtInput ? parseFloat(amtInput.value || '1000') : 1000.0;
+    var kwList = [];
+    if (kwArea && kwArea.value.trim()) {
+        var rawKw = kwArea.value.replace(/\\r\\n/g, '\\n').replace(/，/g, ',');
+        if (rawKw.indexOf('\\n') !== -1) {
+            kwList = rawKw.split('\\n').map(function(s) { return s.trim(); }).filter(Boolean);
+        } else {
+            kwList = rawKw.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+        }
+    }
+
+    var payload = {
+        focus_projects: currentUserConfig.focus_projects,
+        focus_owners: currentUserConfig.focus_owners,
+        alert_keywords: kwList,
+        alert_min_amount: isNaN(minAmt) ? 1000.0 : minAmt,
+        note: noteInput ? noteInput.value.trim() : ''
+    };
+
     try {
-        var res = await fetch('/api/user/favorites/add', {
+        var res = await fetch('/api/user/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                target_type: typeSel.value,
-                target_name: nameInput.value.trim(),
-                tags: tagInput ? tagInput.value.trim() : ''
-            })
+            body: JSON.stringify(payload)
         });
         var data = await res.json();
         if (data.ok) {
-            nameInput.value = '';
-            if (tagInput) tagInput.value = '';
-            loadUserFavorites();
+            if (noteInput) noteInput.value = '';
+            if (tip) {
+                tip.className = 'admin-login-tip tip-success';
+                tip.innerText = '专属重点跟踪规则已成功保存，并已生成最新历史快照！';
+                tip.style.display = 'block';
+            }
+            await loadUserFullConfig();
+            setTimeout(function() {
+                if (tip) tip.style.display = 'none';
+            }, 3000);
         } else {
             if (tip) {
                 tip.className = 'admin-login-tip tip-error';
-                tip.innerText = data.msg || '添加关注失败';
+                tip.innerText = data.msg || '保存配置失败';
                 tip.style.display = 'block';
             }
         }
     } catch (err) {
         if (tip) {
             tip.className = 'admin-login-tip tip-error';
-            tip.innerText = '网络请求异常: ' + err.message;
+            tip.innerText = '网络异常: ' + err.message;
             tip.style.display = 'block';
         }
     } finally {
-        btn.disabled = false;
+        if (btn) btn.disabled = false;
     }
 }
 
-async function handleDeleteFavorite(favId, targetType) {
-    if (!confirm('确定要取消此项关注吗？')) return;
+async function handleRollbackSnapshot(snapshotId) {
+    if (!confirm('确定要将您的个性化跟踪规则回滚至此快照版本吗？')) return;
+    var tip = document.getElementById('favActionTip');
     try {
-        await fetch('/api/user/favorites/delete', {
+        var res = await fetch('/api/user/config_snapshots/rollback', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: favId, target_type: targetType })
+            body: JSON.stringify({ snapshot_id: snapshotId })
         });
-        loadUserFavorites();
+        var data = await res.json();
+        if (data.ok) {
+            alert('回滚成功！已成功载入该快照规则。');
+            await loadUserFullConfig();
+        } else {
+            alert('回滚失败: ' + (data.msg || '未知错误'));
+        }
     } catch (err) {
-        alert('取消关注失败: ' + err.message);
+        alert('回滚请求异常: ' + err.message);
     }
 }
 
@@ -2222,6 +2490,11 @@ function escapeHtmlStr(str) {
             if (data && data.authenticated && data.user) {
                 currentUserState = data.user;
                 updateUserPortalUI(data.user);
+                if (window.location.search.indexOf('open_user=1') !== -1) {
+                    setTimeout(function() {
+                        openFavoritesModal();
+                    }, 200);
+                }
             }
         })
         .catch(function() {});

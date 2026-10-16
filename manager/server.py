@@ -43,7 +43,10 @@ try:
         init_user_db, register_user, verify_user_login,
         generate_user_token, verify_user_token,
         get_user_favorites, add_user_favorite, remove_user_favorite,
-        get_all_users_for_admin, get_login_history_for_admin
+        get_all_users_for_admin, get_login_history_for_admin,
+        get_user_full_config, save_user_full_config,
+        get_user_config_snapshots, get_user_config_snapshot_detail,
+        rollback_user_config_snapshot
     )
     init_user_db()
 except Exception as _e:
@@ -1631,6 +1634,43 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             self.send_json({"ok": True, "favorites": favs})
             return
 
+        # 普通用户个性化跟踪规则（重点项目、重点业主、通用预警关键词、激活金额门槛）
+        if path == "/api/user/config":
+            user = self.get_current_user()
+            if not user:
+                self.send_json({"ok": False, "error": "unauthorized", "msg": "请先登录普通用户账号"}, status=401)
+                return
+            cfg = get_user_full_config(user["id"])
+            self.send_json({"ok": True, "config": cfg})
+            return
+
+        # 普通用户历史配置快照列表
+        if path == "/api/user/config_snapshots":
+            user = self.get_current_user()
+            if not user:
+                self.send_json({"ok": False, "error": "unauthorized", "msg": "请先登录普通用户账号"}, status=401)
+                return
+            snapshots = get_user_config_snapshots(user["id"])
+            self.send_json({"ok": True, "snapshots": snapshots})
+            return
+
+        # 普通用户历史配置快照详情
+        if path == "/api/user/config_snapshot_detail":
+            user = self.get_current_user()
+            if not user:
+                self.send_json({"ok": False, "error": "unauthorized", "msg": "请先登录普通用户账号"}, status=401)
+                return
+            snapshot_id = query_params.get("snapshot_id", [""])[0] or query_params.get("id", [""])[0]
+            if not snapshot_id:
+                self.send_json({"ok": False, "msg": "缺少快照标识 snapshot_id"}, status=400)
+                return
+            detail = get_user_config_snapshot_detail(user["id"], snapshot_id)
+            if not detail:
+                self.send_json({"ok": False, "msg": "快照不存在或无权访问"}, status=404)
+                return
+            self.send_json({"ok": True, "detail": detail})
+            return
+
         # 管理员视图：查看所有用户及各自关注的重点项目/重点业主
         if path == "/api/admin/users":
             if not self.is_authenticated():
@@ -2184,6 +2224,40 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             ok, msg = remove_user_favorite(user["id"], favorite_id=fav_id, target_type=target_type, target_name=target_name)
             favs = get_user_favorites(user["id"])
             self.send_json({"ok": ok, "msg": msg, "favorites": favs})
+            return
+
+        # 保存普通用户个性化配置（包含重点项目、重点业主、预警词、金额门槛），并自动创建快照
+        if path == "/api/user/config":
+            user = self.get_current_user()
+            if not user:
+                self.send_json({"ok": False, "error": "unauthorized", "msg": "请先登录普通用户账号"}, status=401)
+                return
+            note = post_data.get("note", "用户自主调整配置")
+            res = save_user_full_config(
+                user_id=user["id"],
+                username=user["username"],
+                config_data=post_data,
+                trigger="manual",
+                note=note
+            )
+            self._audit("USER_CONFIG_UPDATE", "SUCCESS", f"用户 {user['username']} 更新个性化跟踪规则并生成快照 {res.get('snapshot_id')}")
+            self.send_json(res)
+            return
+
+        # 普通用户配置快照安全回滚
+        if path in ("/api/user/config_snapshots/rollback", "/api/user/rollback_config"):
+            user = self.get_current_user()
+            if not user:
+                self.send_json({"ok": False, "error": "unauthorized", "msg": "请先登录普通用户账号"}, status=401)
+                return
+            snapshot_id = post_data.get("snapshot_id") or post_data.get("id")
+            if not snapshot_id:
+                self.send_json({"ok": False, "msg": "缺少快照标识 snapshot_id"}, status=400)
+                return
+            ok, msg = rollback_user_config_snapshot(user["id"], user["username"], snapshot_id)
+            if ok:
+                self._audit("USER_CONFIG_ROLLBACK", "SUCCESS", f"用户 {user['username']} 回滚配置至快照 {snapshot_id}")
+            self.send_json({"ok": ok, "msg": msg})
             return
 
         # 敏感写操作与流水线触发鉴权拦截

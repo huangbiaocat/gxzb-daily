@@ -1076,6 +1076,10 @@ __DAILY_CSS__
 <span>后一日</span>
 <svg fill="none" height="15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="15"><polyline points="9 18 15 12 9 6"></polyline></svg>
 </a>
+<button id="btnDailyUserPortal" class="btn-back" style="color: #2563eb; border-color: #bfdbfe; background: #eff6ff; font-weight: 600;" onclick="window.location.href='./index.html?open_user=1'" title="管理我的专属重点跟踪规则">
+<svg fill="none" height="15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="15"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+<span id="dailyUserLabel">重点跟踪配置</span>
+</button>
 </div>
 </div>
 </header>
@@ -1090,6 +1094,13 @@ __DAILY_CSS__
             </div>
             <h2 class="hero-title">广西全区招投标公告日报（__DATE__）</h2>
             <p class="hero-desc">按 6 大业务环节与工程类别归集当日全区公共资源交易公告，每条公告以官方唯一识别码（infoid）入库，便于溯源与查重，点击标题可跳转至官方公告页面查看原文。支持关键词检索、工程大类 / 地市 / 业务环节筛选与重点预警；无公告更新的类别与类型不在此页展示。</p>
+            <div id="userFocusNoticeBanner" style="display: none; margin: 12px 0 16px; padding: 10px 16px; background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1px solid #bfdbfe; border-radius: 8px; font-size: 0.85rem; color: #1e3a8a; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.15rem;">🎯</span>
+                    <span><strong>专属重点跟踪已生效：</strong>已按您专属设置的 <span id="bannerProjectsCount" style="font-weight: 700; color: #0284c7;">0</span> 项重点项目、<span id="bannerOwnersCount" style="font-weight: 700; color: #0284c7;">0</span> 家重点业主与预警门槛 (<span id="bannerMinAmount" style="font-weight: 700; color: #d97706;">1000</span>万) 实时动态标记标讯，不再沿用系统默认规则。</span>
+                </div>
+                <a href="./index.html?open_user=1" style="color: #2563eb; font-weight: 600; text-decoration: underline; font-size: 0.82rem;">修改专属规则 &gt;</a>
+            </div>
             <div class="stats-grid cols-8">
                 <div class="stat-box stage-plan clickable" data-stage="招标计划" title="点击筛选 招标计划">
                     <div class="sb-label">招标计划</div>
@@ -2063,6 +2074,151 @@ if (statOwnerEl && statOwnerEl.firstChild) {
 
 build();
 apply();
+
+// 多用户专属个性化重点跟踪体系与动态标记
+function checkAndApplyUserFocus() {
+    fetch('/api/user/config')
+        .then(function(res) {
+            if (res.status === 401) return null;
+            return res.json();
+        })
+        .then(function(data) {
+            if (!data || !data.ok || !data.config) return;
+            var cfg = data.config;
+            var label = document.getElementById('dailyUserLabel');
+            var btn = document.getElementById('btnDailyUserPortal');
+            if (label) label.innerText = '专属跟踪已生效';
+            if (btn) {
+                btn.style.background = '#dcfce7';
+                btn.style.borderColor = '#86efac';
+                btn.style.color = '#15803d';
+                btn.title = '专属规则生效中：点击可调整重点项目、业主或预警门槛';
+            }
+
+            var banner = document.getElementById('userFocusNoticeBanner');
+            var bPrj = document.getElementById('bannerProjectsCount');
+            var bOwn = document.getElementById('bannerOwnersCount');
+            var bAmt = document.getElementById('bannerMinAmount');
+            if (banner) banner.style.display = 'flex';
+            if (bPrj) bPrj.innerText = (cfg.focus_projects || []).length;
+            if (bOwn) bOwn.innerText = (cfg.focus_owners || []).length;
+            if (bAmt) bAmt.innerText = (cfg.alert_min_amount !== undefined) ? cfg.alert_min_amount : 1000;
+
+            // 规则提取
+            var pRules = (cfg.focus_projects || []).map(function(s) { return String(s).trim().toLowerCase(); }).filter(Boolean);
+            var oRules = (cfg.focus_owners || []).map(function(s) { return String(s).trim().toLowerCase(); }).filter(Boolean);
+            var kwRules = (cfg.alert_keywords || []).map(function(s) { return String(s).trim().toLowerCase(); }).filter(Boolean);
+            var minAmt = (typeof cfg.alert_min_amount === 'number') ? cfg.alert_min_amount : 1000.0;
+
+            var newTotalFocus = 0;
+            var newTotalProjects = 0;
+            var newTotalOwners = 0;
+
+            RAW_DATA.forEach(function(d) {
+                var titleLower = (d.title || '').toLowerCase();
+                var purchaserLower = ((d.purchaser || d.owner || '') + ' ' + (d.areaname || '')).toLowerCase();
+                var dAmount = (typeof d.amount === 'number') ? d.amount : 0;
+                if (!dAmount && d.title) {
+                    var m = d.title.match(/([0-9]+(?:\\.[0-9]+)?)\\s*(?:万元|万)/);
+                    if (m) dAmount = parseFloat(m[1]);
+                }
+
+                var isProj = false;
+                var isOwner = false;
+                var isAlert = false;
+                var matchedProj = '';
+                var matchedOwner = '';
+                var matchedKw = '';
+                var tags = [];
+                var reasons = [];
+
+                // 1. 重点跟踪项目清单 (FOCUS_PROJECTS) - 独立强规则·命中即重点
+                for (var i = 0; i < pRules.length; i++) {
+                    var p = pRules[i];
+                    if (titleLower.indexOf(p) !== -1) {
+                        isProj = true;
+                        matchedProj = p;
+                        break;
+                    }
+                    if (p.length >= 6) {
+                        var mid = Math.floor(p.length / 2);
+                        var s1 = p.slice(0, mid);
+                        var s2 = p.slice(mid);
+                        if (titleLower.indexOf(s1) !== -1 && titleLower.indexOf(s2) !== -1) {
+                            isProj = true;
+                            matchedProj = p;
+                            break;
+                        }
+                    }
+                }
+                if (isProj) {
+                    tags.push('重点项目');
+                    reasons.push('命中专属重点项目：' + matchedProj);
+                }
+
+                // 2. 重点跟踪业主名单 (FOCUS_OWNERS) - 独立强规则·命中即重点
+                for (var j = 0; j < oRules.length; j++) {
+                    var o = oRules[j];
+                    if (titleLower.indexOf(o) !== -1 || purchaserLower.indexOf(o) !== -1) {
+                        isOwner = true;
+                        matchedOwner = o;
+                        break;
+                    }
+                }
+                if (isOwner) {
+                    tags.push('重点业主');
+                    reasons.push('命中专属重点业主：' + matchedOwner);
+                }
+
+                // 3. 常规通用预警关键词 ＆ 激活金额门槛
+                if (!isProj && !isOwner && kwRules.length > 0) {
+                    for (var k = 0; k < kwRules.length; k++) {
+                        var kw = kwRules[k];
+                        if (titleLower.indexOf(kw) !== -1) {
+                            if (dAmount >= minAmt && minAmt > 0) {
+                                isAlert = true;
+                                matchedKw = kw;
+                                break;
+                            }
+                        }
+                    }
+                    if (isAlert) {
+                        tags.push('重点预警');
+                        reasons.push('命中预警词【' + matchedKw + '】且金额 ' + dAmount + '万 >= 门槛 ' + minAmt + '万');
+                    }
+                }
+
+                d.is_focus = (isProj || isOwner || isAlert) ? 1 : 0;
+                d.focus_tags = tags;
+                d.focus_reason = reasons;
+
+                if (d.is_focus) newTotalFocus++;
+                if (isProj) newTotalProjects++;
+                if (isOwner) newTotalOwners++;
+            });
+
+            // 重新渲染条目列表
+            build();
+
+            // 刷新顶部统计数字与过滤按钮芯片
+            var elProjStat = document.getElementById('stat-focus-project');
+            var elOwnerStat = document.getElementById('stat-focus-owner');
+            var elProjChip = document.getElementById('focusProjectCount');
+            var elOwnerChip = document.getElementById('focusOwnerCount');
+            if (elProjStat && elProjStat.firstChild) elProjStat.firstChild.textContent = newTotalProjects;
+            if (elOwnerStat && elOwnerStat.firstChild) elOwnerStat.firstChild.textContent = newTotalOwners;
+            if (elProjChip) elProjChip.textContent = newTotalProjects;
+            if (elOwnerChip) elOwnerChip.textContent = newTotalOwners;
+
+            // 重新应用过滤
+            apply();
+        })
+        .catch(function(err) {});
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+    checkAndApplyUserFocus();
+});
 </script>
 </body>
 </html>
