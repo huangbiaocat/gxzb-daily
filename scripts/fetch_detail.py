@@ -28,6 +28,7 @@ import argparse
 import json
 import re
 import sys
+import urllib.request
 # 控制台编码保护
 if hasattr(sys.stdout, "reconfigure"):
     try:

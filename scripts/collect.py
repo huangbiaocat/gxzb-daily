@@ -32,6 +32,7 @@
 无任何第三方依赖，可直接由 cron / launchd 调度。
 """
 import argparse
+import os
 import json
 import sys
 # 控制台编码保护

@@ -1690,9 +1690,8 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             sql = "SELECT run_id, day, kind, started_at, finished_at, total, ok, failed, skipped, aborted, payload FROM runs"
             params = []
             where_clauses = []
-            # 过滤条件：仅保留自动定时执行内容，剔除历史回扫与事件任务派生内容
-            where_clauses.append("(trigger_type = 'auto' OR trigger_type IS NULL)")
-            where_clauses.append("day >= '2026-09-01'")
+            # 仅排除大范围事件回扫派生流水，展示所有单次独立采集流水（包含定时与手动单步执行）
+            where_clauses.append("(trigger_type != 'event' OR trigger_type IS NULL)")
             if kind_filter:
                 where_clauses.append("kind = ?")
                 params.append(kind_filter)
@@ -1711,6 +1710,15 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
                 with sqlite3.connect(config.DB_PATH) as conn:
                     conn.row_factory = sqlite3.Row
                     cur = conn.cursor()
+                    # 容错：自动探测并补充旧数据库可能缺失的 trigger_type 字段
+                    try:
+                        cols = [r[1] for r in cur.execute("PRAGMA table_info(runs)").fetchall()]
+                        if cols and "trigger_type" not in cols:
+                            conn.execute("ALTER TABLE runs ADD COLUMN trigger_type TEXT DEFAULT 'auto'")
+                            conn.commit()
+                    except Exception:
+                        pass
+
                     count_sql = "SELECT COUNT(*) FROM runs"
                     if where_clauses:
                         count_sql += " WHERE " + " AND ".join(where_clauses)
@@ -1726,6 +1734,7 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
                                 pass
                         runs.append(d)
             except Exception as e:
+                logging.warning(f"[/api/runs] 查询单次采集流水异常: {e}")
                 runs = []
             self.send_json({"ok": True, "total": total_count, "runs": runs})
             return

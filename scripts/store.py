@@ -17,6 +17,7 @@
     python scripts/store.py --mark-pushed --infoid <id> [--infoid <id> ...] / --all-extracted
 """
 import argparse
+import contextlib
 import json
 import os
 import sqlite3
@@ -129,6 +130,15 @@ def connect(db_path=None):
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
 
+
+@contextlib.contextmanager
+def get_conn(db_path=None):
+    """提供支持 with get_conn() as conn 上下文管理器的连接生成器，并在退出时自动关闭。"""
+    conn = connect(db_path)
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 def init_db(conn=None):
     own = conn is None
