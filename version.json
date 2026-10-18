@@ -1,11 +1,17 @@
 {
   "version": "v0.1.23",
-  "commit": "d0ec341",
+  "commit": "f60a8f4",
   "date": "2026-10-18",
-  "message": "feat: 规则配置中心支持删除单条历史配置快照并实时刷新计数",
+  "message": "chore(release): bump version v0.1.23",
   "commits": [
     {
-      "commit": "HEAD",
+      "commit": "f60a8f4",
+      "author": "黄彪",
+      "date": "2026-10-18",
+      "message": "chore(release): bump version v0.1.23"
+    },
+    {
+      "commit": "016ecc3",
       "author": "黄彪",
       "date": "2026-10-18",
       "message": "feat: 规则配置中心支持删除单条历史配置快照并实时刷新计数"
@@ -33,18 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-18",
       "message": "fix(task_event): 修复大任务中断后卡死running状态与重置提示残留问题"
-    },
-    {
-      "commit": "05b61cb",
-      "author": "黄彪",
-      "date": "2026-10-18",
-      "message": "chore(release): bump version v0.1.20"
-    },
-    {
-      "commit": "24a98f4",
-      "author": "黄彪",
-      "date": "2026-10-18",
-      "message": "feat(mobile): 优化管理模式移动端顶栏按钮展示与吸顶导航"
     }
   ]
 }
