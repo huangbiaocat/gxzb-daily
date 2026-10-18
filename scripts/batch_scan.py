@@ -193,7 +193,7 @@ def main():
             except Exception:
                 pass
 
-            if res2.returncode == 0:
+            if res2 is not None and res2.returncode == 0:
                 success_days.append(day_str)
                 print(f"[OK] 日期 {day_str} 采集并构建完成！(耗时: {elapsed:.1f}s)", flush=True)
                 try:
@@ -209,11 +209,12 @@ def main():
                         pass
             else:
                 failed_days.append(day_str)
-                print(f"[FAIL] 日期 {day_str} 构建失败，返回码: {res2.returncode} (耗时: {elapsed:.1f}s)", flush=True)
+                err_msg = "build_daily_page 超时 (60s)" if res2 is None else f"build_daily_page exit code {res2.returncode}"
+                print(f"[FAIL] 日期 {day_str} 构建失败: {err_msg} (耗时: {elapsed:.1f}s)", flush=True)
                 if task_event_db and event_id:
                     try:
                         task_event_db.update_day_progress(
-                            event_id, day_str, status="failed", duration=elapsed, error=f"build_daily_page exit code {res2.returncode}"
+                            event_id, day_str, status="failed", duration=elapsed, error=err_msg
                         )
                     except Exception:
                         pass

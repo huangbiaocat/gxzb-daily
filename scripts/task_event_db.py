@@ -195,6 +195,8 @@ def update_day_progress(
                     item["error"] = error
                 elif status == "success":
                     item["error"] = None
+                elif status == "running" and not error:
+                    item["error"] = None
                 if status == "running":
                     item["started_at"] = now_str
                 elif status in ("success", "failed"):
@@ -342,7 +344,7 @@ def resume_event(event_id: str) -> bool:
                 for d in days_detail:
                     if d.get("status") == "running":
                         d["status"] = "pending"
-                        d["error"] = "断点续跑前重置"
+                        d["error"] = "中断后安全重置为待重试"
                         updated = True
                 if updated:
                     conn.execute(
@@ -405,6 +407,83 @@ def list_events(limit: int = 20, offset: int = 0, status: Optional[str] = None, 
             events.append(d)
 
         return total, events
+
+
+def heal_stale_running_events(active_event_id: Optional[str] = None) -> int:
+    """
+    扫描并安全自愈无活跃进程的僵尸 running 状态事件。
+    若某事件状态为 running 但并非当前活跃执行的 active_event_id，
+    将其及其内部停留在 running 的天数重置为可续跑的 partial_failed 状态。
+    返回被自愈的事件数量。
+    """
+    init_db()
+    healed_count = 0
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with get_conn() as conn:
+        cursor = conn.execute("SELECT event_id, days_detail FROM task_events WHERE status = 'running'")
+        running_events = cursor.fetchall()
+        for row in running_events:
+            eid = row["event_id"]
+            if active_event_id and eid == active_event_id:
+                continue
+            
+            days_detail_raw = row["days_detail"]
+            days_detail = []
+            if days_detail_raw:
+                try:
+                    days_detail = json.loads(days_detail_raw)
+                except Exception:
+                    days_detail = []
+            
+            # 将停留在 running 状态的单天修正为 pending
+            for d in days_detail:
+                if d.get("status") == "running":
+                    d["status"] = "pending"
+                    d["error"] = "进程中断后安全重置为待重试"
+                    d["finished_at"] = now_str
+            
+            completed = sum(1 for x in days_detail if x.get("status") == "success")
+            failed = sum(1 for x in days_detail if x.get("status") == "failed")
+            pending = sum(1 for x in days_detail if x.get("status") == "pending")
+            
+            if completed > 0 or pending > 0:
+                new_status = "partial_failed"
+            else:
+                new_status = "failed"
+            
+            conn.execute(
+                """
+                UPDATE task_events SET
+                    status = ?,
+                    pending_days = ?,
+                    failed_days = ?,
+                    completed_days = ?,
+                    days_detail = ?,
+                    finished_at = COALESCE(finished_at, ?),
+                    error_msg = COALESCE(error_msg, '任务进程非正常中断，已自动转为待续跑状态')
+                WHERE event_id = ?
+                """,
+                (new_status, pending, failed, completed, json.dumps(days_detail, ensure_ascii=False), now_str, eid)
+            )
+            healed_count += 1
+            logger.info(f"已自动自愈僵尸任务事件 {eid} -> {new_status}")
+            
+    return healed_count
+
+
+def reset_event_to_retryable(event_id: str) -> bool:
+    """手动强制重置指定事件状态为 partial_failed (待续跑)，解除 running 卡死状态"""
+    init_db()
+    with get_conn() as conn:
+        row = conn.execute("SELECT event_id, status FROM task_events WHERE event_id = ?", (event_id,)).fetchone()
+        if not row:
+            return False
+        heal_stale_running_events(active_event_id=None)
+        conn.execute(
+            "UPDATE task_events SET status = 'partial_failed', error_msg = '管理员手动重置为待续跑' WHERE event_id = ?",
+            (event_id,)
+        )
+        return True
 
 
 if __name__ == "__main__":
