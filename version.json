@@ -1,9 +1,33 @@
 {
-  "version": "v0.1.19",
-  "commit": "e006d7e",
-  "date": "2026-10-16",
-  "message": "chore(release): bump version v0.1.19",
+  "version": "v0.1.20",
+  "commit": "05b61cb",
+  "date": "2026-10-18",
+  "message": "chore(release): bump version v0.1.20",
   "commits": [
+    {
+      "commit": "05b61cb",
+      "author": "黄彪",
+      "date": "2026-10-18",
+      "message": "chore(release): bump version v0.1.20"
+    },
+    {
+      "commit": "24a98f4",
+      "author": "黄彪",
+      "date": "2026-10-18",
+      "message": "feat(mobile): 优化管理模式移动端顶栏按钮展示与吸顶导航"
+    },
+    {
+      "commit": "ecaae75",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "feat: 实现长周期任务天级协作式避让与定时任务完成后自动恢复机制"
+    },
+    {
+      "commit": "b6dc074",
+      "author": "黄彪",
+      "date": "2026-10-16",
+      "message": "fix(manager): 修复断点续跑并发冲突与前端日志卡死问题"
+    },
     {
       "commit": "e006d7e",
       "author": "黄彪",
@@ -15,30 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-16",
       "message": "fix(manager): 动态探测runs表结构与trigger_type列容错，修复底层单次采集流水为空问题"
-    },
-    {
-      "commit": "34a5cbd",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): bump version v0.1.18"
-    },
-    {
-      "commit": "7f20a7d",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "feat: 支持多用户独立重点项目/业主/预警规则动态计算与历史快照系统 (ZTB-25)"
-    },
-    {
-      "commit": "d2fc9da",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): update version.json build metadata for v0.1.17"
-    },
-    {
-      "commit": "4ab46e6",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): bump version v0.1.17"
     }
   ]
 }

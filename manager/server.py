@@ -347,6 +347,7 @@ class ProcessManager:
         self.end_time = None
         self.task_name = ""
         self.exit_code = None
+        self.current_event_id = None
 
     def append_log(self, text):
         with self.lock:
@@ -366,8 +367,19 @@ class ProcessManager:
             self.end_time = None
             self.log_lines = []
             self.exit_code = None
+            # 自动提取关联的 event_id
+            event_id = None
+            if "--event-id" in cmd:
+                try:
+                    idx = cmd.index("--event-id")
+                    if idx + 1 < len(cmd):
+                        event_id = cmd[idx + 1].strip()
+                except Exception:
+                    pass
+            self.current_event_id = event_id
 
         def _worker():
+            eid = event_id
             try:
                 self.append_log(f"[{self.start_time}] 开始执行任务: {name}\n")
                 self.append_log(f"命令: {' '.join(str(c) for c in cmd)}\n" + "-" * 50 + "\n")
@@ -399,12 +411,26 @@ class ProcessManager:
                     self.exit_code = rc
                     self.status = "success" if rc == 0 else "error"
                     self.end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    self.current_event_id = None
                 self.append_log("-" * 50 + f"\n[{self.end_time}] 任务结束，退出代码: {rc}\n")
+                if rc != 0 and eid:
+                    try:
+                        from scripts import task_event_db
+                        task_event_db.heal_stale_running_events()
+                    except Exception:
+                        pass
             except Exception as e:
                 with self.lock:
                     self.status = "error"
                     self.end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    self.current_event_id = None
                 self.append_log(f"\n[执行异常]: {str(e)}\n")
+                if eid:
+                    try:
+                        from scripts import task_event_db
+                        task_event_db.heal_stale_running_events()
+                    except Exception:
+                        pass
 
         th = threading.Thread(target=_worker, daemon=True)
         th.start()
@@ -416,7 +442,16 @@ class ProcessManager:
                 try:
                     self.process.terminate()
                     self.status = "error"
+                    eid = self.current_event_id
+                    self.current_event_id = None
                     self.append_log("\n[用户手动终止任务]\n")
+                    if eid:
+                        try:
+                            from scripts import task_event_db
+                            task_event_db.finish_event(eid, error_msg="用户手动终止任务")
+                            task_event_db.heal_stale_running_events()
+                        except Exception:
+                            pass
                     return True, "已发送终止信号"
                 except Exception as e:
                     return False, str(e)
@@ -428,6 +463,13 @@ class ProcessManager:
             if self.process and self.process.poll() is not None and self.status == "running":
                 self.status = "success" if self.process.returncode == 0 else "error"
                 self.exit_code = self.process.returncode
+                if self.current_event_id:
+                    try:
+                        from scripts import task_event_db
+                        task_event_db.heal_stale_running_events()
+                    except Exception:
+                        pass
+                    self.current_event_id = None
             is_running = (self.status == "running")
             log_content = "".join(self.log_lines)
             return {
@@ -1781,6 +1823,12 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
 
         if path == "/api/task_events":
             # 获取事件级高层任务台账
+            try:
+                from scripts import task_event_db
+                active_eid = PROC_MGR.current_event_id if PROC_MGR.status == "running" else None
+                task_event_db.heal_stale_running_events(active_event_id=active_eid)
+            except Exception:
+                pass
             query = parse_qs(parsed.query)
             limit = min(int(query.get("limit", ["30"])[0]), 100)
             offset = max(int(query.get("offset", ["0"])[0]), 0)
@@ -2437,6 +2485,24 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             except Exception as e:
                 self._audit("RESUME_TASK", "FAILED", f"断点续跑启动异常: {e}")
                 self.send_json({"ok": False, "msg": f"断点续跑启动异常: {e}"})
+            return
+
+        if path == "/api/reset_task_event":
+            # 强制重置卡死在 running 状态的事件为待续跑状态
+            event_id = post_data.get("event_id", "").strip()
+            if not event_id:
+                self.send_json({"ok": False, "msg": "缺少事件 ID (event_id)！"})
+                return
+            try:
+                from scripts import task_event_db
+                ok = task_event_db.reset_event_to_retryable(event_id)
+                if ok:
+                    self._audit("RESET_TASK_EVENT", "SUCCESS", f"手动重置任务事件为可续跑: {event_id}")
+                    self.send_json({"ok": True, "msg": f"事件 {event_id} 已成功重置为可续跑状态！"})
+                else:
+                    self.send_json({"ok": False, "msg": f"未找到事件 {event_id} 或无需重置！"})
+            except Exception as e:
+                self.send_json({"ok": False, "msg": f"重置事件异常: {e}"})
             return
 
         if path == "/api/run_backscan":

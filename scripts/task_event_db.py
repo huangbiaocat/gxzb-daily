@@ -466,7 +466,7 @@ def heal_stale_running_events(active_event_id: Optional[str] = None) -> int:
                 (new_status, pending, failed, completed, json.dumps(days_detail, ensure_ascii=False), now_str, eid)
             )
             healed_count += 1
-            logger.info(f"已自动自愈僵尸任务事件 {eid} -> {new_status}")
+            print(f"[TaskEventDB] 已自动自愈僵尸任务事件 {eid} -> {new_status}")
             
     return healed_count
 

@@ -3932,7 +3932,7 @@
                             <td class="px-3 py-2 font-mono text-indigo-600 font-medium">${d.focus > 0 ? `${d.focus} 条` : '--'}</td>
                             <td class="px-3 py-2 font-mono text-slate-500">${d.duration ? `${d.duration}s` : '--'}</td>
                             <td class="px-3 py-2 text-slate-400 text-[11px]">${d.finished_at ? d.finished_at.split(' ')[1] : '--'}</td>
-                            <td class="px-3 py-2 text-slate-500 text-[11px] max-w-[200px] truncate" title="${d.error || ''}">${d.error ? `<span class="text-red-500 font-mono">${d.error}</span>` : '<span class="text-slate-300">无异常</span>'}</td>
+                            <td class="px-3 py-2 text-slate-500 text-[11px] max-w-[200px] truncate" title="${d.error || ''}">${d.error ? (d.error.includes('重置') ? `<span class="text-amber-600 font-mono">${d.error}</span>` : `<span class="text-red-500 font-mono">${d.error}</span>`) : '<span class="text-slate-300">无异常</span>'}</td>
                             <td class="px-3 py-2 text-right">
                                 <button onclick="runSingleDayFromEvent('${d.day}')" class="px-2 py-0.5 text-[11px] font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition">
                                     单日重跑
@@ -3943,7 +3943,14 @@
                 });
 
                 let resumeBtnHtml = "";
-                if (evt.has_unfinished || evt.status === 'partial_failed' || (fail > 0 || pend > 0)) {
+                if (evt.status === 'running') {
+                    resumeBtnHtml = `
+                        <button onclick="resetTaskEvent('${evt.event_id}')" class="inline-flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 shadow-2xs transition transform active:scale-95" title="若后台进程已异常中断，点击可安全重置为待续跑">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            <span>重置为可续跑</span>
+                        </button>
+                    `;
+                } else if (evt.has_unfinished || evt.status === 'partial_failed' || (fail > 0 || pend > 0)) {
                     const remainCount = fail + pend;
                     resumeBtnHtml = `
                         <button onclick="resumeTaskEvent('${evt.event_id}', '${encodeURIComponent(evt.title)}')" class="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition transform active:scale-95">
@@ -4070,6 +4077,28 @@
                 }
             } catch (err) {
                 logEl.textContent += `[System Error] 启动异常: ${err}\n`;
+            }
+        }
+
+        async function resetTaskEvent(eventId) {
+            if (!confirm("确定要将该大任务安全重置为待续跑状态吗？\n如果任务进程已中断，重置后即可点击【断点续跑】继续执行。")) {
+                return;
+            }
+            try {
+                const res = await fetch("/api/reset_task_event", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ event_id: eventId })
+                });
+                const d = await res.json();
+                if (d.ok) {
+                    alert(d.msg || "已成功重置！");
+                    fetchTaskEvents();
+                } else {
+                    alert("重置失败: " + (d.msg || "未知原因"));
+                }
+            } catch (err) {
+                alert("网络请求失败: " + err);
             }
         }
 
