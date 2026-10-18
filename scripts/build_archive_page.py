@@ -2256,8 +2256,9 @@ function renderFavSnapshotsUI() {
                 '</div>' +
                 noteHtml +
             '</div>' +
-            '<div>' +
+            '<div style="display: flex; gap: 8px; align-items: center;">' +
                 '<button type="button" onclick="handleRollbackSnapshot(\\'' + s.snapshot_id + '\\')" style="padding: 5px 12px; font-size: 0.78rem; font-weight: 600; background: #f8fafc; color: #0284c7; border: 1px solid #bae6fd; border-radius: 6px; cursor: pointer;">一键回滚</button>' +
+                '<button type="button" onclick="handleDeleteSnapshot(\\'' + s.snapshot_id + '\\')" style="padding: 5px 10px; font-size: 0.78rem; font-weight: 600; background: #f8fafc; color: #ef4444; border: 1px solid #fecaca; background: #ffffff; border-radius: 6px; cursor: pointer;">删除</button>' +
             '</div>' +
         '</div>';
     }).join('');
@@ -2435,6 +2436,32 @@ async function handleRollbackSnapshot(snapshotId) {
         }
     } catch (err) {
         alert('回滚请求异常: ' + err.message);
+    }
+}
+
+async function handleDeleteSnapshot(snapshotId) {
+    if (!confirm('确定要删除该条历史配置快照吗？删除后将无法通过此快照回滚。')) return;
+    try {
+        var res = await fetch('/api/user/config_snapshots/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ snapshot_id: snapshotId })
+        });
+        var data = await res.json();
+        if (data.ok) {
+            if (data.snapshots) {
+                currentUserConfig.snapshots = data.snapshots;
+            } else if (currentUserConfig.snapshots) {
+                currentUserConfig.snapshots = currentUserConfig.snapshots.filter(function(s) {
+                    return s.snapshot_id !== snapshotId;
+                });
+            }
+            renderFavSnapshotsUI();
+        } else {
+            alert('删除快照失败: ' + (data.msg || '未知错误'));
+        }
+    } catch (err) {
+        alert('删除快照请求异常: ' + err.message);
     }
 }
 

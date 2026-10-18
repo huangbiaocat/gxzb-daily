@@ -46,7 +46,7 @@ try:
         get_all_users_for_admin, get_login_history_for_admin,
         get_user_full_config, save_user_full_config,
         get_user_config_snapshots, get_user_config_snapshot_detail,
-        rollback_user_config_snapshot
+        rollback_user_config_snapshot, delete_user_config_snapshot
     )
     init_user_db()
 except Exception as _e:
@@ -2306,6 +2306,25 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             if ok:
                 self._audit("USER_CONFIG_ROLLBACK", "SUCCESS", f"用户 {user['username']} 回滚配置至快照 {snapshot_id}")
             self.send_json({"ok": ok, "msg": msg})
+            return
+
+        # 普通用户历史配置快照删除
+        if path in ("/api/user/config_snapshots/delete", "/api/user/delete_config_snapshot"):
+            user = self.get_current_user()
+            if not user:
+                self.send_json({"ok": False, "error": "unauthorized", "msg": "请先登录普通用户账号"}, status=401)
+                return
+            snapshot_id = post_data.get("snapshot_id") or post_data.get("id")
+            if not snapshot_id:
+                self.send_json({"ok": False, "msg": "缺少快照标识 snapshot_id"}, status=400)
+                return
+            ok, msg = delete_user_config_snapshot(user["id"], snapshot_id)
+            if ok:
+                self._audit("USER_CONFIG_SNAPSHOT_DELETE", "SUCCESS", f"用户 {user['username']} 删除了历史快照 {snapshot_id}")
+                snapshots = get_user_config_snapshots(user["id"])
+                self.send_json({"ok": True, "msg": msg, "snapshots": snapshots})
+            else:
+                self.send_json({"ok": False, "msg": msg}, status=400)
             return
 
         # 敏感写操作与流水线触发鉴权拦截

@@ -623,3 +623,20 @@ def rollback_user_config_snapshot(user_id: int, username: str, snapshot_id: str)
     note_text = f"回滚自快照 [{snapshot_id}] ({detail.get('created_at', '')})"
     save_user_full_config(user_id, username, target_cfg, trigger="rollback", note=note_text)
     return True, f"已成功将配置回滚至快照 {snapshot_id}"
+
+
+def delete_user_config_snapshot(user_id: int, snapshot_id: str) -> Tuple[bool, str]:
+    """删除用户的指定历史配置快照"""
+    init_user_db()
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT id FROM portal_user_config_snapshots WHERE user_id = ? AND snapshot_id = ?",
+            (user_id, snapshot_id)
+        ).fetchone()
+        if not row:
+            return False, f"未找到快照 {snapshot_id}"
+        conn.execute(
+            "DELETE FROM portal_user_config_snapshots WHERE user_id = ? AND snapshot_id = ?",
+            (user_id, snapshot_id)
+        )
+    return True, f"已成功删除快照 {snapshot_id}"

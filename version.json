@@ -1,9 +1,27 @@
 {
-  "version": "v0.1.21",
-  "commit": "642a930",
+  "version": "v0.1.23",
+  "commit": "d0ec341",
   "date": "2026-10-18",
-  "message": "chore(release): bump version v0.1.21",
+  "message": "feat: 规则配置中心支持删除单条历史配置快照并实时刷新计数",
   "commits": [
+    {
+      "commit": "HEAD",
+      "author": "黄彪",
+      "date": "2026-10-18",
+      "message": "feat: 规则配置中心支持删除单条历史配置快照并实时刷新计数"
+    },
+    {
+      "commit": "d0ec341",
+      "author": "黄彪",
+      "date": "2026-10-18",
+      "message": "chore(release): bump version v0.1.22"
+    },
+    {
+      "commit": "c908e4a",
+      "author": "黄彪",
+      "date": "2026-10-18",
+      "message": "feat: 支持根据用户关注规则实时无刷新渲染重点项目与业主，新用户默认不显示重点"
+    },
     {
       "commit": "642a930",
       "author": "黄彪",
@@ -27,18 +45,6 @@
       "author": "黄彪",
       "date": "2026-10-18",
       "message": "feat(mobile): 优化管理模式移动端顶栏按钮展示与吸顶导航"
-    },
-    {
-      "commit": "ecaae75",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "feat: 实现长周期任务天级协作式避让与定时任务完成后自动恢复机制"
-    },
-    {
-      "commit": "b6dc074",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "fix(manager): 修复断点续跑并发冲突与前端日志卡死问题"
     }
   ]
 }
