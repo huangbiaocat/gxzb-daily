@@ -2372,6 +2372,15 @@ async function saveUserFullConfigSubmit() {
         var data = await res.json();
         if (data.ok) {
             if (noteInput) noteInput.value = '';
+            try {
+                localStorage.setItem('gxzb_user_focus_config', JSON.stringify(payload));
+            } catch (e) {}
+            try {
+                if (window.BroadcastChannel) {
+                    new BroadcastChannel('gxzb_focus_channel').postMessage(payload);
+                }
+            } catch (e) {}
+            window.dispatchEvent(new CustomEvent('gxzb_focus_config_changed', { detail: payload }));
             if (tip) {
                 tip.className = 'admin-login-tip tip-success';
                 tip.innerText = '专属重点跟踪规则已成功保存，并已生成最新历史快照！';
@@ -2389,9 +2398,18 @@ async function saveUserFullConfigSubmit() {
             }
         }
     } catch (err) {
+        try {
+            localStorage.setItem('gxzb_user_focus_config', JSON.stringify(payload));
+        } catch (e) {}
+        try {
+            if (window.BroadcastChannel) {
+                new BroadcastChannel('gxzb_focus_channel').postMessage(payload);
+            }
+        } catch (e) {}
+        window.dispatchEvent(new CustomEvent('gxzb_focus_config_changed', { detail: payload }));
         if (tip) {
             tip.className = 'admin-login-tip tip-error';
-            tip.innerText = '网络异常: ' + err.message;
+            tip.innerText = '专属规则已保存到本地并实时生效（离线模式）';
             tip.style.display = 'block';
         }
     } finally {

@@ -1093,12 +1093,23 @@ def build_search_page() -> Path:
                 }
             }
 
+            // 优先应用本地保存的用户专属重点设置（若新用户未配置任何关注，清空重点标记，不显示任何重点）
+            let localCfg = null;
+            try {
+                const raw = localStorage.getItem('gxzb_user_focus_config');
+                if (raw) localCfg = JSON.parse(raw);
+            } catch (e) {}
+            applyUserFocusConfigToSearch(localCfg, false);
+
             // 检测普通用户登录态并应用个性化重点跟踪规则
             try {
                 const userCfgRes = await fetch('/api/user/config');
                 if (userCfgRes.ok) {
                     const userCfgData = await userCfgRes.json();
                     if (userCfgData && userCfgData.ok && userCfgData.config) {
+                        try {
+                            localStorage.setItem('gxzb_user_focus_config', JSON.stringify(userCfgData.config));
+                        } catch (e) {}
                         const cfg = userCfgData.config;
                         const uLabel = document.getElementById('searchUserLabel');
                         if (uLabel) uLabel.innerText = '专属跟踪已生效';
@@ -1196,6 +1207,136 @@ def build_search_page() -> Path:
                 </div>
             `;
         }
+    }
+
+    // 用户专属重点跟踪动态实时计算与重绘（支持跨页面广播与就地生效，零刷新响应）
+    function applyUserFocusConfigToSearch(cfg, shouldRerender) {
+        const pRules = (cfg && cfg.focus_projects ? cfg.focus_projects : []).map(s => String(s).trim().toLowerCase()).filter(Boolean);
+        const oRules = (cfg && cfg.focus_owners ? cfg.focus_owners : []).map(s => String(s).trim().toLowerCase()).filter(Boolean);
+        const kwRules = (cfg && cfg.alert_keywords ? cfg.alert_keywords : []).map(s => String(s).trim().toLowerCase()).filter(Boolean);
+        const minAmt = (cfg && typeof cfg.alert_min_amount === 'number') ? cfg.alert_min_amount : 1000.0;
+
+        const uLabel = document.getElementById('searchUserLabel');
+        if (uLabel) {
+            if (pRules.length > 0 || oRules.length > 0) {
+                uLabel.innerText = '专属跟踪已生效';
+            } else {
+                uLabel.innerText = '专属跟踪';
+            }
+        }
+
+        allData.forEach(item => {
+            // 若新用户未配置任何关注，清空所有重点标记，不显示任何重点
+            if (pRules.length === 0 && oRules.length === 0 && kwRules.length === 0) {
+                item.is_focus = 0;
+                item.focus_tags = [];
+                item.focus_reason = [];
+                return;
+            }
+
+            const titleLower = (item.title || '').toLowerCase();
+            const purchaserLower = ((item.purchaser || item.owner || '') + ' ' + (item.areaname || '')).toLowerCase();
+            let amt = (typeof item.amount === 'number') ? item.amount : 0;
+            if (!amt && item.title) {
+                const m = item.title.match(/([0-9]+(?:\\.[0-9]+)?)\\s*(?:万元|万)/);
+                if (m) amt = parseFloat(m[1]);
+            }
+
+            let isProj = false;
+            let isOwner = false;
+            let isAlert = false;
+            let matchedProj = '';
+            let matchedOwner = '';
+            let matchedKw = '';
+            const tags = [];
+            const reasons = [];
+
+            // 1. 重点项目强规则
+            if (pRules.length > 0) {
+                for (let i = 0; i < pRules.length; i++) {
+                    const p = pRules[i];
+                    if (titleLower.includes(p)) {
+                        isProj = true;
+                        matchedProj = p;
+                        break;
+                    }
+                    if (p.length >= 6) {
+                        const mid = Math.floor(p.length / 2);
+                        if (titleLower.includes(p.slice(0, mid)) && titleLower.includes(p.slice(mid))) {
+                            isProj = true;
+                            matchedProj = p;
+                            break;
+                        }
+                    }
+                }
+                if (isProj) {
+                    tags.push('重点项目');
+                    reasons.push('命中专属重点项目：' + matchedProj);
+                }
+            }
+
+            // 2. 重点业主强规则
+            if (oRules.length > 0) {
+                for (let j = 0; j < oRules.length; j++) {
+                    const o = oRules[j];
+                    if (titleLower.includes(o) || purchaserLower.includes(o)) {
+                        isOwner = true;
+                        matchedOwner = o;
+                        break;
+                    }
+                }
+                if (isOwner) {
+                    tags.push('重点业主');
+                    reasons.push('命中专属重点业主：' + matchedOwner);
+                }
+            }
+
+            // 3. 通用预警与金额门槛
+            if (!isProj && !isOwner && kwRules.length > 0) {
+                for (let k = 0; k < kwRules.length; k++) {
+                    const kw = kwRules[k];
+                    if (titleLower.includes(kw)) {
+                        if (amt >= minAmt && minAmt > 0) {
+                            isAlert = true;
+                            matchedKw = kw;
+                            break;
+                        }
+                    }
+                }
+                if (isAlert) {
+                    tags.push('重点预警');
+                    reasons.push('命中预警词【' + matchedKw + '】且金额 ' + amt + '万 >= 门槛 ' + minAmt + '万');
+                }
+            }
+
+            item.is_focus = (isProj || isOwner || isAlert) ? 1 : 0;
+            item.focus_tags = tags;
+            item.focus_reason = reasons;
+        });
+
+        if (shouldRerender !== false) {
+            applyFilters();
+        }
+    }
+
+    // 跨标签页广播与本地存储监听（搜索页零刷新实时同步）
+    window.addEventListener('storage', e => {
+        if (e.key === 'gxzb_user_focus_config' && e.newValue) {
+            try {
+                applyUserFocusConfigToSearch(JSON.parse(e.newValue), true);
+            } catch (err) {}
+        }
+    });
+    window.addEventListener('gxzb_focus_config_changed', e => {
+        if (e.detail) applyUserFocusConfigToSearch(e.detail, true);
+    });
+    if (window.BroadcastChannel) {
+        try {
+            const bc = new BroadcastChannel('gxzb_focus_channel');
+            bc.onmessage = e => {
+                if (e.data) applyUserFocusConfigToSearch(e.data, true);
+            };
+        } catch (e) {}
     }
 
     initData();

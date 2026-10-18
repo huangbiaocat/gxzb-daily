@@ -1021,6 +1021,208 @@ DAILY_CSS = """
             font-weight: 700;
         }
 
+        /* ===== 专属重点跟踪配置弹窗 ===== */
+        .admin-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .admin-modal-card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+            width: 100%;
+            max-width: 780px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .admin-modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+        }
+        .admin-modal-title {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .admin-modal-close {
+            background: transparent;
+            border: none;
+            color: #64748b;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            line-height: 1;
+            transition: all 0.15s;
+        }
+        .admin-modal-close:hover {
+            color: #0f172a;
+            background: #e2e8f0;
+        }
+        .admin-modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .admin-modal-footer {
+            padding: 14px 20px;
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .fav-tab-bar {
+            display: flex;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 16px;
+            gap: 8px;
+        }
+        .fav-tab-btn {
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            padding: 8px 14px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .fav-tab-btn:hover {
+            color: #0f172a;
+        }
+        .fav-tab-btn.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+        .fav-tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 8px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            background: #f8fafc;
+            min-height: 48px;
+        }
+        .fav-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #1e293b;
+        }
+        .fav-chip-project {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-color: #bfdbfe;
+        }
+        .fav-chip-owner {
+            background: #ecfdf5;
+            color: #047857;
+            border-color: #a7f3d0;
+        }
+        .fav-chip-del {
+            cursor: pointer;
+            color: #94a3b8;
+            font-weight: 700;
+            margin-left: 2px;
+        }
+        .fav-chip-del:hover {
+            color: #ef4444;
+        }
+        .fav-add-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .fav-add-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+        .fav-add-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+        }
+        .fav-add-btn {
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .fav-add-btn:hover {
+            background: #2563eb;
+        }
+        .fav-save-btn {
+            background: #16a34a;
+            color: #ffffff;
+            border: none;
+            padding: 9px 20px;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .fav-save-btn:hover {
+            background: #15803d;
+        }
+        .fav-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #0f172a;
+            color: #ffffff;
+            padding: 10px 18px;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+            font-size: 0.85rem;
+            font-weight: 600;
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
 """
 
 # ------------------------------------------------------------------ 3. 页面骨架（preview 结构与类名）
@@ -1076,7 +1278,7 @@ __DAILY_CSS__
 <span>后一日</span>
 <svg fill="none" height="15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="15"><polyline points="9 18 15 12 9 6"></polyline></svg>
 </a>
-<button id="btnDailyUserPortal" class="btn-back" style="color: #2563eb; border-color: #bfdbfe; background: #eff6ff; font-weight: 600;" onclick="window.location.href='./index.html?open_user=1'" title="管理我的专属重点跟踪规则">
+<button id="btnDailyUserPortal" class="btn-back" style="color: #2563eb; border-color: #bfdbfe; background: #eff6ff; font-weight: 600;" onclick="openFavoritesModal()" title="管理我的专属重点跟踪规则">
 <svg fill="none" height="15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24" width="15"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
 <span id="dailyUserLabel">重点跟踪配置</span>
 </button>
@@ -1097,9 +1299,9 @@ __DAILY_CSS__
             <div id="userFocusNoticeBanner" style="display: none; margin: 12px 0 16px; padding: 10px 16px; background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1px solid #bfdbfe; border-radius: 8px; font-size: 0.85rem; color: #1e3a8a; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 1.15rem;">🎯</span>
-                    <span><strong>专属重点跟踪已生效：</strong>已按您专属设置的 <span id="bannerProjectsCount" style="font-weight: 700; color: #0284c7;">0</span> 项重点项目、<span id="bannerOwnersCount" style="font-weight: 700; color: #0284c7;">0</span> 家重点业主与预警门槛 (<span id="bannerMinAmount" style="font-weight: 700; color: #d97706;">1000</span>万) 实时动态标记标讯，不再沿用系统默认规则。</span>
+                    <span id="userFocusBannerContent"><strong>专属重点跟踪已生效：</strong>已按您专属设置的 <span id="bannerProjectsCount" style="font-weight: 700; color: #0284c7;">0</span> 项重点项目、<span id="bannerOwnersCount" style="font-weight: 700; color: #0284c7;">0</span> 家重点业主实时标记。</span>
                 </div>
-                <a href="./index.html?open_user=1" style="color: #2563eb; font-weight: 600; text-decoration: underline; font-size: 0.82rem;">修改专属规则 &gt;</a>
+                <button type="button" onclick="openFavoritesModal()" style="background: #ffffff; border: 1px solid #bfdbfe; color: #2563eb; padding: 4px 12px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;">管理我的规则</button>
             </div>
             <div class="stats-grid cols-8">
                 <div class="stat-box stage-plan clickable" data-stage="招标计划" title="点击筛选 招标计划">
@@ -2048,13 +2250,201 @@ container.addEventListener('click', function(e) {
     }
 });
 
-var projCnt = RAW_DATA.filter(function (d) { return d.focus_tags && d.focus_tags.indexOf("重点项目") !== -1; }).length;
-var ownerCnt = RAW_DATA.filter(function (d) { return d.focus_tags && d.focus_tags.indexOf("重点业主") !== -1; }).length;
-var elProjCount = document.getElementById('focusProjectCount');
-if (elProjCount) elProjCount.textContent = projCnt;
-var elOwnerCount = document.getElementById('focusOwnerCount');
-if (elOwnerCount) elOwnerCount.textContent = ownerCnt;
+// ===== 用户专属重点跟踪引擎（基于当前用户设置实时动态重绘，零刷新响应） =====
+var currentUserConfig = {
+    focus_projects: [],
+    focus_owners: [],
+    alert_keywords: [],
+    alert_min_amount: 1000
+};
 
+// 1. 获取当前用户配置：优先读取 localStorage；新用户无任何关注时返回纯空配置（不继承系统母库）
+function getActiveUserFocusConfig() {
+    try {
+        var raw = localStorage.getItem('gxzb_user_focus_config');
+        if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed && (Array.isArray(parsed.focus_projects) || Array.isArray(parsed.focus_owners))) {
+                return parsed;
+            }
+        }
+    } catch(e) {}
+    return {
+        focus_projects: [],
+        focus_owners: [],
+        alert_keywords: [],
+        alert_min_amount: 1000,
+        is_empty: true
+    };
+}
+
+// 2. 核心函数：根据用户配置实时重算 RAW_DATA 并更新界面（shouldRebuild 决定是否立即重绘 DOM）
+function applyUserFocusConfig(cfg, shouldRebuild) {
+    if (!cfg) cfg = { focus_projects: [], focus_owners: [], alert_keywords: [], alert_min_amount: 1000 };
+    currentUserConfig.focus_projects = Array.isArray(cfg.focus_projects) ? cfg.focus_projects.slice() : [];
+    currentUserConfig.focus_owners = Array.isArray(cfg.focus_owners) ? cfg.focus_owners.slice() : [];
+    currentUserConfig.alert_keywords = Array.isArray(cfg.alert_keywords) ? cfg.alert_keywords.slice() : [];
+    currentUserConfig.alert_min_amount = (typeof cfg.alert_min_amount === 'number') ? cfg.alert_min_amount : 1000;
+
+    var pRules = currentUserConfig.focus_projects.map(function(s) { return String(s).trim().toLowerCase(); }).filter(Boolean);
+    var oRules = currentUserConfig.focus_owners.map(function(s) { return String(s).trim().toLowerCase(); }).filter(Boolean);
+    var kwRules = currentUserConfig.alert_keywords.map(function(s) { return String(s).trim().toLowerCase(); }).filter(Boolean);
+    var minAmt = currentUserConfig.alert_min_amount;
+
+    var newTotalFocus = 0;
+    var newTotalProjects = 0;
+    var newTotalOwners = 0;
+
+    RAW_DATA.forEach(function(d) {
+        // 如果新用户没有任何关注规则，完全不标记任何重点
+        if (pRules.length === 0 && oRules.length === 0 && kwRules.length === 0) {
+            d.is_focus = 0;
+            d.focus_tags = [];
+            d.focus_reason = [];
+            return;
+        }
+
+        var titleLower = (d.title || '').toLowerCase();
+        var purchaserLower = ((d.purchaser || d.owner || '') + ' ' + (d.areaname || '')).toLowerCase();
+        var dAmount = (typeof d.amount === 'number') ? d.amount : 0;
+        if (!dAmount && d.title) {
+            var m = d.title.match(/([0-9]+(?:\\.[0-9]+)?)\\s*(?:万元|万)/);
+            if (m) dAmount = parseFloat(m[1]);
+        }
+
+        var isProj = false;
+        var isOwner = false;
+        var isAlert = false;
+        var matchedProj = '';
+        var matchedOwner = '';
+        var matchedKw = '';
+        var tags = [];
+        var reasons = [];
+
+        // 重点项目匹配
+        if (pRules.length > 0) {
+            for (var i = 0; i < pRules.length; i++) {
+                var p = pRules[i];
+                if (titleLower.indexOf(p) !== -1) {
+                    isProj = true;
+                    matchedProj = p;
+                    break;
+                }
+                if (p.length >= 6) {
+                    var mid = Math.floor(p.length / 2);
+                    var s1 = p.slice(0, mid);
+                    var s2 = p.slice(mid);
+                    if (titleLower.indexOf(s1) !== -1 && titleLower.indexOf(s2) !== -1) {
+                        isProj = true;
+                        matchedProj = p;
+                        break;
+                    }
+                }
+            }
+            if (isProj) {
+                tags.push('重点项目');
+                reasons.push('命中专属重点项目：' + matchedProj);
+            }
+        }
+
+        // 重点业主匹配
+        if (oRules.length > 0) {
+            for (var j = 0; j < oRules.length; j++) {
+                var o = oRules[j];
+                if (titleLower.indexOf(o) !== -1 || purchaserLower.indexOf(o) !== -1) {
+                    isOwner = true;
+                    matchedOwner = o;
+                    break;
+                }
+            }
+            if (isOwner) {
+                tags.push('重点业主');
+                reasons.push('命中专属重点业主：' + matchedOwner);
+            }
+        }
+
+        // 预警关键词匹配
+        if (!isProj && !isOwner && kwRules.length > 0) {
+            for (var k = 0; k < kwRules.length; k++) {
+                var kw = kwRules[k];
+                if (titleLower.indexOf(kw) !== -1) {
+                    if (dAmount >= minAmt && minAmt > 0) {
+                        isAlert = true;
+                        matchedKw = kw;
+                        break;
+                    }
+                }
+            }
+            if (isAlert) {
+                tags.push('重点预警');
+                reasons.push('命中预警词【' + matchedKw + '】且金额 ' + dAmount + '万 >= 门槛 ' + minAmt + '万');
+            }
+        }
+
+        d.is_focus = (isProj || isOwner || isAlert) ? 1 : 0;
+        d.focus_tags = tags;
+        d.focus_reason = reasons;
+
+        if (d.is_focus) newTotalFocus++;
+        if (isProj) newTotalProjects++;
+        if (isOwner) newTotalOwners++;
+    });
+
+    // 更新统计栏与胶囊计数器
+    var elProjCount = document.getElementById('focusProjectCount');
+    if (elProjCount) elProjCount.textContent = newTotalProjects;
+    var elOwnerCount = document.getElementById('focusOwnerCount');
+    if (elOwnerCount) elOwnerCount.textContent = newTotalOwners;
+
+    var statProjEl = document.getElementById('stat-focus-project');
+    if (statProjEl && statProjEl.firstChild) statProjEl.firstChild.textContent = newTotalProjects;
+    var statOwnerEl = document.getElementById('stat-focus-owner');
+    if (statOwnerEl && statOwnerEl.firstChild) statOwnerEl.firstChild.textContent = newTotalOwners;
+
+    // 更新专属横幅与头部按钮状态
+    var banner = document.getElementById('userFocusNoticeBanner');
+    var bannerContent = document.getElementById('userFocusBannerContent');
+    var btnUser = document.getElementById('btnDailyUserPortal');
+    var labelUser = document.getElementById('dailyUserLabel');
+
+    var hasCustomFocus = (pRules.length > 0 || oRules.length > 0 || kwRules.length > 0);
+    if (banner) {
+        banner.style.display = 'flex';
+        if (hasCustomFocus) {
+            if (bannerContent) {
+                bannerContent.innerHTML = '<strong>🎯 专属重点跟踪已生效：</strong>已按您专属关注的 <span style="font-weight:700;color:#0284c7;">' + pRules.length + '</span> 项重点项目、<span style="font-weight:700;color:#0284c7;">' + oRules.length + '</span> 家重点业主实时标记（今日命中：项目 ' + newTotalProjects + ' 条，业主 ' + newTotalOwners + ' 条）。';
+            }
+            if (btnUser) {
+                btnUser.style.background = '#dcfce7';
+                btnUser.style.borderColor = '#86efac';
+                btnUser.style.color = '#15803d';
+            }
+            if (labelUser) labelUser.innerText = '专属跟踪已生效';
+        } else {
+            if (bannerContent) {
+                bannerContent.innerHTML = '<strong>💡 专属跟踪提示：</strong>您当前尚未添加任何重点项目或业主，暂未标记任何重点标讯。点击右侧按钮即可建立您的专属关注库。';
+            }
+            if (btnUser) {
+                btnUser.style.background = '#eff6ff';
+                btnUser.style.borderColor = '#bfdbfe';
+                btnUser.style.color = '#2563eb';
+            }
+            if (labelUser) labelUser.innerText = '重点跟踪设置';
+        }
+    }
+
+    // 立即重绘 DOM 条目列表并重新执行筛选过滤（实时生效）
+    if (shouldRebuild !== false) {
+        build();
+        apply();
+    }
+}
+
+// 3. 首屏初始化：第一时间使用用户规则清洗 RAW_DATA（若新用户未关注任何词，首屏重点直接为 0，不显示任何重点）
+var initialCfg = getActiveUserFocusConfig();
+applyUserFocusConfig(initialCfg, false);
+
+// 4. 更新加班与滞后公开卡片初始计数
 const otCountEl = document.getElementById('overtimeCount');
 if (otCountEl) otCountEl.textContent = RAW_DATA.filter(function (d) { return d.is_overtime; }).length;
 const delCountEl = document.getElementById('delayedCount');
@@ -2063,19 +2453,254 @@ if (delCountEl) {
     var extraDelCnt = (typeof DELAYED_DATA !== 'undefined' && Array.isArray(DELAYED_DATA)) ? DELAYED_DATA.length : 0;
     delCountEl.textContent = rawDelCnt + extraDelCnt;
 }
-var statProjEl = document.getElementById('stat-focus-project');
-if (statProjEl && statProjEl.firstChild) {
-    statProjEl.firstChild.textContent = projCnt;
-}
-var statOwnerEl = document.getElementById('stat-focus-owner');
-if (statOwnerEl && statOwnerEl.firstChild) {
-    statOwnerEl.firstChild.textContent = ownerCnt;
-}
 
+// 5. 首次执行列表构建与筛选
 build();
 apply();
 
-// 多用户专属个性化重点跟踪体系与动态标记
+// 6. 专属重点跟踪配置弹窗交互管理
+function openFavoritesModal() {
+    var modal = document.getElementById('favoritesModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    renderFavUI();
+}
+
+function closeFavoritesModal() {
+    var modal = document.getElementById('favoritesModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function handleFavModalOverlayClick(e) {
+    if (e.target && e.target.id === 'favoritesModal') {
+        closeFavoritesModal();
+    }
+}
+
+function switchFavTab(tabKey) {
+    var tabs = ['projects', 'owners', 'alerts'];
+    tabs.forEach(function(k) {
+        var btn = document.getElementById('favTabBtn_' + k);
+        var panel = document.getElementById('favPanel_' + k);
+        if (btn) {
+            if (k === tabKey) btn.classList.add('active');
+            else btn.classList.remove('active');
+        }
+        if (panel) panel.style.display = (k === tabKey) ? 'block' : 'none';
+    });
+}
+
+function renderFavUI() {
+    // 项目列表
+    var pContainer = document.getElementById('favProjectsTagContainer');
+    var pBadge = document.getElementById('favCountBadge_projects');
+    var pList = currentUserConfig.focus_projects || [];
+    if (pBadge) pBadge.textContent = pList.length;
+    if (pContainer) {
+        if (pList.length === 0) {
+            pContainer.innerHTML = '<div style="color:#94a3b8;font-size:0.82rem;font-style:italic;padding:8px;width:100%;text-align:center;">暂无关注项目，可从下方添加</div>';
+        } else {
+            pContainer.innerHTML = pList.map(function(name, idx) {
+                return '<span class="fav-chip fav-chip-project">🎯 ' + escapeHtml(name) + '<span class="fav-chip-del" onclick="removeSingleProject(' + idx + ')">&times;</span></span>';
+            }).join('');
+        }
+    }
+
+    // 业主列表
+    var oContainer = document.getElementById('favOwnersTagContainer');
+    var oBadge = document.getElementById('favCountBadge_owners');
+    var oList = currentUserConfig.focus_owners || [];
+    if (oBadge) oBadge.textContent = oList.length;
+    if (oContainer) {
+        if (oList.length === 0) {
+            oContainer.innerHTML = '<div style="color:#94a3b8;font-size:0.82rem;font-style:italic;padding:8px;width:100%;text-align:center;">暂无关注业主，可从下方添加</div>';
+        } else {
+            pContainer.innerHTML = oList.map(function(name, idx) {
+                return '<span class="fav-chip fav-chip-owner">🏢 ' + escapeHtml(name) + '<span class="fav-chip-del" onclick="removeSingleOwner(' + idx + ')">&times;</span></span>';
+            }).join('');
+        }
+    }
+
+    // 预警配置
+    var amtInput = document.getElementById('favAlertMinAmount');
+    var kwArea = document.getElementById('favAlertKeywordsTextarea');
+    if (amtInput) amtInput.value = currentUserConfig.alert_min_amount || 1000;
+    if (kwArea) kwArea.value = (currentUserConfig.alert_keywords || []).join('\\n');
+}
+
+function addSingleProject() {
+    var input = document.getElementById('favAddProjectInput');
+    if (!input) return;
+    var val = input.value.trim();
+    if (!val) return;
+    if (!currentUserConfig.focus_projects) currentUserConfig.focus_projects = [];
+    if (currentUserConfig.focus_projects.indexOf(val) === -1) {
+        currentUserConfig.focus_projects.push(val);
+        input.value = '';
+        renderFavUI();
+    } else {
+        showFavToast('该项目已在关注列表中');
+    }
+}
+
+function removeSingleProject(idx) {
+    if (currentUserConfig.focus_projects && currentUserConfig.focus_projects[idx]) {
+        currentUserConfig.focus_projects.splice(idx, 1);
+        renderFavUI();
+    }
+}
+
+function addSingleOwner() {
+    var input = document.getElementById('favAddOwnerInput');
+    if (!input) return;
+    var val = input.value.trim();
+    if (!val) return;
+    if (!currentUserConfig.focus_owners) currentUserConfig.focus_owners = [];
+    if (currentUserConfig.focus_owners.indexOf(val) === -1) {
+        currentUserConfig.focus_owners.push(val);
+        input.value = '';
+        renderFavUI();
+    } else {
+        showFavToast('该业主已在关注列表中');
+    }
+}
+
+function removeSingleOwner(idx) {
+    if (currentUserConfig.focus_owners && currentUserConfig.focus_owners[idx]) {
+        currentUserConfig.focus_owners.splice(idx, 1);
+        renderFavUI();
+    }
+}
+
+function toggleBatchEdit(type) {
+    var tagBox = document.getElementById(type === 'projects' ? 'favProjectsTagContainer' : 'favOwnersTagContainer');
+    var addRow = document.getElementById(type === 'projects' ? 'favProjectsAddRow' : 'favOwnersAddRow');
+    var batchBox = document.getElementById(type === 'projects' ? 'favProjectsBatchContainer' : 'favOwnersBatchContainer');
+    var batchArea = document.getElementById(type === 'projects' ? 'favProjectsBatchTextarea' : 'favOwnersBatchTextarea');
+    if (!batchBox) return;
+
+    var isBatch = (batchBox.style.display !== 'none');
+    if (isBatch) {
+        // 完成批量编辑
+        var lines = (batchArea.value || '').split('\\n').map(function(s){return s.trim();}).filter(Boolean);
+        var uniq = [];
+        lines.forEach(function(l){ if (uniq.indexOf(l) === -1) uniq.push(l); });
+        if (type === 'projects') currentUserConfig.focus_projects = uniq;
+        else currentUserConfig.focus_owners = uniq;
+        batchBox.style.display = 'none';
+        if (tagBox) tagBox.style.display = 'flex';
+        if (addRow) addRow.style.display = 'flex';
+        renderFavUI();
+    } else {
+        // 进入批量编辑
+        var list = (type === 'projects') ? currentUserConfig.focus_projects : currentUserConfig.focus_owners;
+        if (batchArea) batchArea.value = (list || []).join('\\n');
+        if (tagBox) tagBox.style.display = 'none';
+        if (addRow) addRow.style.display = 'none';
+        batchBox.style.display = 'block';
+    }
+}
+
+function showFavToast(msg) {
+    var toast = document.getElementById('favToast');
+    if (!toast) return;
+    toast.innerText = msg;
+    toast.style.display = 'flex';
+    setTimeout(function() {
+        toast.style.display = 'none';
+    }, 2800);
+}
+
+// 7. 提交保存用户配置：写入本地并尝试同步云端，就地实时重绘当前页面，零刷新！
+async function saveUserFullConfigSubmit() {
+    var btn = document.getElementById('btnSaveFullConfig');
+
+    // 同步可能处于批量编辑状态中的输入
+    var pBatch = document.getElementById('favProjectsBatchContainer');
+    if (pBatch && pBatch.style.display !== 'none') toggleBatchEdit('projects');
+    var oBatch = document.getElementById('favOwnersBatchContainer');
+    if (oBatch && oBatch.style.display !== 'none') toggleBatchEdit('owners');
+
+    var amtInput = document.getElementById('favAlertMinAmount');
+    var kwArea = document.getElementById('favAlertKeywordsTextarea');
+    var minAmt = 1000;
+    if (amtInput) {
+        var v = parseFloat(amtInput.value);
+        if (!isNaN(v)) minAmt = v;
+    }
+    var kwList = [];
+    if (kwArea) {
+        kwList = kwArea.value.replace(/\\r\\n/g, '\\n').replace(/，/g, ',')
+            .split(/[\\n,]/).map(function(s) { return s.trim(); }).filter(Boolean);
+    }
+
+    var payload = {
+        focus_projects: currentUserConfig.focus_projects || [],
+        focus_owners: currentUserConfig.focus_owners || [],
+        alert_keywords: kwList,
+        alert_min_amount: minAmt
+    };
+
+    if (btn) { btn.disabled = true; btn.innerText = '正在保存...'; }
+
+    // 1. 立即持久化到本地存储
+    try {
+        localStorage.setItem('gxzb_user_focus_config', JSON.stringify(payload));
+    } catch(e) {}
+
+    // 2. 尝试向后端同步（若已登录）
+    try {
+        await fetch('/api/user/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+    } catch(err) {}
+
+    // 3. 关键：直接就地调用实时渲染重绘，完全不需要刷新页面！
+    applyUserFocusConfig(payload, true);
+
+    // 4. 广播跨标签页与页面内通信
+    try {
+        if (window.BroadcastChannel) {
+            new BroadcastChannel('gxzb_focus_channel').postMessage(payload);
+        }
+    } catch(e) {}
+    window.dispatchEvent(new CustomEvent('gxzb_focus_config_changed', { detail: payload }));
+
+    if (btn) { btn.disabled = false; btn.innerText = '💾 保存专属规则并生效'; }
+    closeFavoritesModal();
+    showFavToast('🎯 专属重点关注已实时更新生效！');
+}
+
+// 8. 跨标签页与全局广播监听：无论在哪个标签页或页面保存，当前页面秒级同步重绘，零刷新！
+window.addEventListener('storage', function(e) {
+    if (e.key === 'gxzb_user_focus_config' && e.newValue) {
+        try {
+            var newCfg = JSON.parse(e.newValue);
+            applyUserFocusConfig(newCfg, true);
+        } catch(err) {}
+    }
+});
+
+window.addEventListener('gxzb_focus_config_changed', function(e) {
+    if (e.detail) {
+        applyUserFocusConfig(e.detail, true);
+    }
+});
+
+if (window.BroadcastChannel) {
+    try {
+        var focusBc = new BroadcastChannel('gxzb_focus_channel');
+        focusBc.onmessage = function(e) {
+            if (e.data) {
+                applyUserFocusConfig(e.data, true);
+            }
+        };
+    } catch(e) {}
+}
+
+// 9. 后台静默向云端同步已登录用户配置
 function checkAndApplyUserFocus() {
     fetch('/api/user/config')
         .then(function(res) {
@@ -2084,134 +2709,11 @@ function checkAndApplyUserFocus() {
         })
         .then(function(data) {
             if (!data || !data.ok || !data.config) return;
-            var cfg = data.config;
-            var label = document.getElementById('dailyUserLabel');
-            var btn = document.getElementById('btnDailyUserPortal');
-            if (label) label.innerText = '专属跟踪已生效';
-            if (btn) {
-                btn.style.background = '#dcfce7';
-                btn.style.borderColor = '#86efac';
-                btn.style.color = '#15803d';
-                btn.title = '专属规则生效中：点击可调整重点项目、业主或预警门槛';
-            }
-
-            var banner = document.getElementById('userFocusNoticeBanner');
-            var bPrj = document.getElementById('bannerProjectsCount');
-            var bOwn = document.getElementById('bannerOwnersCount');
-            var bAmt = document.getElementById('bannerMinAmount');
-            if (banner) banner.style.display = 'flex';
-            if (bPrj) bPrj.innerText = (cfg.focus_projects || []).length;
-            if (bOwn) bOwn.innerText = (cfg.focus_owners || []).length;
-            if (bAmt) bAmt.innerText = (cfg.alert_min_amount !== undefined) ? cfg.alert_min_amount : 1000;
-
-            // 规则提取
-            var pRules = (cfg.focus_projects || []).map(function(s) { return String(s).trim().toLowerCase(); }).filter(Boolean);
-            var oRules = (cfg.focus_owners || []).map(function(s) { return String(s).trim().toLowerCase(); }).filter(Boolean);
-            var kwRules = (cfg.alert_keywords || []).map(function(s) { return String(s).trim().toLowerCase(); }).filter(Boolean);
-            var minAmt = (typeof cfg.alert_min_amount === 'number') ? cfg.alert_min_amount : 1000.0;
-
-            var newTotalFocus = 0;
-            var newTotalProjects = 0;
-            var newTotalOwners = 0;
-
-            RAW_DATA.forEach(function(d) {
-                var titleLower = (d.title || '').toLowerCase();
-                var purchaserLower = ((d.purchaser || d.owner || '') + ' ' + (d.areaname || '')).toLowerCase();
-                var dAmount = (typeof d.amount === 'number') ? d.amount : 0;
-                if (!dAmount && d.title) {
-                    var m = d.title.match(/([0-9]+(?:\\.[0-9]+)?)\\s*(?:万元|万)/);
-                    if (m) dAmount = parseFloat(m[1]);
-                }
-
-                var isProj = false;
-                var isOwner = false;
-                var isAlert = false;
-                var matchedProj = '';
-                var matchedOwner = '';
-                var matchedKw = '';
-                var tags = [];
-                var reasons = [];
-
-                // 1. 重点跟踪项目清单 (FOCUS_PROJECTS) - 独立强规则·命中即重点
-                for (var i = 0; i < pRules.length; i++) {
-                    var p = pRules[i];
-                    if (titleLower.indexOf(p) !== -1) {
-                        isProj = true;
-                        matchedProj = p;
-                        break;
-                    }
-                    if (p.length >= 6) {
-                        var mid = Math.floor(p.length / 2);
-                        var s1 = p.slice(0, mid);
-                        var s2 = p.slice(mid);
-                        if (titleLower.indexOf(s1) !== -1 && titleLower.indexOf(s2) !== -1) {
-                            isProj = true;
-                            matchedProj = p;
-                            break;
-                        }
-                    }
-                }
-                if (isProj) {
-                    tags.push('重点项目');
-                    reasons.push('命中专属重点项目：' + matchedProj);
-                }
-
-                // 2. 重点跟踪业主名单 (FOCUS_OWNERS) - 独立强规则·命中即重点
-                for (var j = 0; j < oRules.length; j++) {
-                    var o = oRules[j];
-                    if (titleLower.indexOf(o) !== -1 || purchaserLower.indexOf(o) !== -1) {
-                        isOwner = true;
-                        matchedOwner = o;
-                        break;
-                    }
-                }
-                if (isOwner) {
-                    tags.push('重点业主');
-                    reasons.push('命中专属重点业主：' + matchedOwner);
-                }
-
-                // 3. 常规通用预警关键词 ＆ 激活金额门槛
-                if (!isProj && !isOwner && kwRules.length > 0) {
-                    for (var k = 0; k < kwRules.length; k++) {
-                        var kw = kwRules[k];
-                        if (titleLower.indexOf(kw) !== -1) {
-                            if (dAmount >= minAmt && minAmt > 0) {
-                                isAlert = true;
-                                matchedKw = kw;
-                                break;
-                            }
-                        }
-                    }
-                    if (isAlert) {
-                        tags.push('重点预警');
-                        reasons.push('命中预警词【' + matchedKw + '】且金额 ' + dAmount + '万 >= 门槛 ' + minAmt + '万');
-                    }
-                }
-
-                d.is_focus = (isProj || isOwner || isAlert) ? 1 : 0;
-                d.focus_tags = tags;
-                d.focus_reason = reasons;
-
-                if (d.is_focus) newTotalFocus++;
-                if (isProj) newTotalProjects++;
-                if (isOwner) newTotalOwners++;
-            });
-
-            // 重新渲染条目列表
-            build();
-
-            // 刷新顶部统计数字与过滤按钮芯片
-            var elProjStat = document.getElementById('stat-focus-project');
-            var elOwnerStat = document.getElementById('stat-focus-owner');
-            var elProjChip = document.getElementById('focusProjectCount');
-            var elOwnerChip = document.getElementById('focusOwnerCount');
-            if (elProjStat && elProjStat.firstChild) elProjStat.firstChild.textContent = newTotalProjects;
-            if (elOwnerStat && elOwnerStat.firstChild) elOwnerStat.firstChild.textContent = newTotalOwners;
-            if (elProjChip) elProjChip.textContent = newTotalProjects;
-            if (elOwnerChip) elOwnerChip.textContent = newTotalOwners;
-
-            // 重新应用过滤
-            apply();
+            var cloudCfg = data.config;
+            try {
+                localStorage.setItem('gxzb_user_focus_config', JSON.stringify(cloudCfg));
+            } catch(e) {}
+            applyUserFocusConfig(cloudCfg, true);
         })
         .catch(function(err) {});
 }
@@ -2220,6 +2722,81 @@ window.addEventListener('DOMContentLoaded', function() {
     checkAndApplyUserFocus();
 });
 </script>
+
+<!-- 专属重点跟踪与规则中心弹窗 -->
+<div id="favoritesModal" class="admin-modal-overlay" style="display: none;" onclick="handleFavModalOverlayClick(event)">
+  <div class="admin-modal-card" onclick="event.stopPropagation()">
+    <div class="admin-modal-header">
+      <div>
+        <h3 class="admin-modal-title">🎯 专属重点跟踪与规则中心</h3>
+        <p style="margin:2px 0 0;font-size:0.75rem;color:#64748b;">实时按您的关注词库动态高亮重点项目与业主，零刷新生效</p>
+      </div>
+      <button type="button" class="admin-modal-close" onclick="closeFavoritesModal()">&times;</button>
+    </div>
+    <div class="admin-modal-body">
+      <div class="fav-tab-bar">
+        <button type="button" class="fav-tab-btn active" id="favTabBtn_projects" onclick="switchFavTab('projects')">🎯 重点项目 (<span id="favCountBadge_projects">0</span>)</button>
+        <button type="button" class="fav-tab-btn" id="favTabBtn_owners" onclick="switchFavTab('owners')">🏢 重点业主 (<span id="favCountBadge_owners">0</span>)</button>
+        <button type="button" class="fav-tab-btn" id="favTabBtn_alerts" onclick="switchFavTab('alerts')">🚨 预警门槛 & 关键词</button>
+      </div>
+
+      <!-- 重点项目 Panel -->
+      <div id="favPanel_projects">
+        <div class="fav-section-title">
+          <span>项目关注清单</span>
+          <button type="button" class="btn-text-sm" onclick="toggleBatchEdit('projects')" style="background:none;border:none;color:#2563eb;cursor:pointer;font-size:0.8rem;">切换批量编辑</button>
+        </div>
+        <div id="favProjectsTagContainer" class="fav-tag-list"></div>
+        <div id="favProjectsBatchContainer" style="display:none;margin-bottom:14px;">
+          <textarea id="favProjectsBatchTextarea" style="width:100%;height:100px;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;" placeholder="每行输入一个重点项目名称，例如：&#10;平陆运河&#10;南宁轨道交通"></textarea>
+          <div style="font-size:0.72rem;color:#64748b;margin-top:4px;">每行一个，点击「完成批量编辑」或直接保存即可更新</div>
+        </div>
+        <div class="fav-add-row" id="favProjectsAddRow">
+          <input type="text" id="favAddProjectInput" class="fav-add-input" placeholder="输入重点项目名称（如：平陆运河），按回车添加..." onkeydown="if(event.key==='Enter')addSingleProject()">
+          <button type="button" class="fav-add-btn" onclick="addSingleProject()">+ 添加项目</button>
+        </div>
+      </div>
+
+      <!-- 重点业主 Panel -->
+      <div id="favPanel_owners" style="display:none;">
+        <div class="fav-section-title">
+          <span>业主关注清单</span>
+          <button type="button" class="btn-text-sm" onclick="toggleBatchEdit('owners')" style="background:none;border:none;color:#2563eb;cursor:pointer;font-size:0.8rem;">切换批量编辑</button>
+        </div>
+        <div id="favOwnersTagContainer" class="fav-tag-list"></div>
+        <div id="favOwnersBatchContainer" style="display:none;margin-bottom:14px;">
+          <textarea id="favOwnersBatchTextarea" style="width:100%;height:100px;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;" placeholder="每行输入一个重点业主名称，例如：&#10;南宁交通投资集团&#10;广西交投"></textarea>
+          <div style="font-size:0.72rem;color:#64748b;margin-top:4px;">每行一个，点击「完成批量编辑」或直接保存即可更新</div>
+        </div>
+        <div class="fav-add-row" id="favOwnersAddRow">
+          <input type="text" id="favAddOwnerInput" class="fav-add-input" placeholder="输入重点业主名称（如：南宁交投），按回车添加..." onkeydown="if(event.key==='Enter')addSingleOwner()">
+          <button type="button" class="fav-add-btn" onclick="addSingleOwner()">+ 添加业主</button>
+        </div>
+      </div>
+
+      <!-- 预警门槛 Panel -->
+      <div id="favPanel_alerts" style="display:none;">
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:0.85rem;font-weight:700;color:#334155;margin-bottom:6px;">通用预警金额门槛 (万元)</label>
+          <input type="number" id="favAlertMinAmount" class="fav-add-input" style="width:160px;" value="1000" min="0" step="50">
+          <span style="font-size:0.75rem;color:#64748b;margin-left:8px;">标讯金额达到该门槛且命中预警关键词时标记</span>
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:0.85rem;font-weight:700;color:#334155;margin-bottom:6px;">预警关键词库 (以换行或逗号分隔)</label>
+          <textarea id="favAlertKeywordsTextarea" style="width:100%;height:80px;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem;" placeholder="例如：水利, 航道, 轨道交通, EPC"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="admin-modal-footer">
+      <div style="font-size:0.78rem;color:#64748b;" id="favActionTip"></div>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="btn-back" onclick="closeFavoritesModal()" style="padding:8px 16px;">取消</button>
+        <button type="button" class="fav-save-btn" id="btnSaveFullConfig" onclick="saveUserFullConfigSubmit()">💾 保存专属规则并生效</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="favToast" class="fav-toast"></div>
 </body>
 </html>
 """

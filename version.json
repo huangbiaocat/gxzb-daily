@@ -1,9 +1,21 @@
 {
-  "version": "v0.1.20",
-  "commit": "05b61cb",
+  "version": "v0.1.21",
+  "commit": "642a930",
   "date": "2026-10-18",
-  "message": "chore(release): bump version v0.1.20",
+  "message": "chore(release): bump version v0.1.21",
   "commits": [
+    {
+      "commit": "642a930",
+      "author": "黄彪",
+      "date": "2026-10-18",
+      "message": "chore(release): bump version v0.1.21"
+    },
+    {
+      "commit": "47be8a4",
+      "author": "黄彪",
+      "date": "2026-10-18",
+      "message": "fix(task_event): 修复大任务中断后卡死running状态与重置提示残留问题"
+    },
     {
       "commit": "05b61cb",
       "author": "黄彪",
@@ -27,18 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-16",
       "message": "fix(manager): 修复断点续跑并发冲突与前端日志卡死问题"
-    },
-    {
-      "commit": "e006d7e",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "chore(release): bump version v0.1.19"
-    },
-    {
-      "commit": "79a881f",
-      "author": "黄彪",
-      "date": "2026-10-16",
-      "message": "fix(manager): 动态探测runs表结构与trigger_type列容错，修复底层单次采集流水为空问题"
     }
   ]
 }
