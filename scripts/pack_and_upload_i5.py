@@ -162,8 +162,9 @@ def main():
         return res.returncode
         
     # 同时也把最新的 html 页面传上去
-    # 注意：排除本地精简环境生成的 index.html，防止覆盖生产服务器基于 2000+ 天全量数据构建的首页
-    htmls = [h for h in dist_dir.glob("*.html") if h.name != "index.html"]
+    # 注意：排除本地精简环境生成的 index.html 以及当天的 HTML，防止覆盖生产服务器正在实时采集的数据
+    today_str = datetime.now().strftime("%Y-%m-%d.html")
+    htmls = [h for h in dist_dir.glob("*.html") if h.name not in ("index.html", today_str)]
     if htmls:
         cmd_html = ["scp", "-P", port, "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", "-o", "ControlMaster=auto", "-o", "ControlPath=/tmp/ssh-%r@%h:%p", "-o", "ControlPersist=10m"] + [str(h) for h in htmls] + [f"{user}@{host}:{remote_path}"]
         res_html = subprocess.run(cmd_html)
