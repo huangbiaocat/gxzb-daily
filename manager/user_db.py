@@ -425,16 +425,8 @@ def get_user_full_config(user_id: int) -> Dict[str, Any]:
         # 若用户尚未配置过个性化预警规则，但有单独收藏项目/业主，则视为主观定制
         has_custom = bool(p_names or o_names)
         alert_min_amount = 1000.0
-        alert_keywords = ["EPC", "设计施工总承包", "特许经营", "产业园", "智慧", "全过程工程咨询"]
+        alert_keywords = []
         updated_at = ""
-        # 若完全未定制，默认将系统基准规则作为参考模板呈现给用户
-        if not has_custom:
-            try:
-                import config
-                p_names = list(getattr(config, "FOCUS_PROJECTS", []))
-                o_names = list(getattr(config, "FOCUS_OWNERS", []))
-            except Exception:
-                pass
 
     return {
         "user_id": user_id,

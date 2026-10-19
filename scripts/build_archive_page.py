@@ -1147,6 +1147,128 @@ extra_style = """
             background: #f8fafc;
             border-top: 1px solid #e2e8f0;
         }
+
+        /* ===== 首页用户专属重点跟踪状态看板 ===== */
+        .user-focus-home-banner {
+            margin: 0 auto 20px auto;
+            max-width: 1380px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            transition: all 0.2s ease;
+        }
+        .user-focus-home-banner.is-empty {
+            background: #fffbeb;
+            border-color: #fde68a;
+        }
+        .user-focus-home-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .user-focus-home-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #0369a1;
+        }
+        .user-focus-home-banner.is-empty .user-focus-home-title {
+            color: #b45309;
+        }
+        .user-focus-home-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-focus-manage {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #0284c7;
+            background: #ffffff;
+            border: 1px solid #bae6fd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-focus-manage:hover {
+            background: #e0f2fe;
+            border-color: #7dd3fc;
+        }
+        .user-focus-home-banner.is-empty .btn-focus-manage {
+            color: #b45309;
+            border-color: #fde68a;
+        }
+        .user-focus-home-banner.is-empty .btn-focus-manage:hover {
+            background: #fef3c7;
+        }
+        .user-focus-home-content {
+            margin-top: 12px;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            color: #334155;
+        }
+        .uf-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .uf-row:last-child {
+            margin-bottom: 0;
+        }
+        .uf-row-label {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #475569;
+            white-space: nowrap;
+            margin-top: 2px;
+        }
+        .uf-tag-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+        .uf-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .uf-tag-proj {
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+        }
+        .uf-tag-owner {
+            background: #f0fdf4;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+        .uf-empty-text {
+            color: #94a3b8;
+            font-size: 0.82rem;
+            font-style: italic;
+        }
+        .uf-empty-block {
+            padding: 4px 0;
+            color: #92400e;
+            font-size: 0.88rem;
+        }
     </style>
 """
 
@@ -1546,6 +1668,26 @@ PAGE = """<!DOCTYPE html>
 <h3>未找到匹配的归档简报</h3>
 <p>请尝试搜索年份、月份（如 2026-09）或具体日期</p>
 </div>
+
+<!-- 用户专属重点跟踪与个性化规则状态看板 -->
+<div id="userFocusHomeBanner" class="user-focus-home-banner" style="display: none;">
+  <div class="user-focus-home-header">
+    <div class="user-focus-home-title">
+      <span id="userFocusHomeIcon">🎯</span>
+      <span id="userFocusHomeStatusText">专属重点跟踪已生效</span>
+    </div>
+    <div class="user-focus-home-actions">
+      <button type="button" class="btn-focus-manage" id="btnFocusHomeManage" onclick="openFavoritesModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>管理重点规则</span>
+      </button>
+    </div>
+  </div>
+  <div id="userFocusHomeContent" class="user-focus-home-content">
+    <!-- 动态渲染用户的重点项目与重点业主胶囊，或者为空提示 -->
+  </div>
+</div>
+
 <!-- View 1: Calendar View -->
 <div class="view-panel active" id="viewCalendar">
 <div class="calendar-years-wrapper">
@@ -2082,6 +2224,7 @@ async function handleUserLogout() {
     currentUserState = null;
     updateUserPortalUI(null);
     closeFavoritesModal();
+    renderHomeFocusBanner(null);
 }
 
 function updateUserPortalUI(user) {
@@ -2108,6 +2251,158 @@ function updateUserPortalUI(user) {
             btn.style.borderColor = '#bae6fd';
             btn.style.color = '#0284c7';
         }
+    }
+}
+
+var defaultHomeStatsCache = null;
+
+function cacheDefaultHomeStats() {
+    if (defaultHomeStatsCache) return;
+    var calCells = document.querySelectorAll('.cal-cell-active');
+    var cellsData = [];
+    calCells.forEach(function(cell) {
+        var focusMeta = cell.querySelector('.cal-meta-focus, .cal-meta-zero');
+        cellsData.push({
+            el: cell,
+            dataFocus: cell.getAttribute('data-focus') || '0',
+            metaEl: focusMeta,
+            metaClass: focusMeta ? focusMeta.className : '',
+            metaHtml: focusMeta ? focusMeta.innerHTML : ''
+        });
+    });
+
+    var monthCards = document.querySelectorAll('.month-card');
+    var monthsData = [];
+    monthCards.forEach(function(card) {
+        var alertPill = card.querySelector('.alert-pill strong');
+        monthsData.push({
+            el: card,
+            pillEl: alertPill,
+            val: alertPill ? alertPill.innerText : ''
+        });
+    });
+
+    var hintEl = document.getElementById('archiveHint');
+    var hintHtml = hintEl ? hintEl.innerHTML : '';
+
+    var listChips = document.querySelectorAll('.chip-alert, .chip-zero');
+    var chipsData = [];
+    listChips.forEach(function(chip) {
+        chipsData.push({
+            el: chip,
+            cls: chip.className,
+            html: chip.innerHTML
+        });
+    });
+
+    defaultHomeStatsCache = {
+        cells: cellsData,
+        months: monthsData,
+        hintEl: hintEl,
+        hintHtml: hintHtml,
+        chips: chipsData
+    };
+}
+
+function applyUserFocusZeroOnHome(isZero) {
+    cacheDefaultHomeStats();
+    if (!defaultHomeStatsCache) return;
+
+    if (isZero) {
+        defaultHomeStatsCache.cells.forEach(function(item) {
+            item.el.setAttribute('data-focus', '0');
+            if (item.metaEl) {
+                item.metaEl.className = 'cal-meta-line cal-meta-zero';
+                item.metaEl.innerHTML = '重点 0';
+            }
+        });
+        defaultHomeStatsCache.months.forEach(function(item) {
+            if (item.pillEl) item.pillEl.innerText = '0';
+        });
+        defaultHomeStatsCache.chips.forEach(function(item) {
+            item.el.className = 'f-chip chip-zero';
+            item.el.innerHTML = '<span>重点 0</span>';
+        });
+        if (defaultHomeStatsCache.hintEl) {
+            defaultHomeStatsCache.hintEl.innerHTML = defaultHomeStatsCache.hintHtml.replace(/重点信息 <strong>[0-9]+<\\/strong> 条/, '重点信息 <strong>0</strong> 条 <span style="font-size:0.82rem;color:#94a3b8;">(专属重点为空)</span>');
+        }
+    } else {
+        restoreHomeFocusToDefault();
+    }
+}
+
+function restoreHomeFocusToDefault() {
+    if (!defaultHomeStatsCache) return;
+    defaultHomeStatsCache.cells.forEach(function(item) {
+        item.el.setAttribute('data-focus', item.dataFocus);
+        if (item.metaEl) {
+            item.metaEl.className = item.metaClass;
+            item.metaEl.innerHTML = item.metaHtml;
+        }
+    });
+    defaultHomeStatsCache.months.forEach(function(item) {
+        if (item.pillEl) item.pillEl.innerText = item.val;
+    });
+    defaultHomeStatsCache.chips.forEach(function(item) {
+        item.el.className = item.cls;
+        item.el.innerHTML = item.html;
+    });
+    if (defaultHomeStatsCache.hintEl) {
+        defaultHomeStatsCache.hintEl.innerHTML = defaultHomeStatsCache.hintHtml;
+    }
+}
+
+function renderHomeFocusBanner(cfg) {
+    var banner = document.getElementById('userFocusHomeBanner');
+    var titleText = document.getElementById('userFocusHomeStatusText');
+    var iconEl = document.getElementById('userFocusHomeIcon');
+    var contentEl = document.getElementById('userFocusHomeContent');
+    if (!banner || !contentEl) return;
+
+    if (!currentUserState) {
+        banner.style.display = 'none';
+        restoreHomeFocusToDefault();
+        return;
+    }
+
+    banner.style.display = 'block';
+    var pList = (cfg && cfg.focus_projects) ? cfg.focus_projects : [];
+    var oList = (cfg && cfg.focus_owners) ? cfg.focus_owners : [];
+    var isEmpty = (pList.length === 0 && oList.length === 0);
+
+    if (isEmpty) {
+        banner.className = 'user-focus-home-banner is-empty';
+        if (iconEl) iconEl.innerText = '💡';
+        if (titleText) titleText.innerHTML = '专属重点跟踪：您当前尚未设置任何重点项目与重点业主，重点跟踪列表为空';
+        contentEl.innerHTML = '<div class="uf-empty-block">您尚未添加专属重点项目与重点业主，全站标讯重点将保持为空。点击右侧“管理重点规则”或下方按钮即可建立您的专属关注库。</div>' +
+            '<div style="margin-top:8px;"><button type="button" class="btn-focus-manage" onclick="openFavoritesModal()">➕ 立即添加重点项目与业主</button></div>';
+        applyUserFocusZeroOnHome(true);
+    } else {
+        banner.className = 'user-focus-home-banner';
+        if (iconEl) iconEl.innerText = '🎯';
+        if (titleText) {
+            titleText.innerHTML = '专属重点跟踪已生效：已关注 <span style="color:#0284c7;font-weight:700;">' + pList.length + '</span> 项重点项目、<span style="color:#0284c7;font-weight:700;">' + oList.length + '</span> 家重点业主';
+        }
+
+        var projTagsHtml = pList.length > 0
+            ? pList.map(function(p) { return '<span class="uf-tag uf-tag-proj">🎯 ' + escapeHtmlStr(p) + '</span>'; }).join('')
+            : '<span class="uf-empty-text">暂未设置重点项目</span>';
+
+        var ownerTagsHtml = oList.length > 0
+            ? oList.map(function(o) { return '<span class="uf-tag uf-tag-owner">🏢 ' + escapeHtmlStr(o) + '</span>'; }).join('')
+            : '<span class="uf-empty-text">暂未设置重点业主</span>';
+
+        contentEl.innerHTML = '<div class="uf-row">' +
+                '<span class="uf-row-label">🎯 重点项目 (' + pList.length + '项)：</span>' +
+                '<div class="uf-tag-group">' + projTagsHtml + '</div>' +
+            '</div>' +
+            '<div class="uf-row">' +
+                '<span class="uf-row-label">🏢 重点业主 (' + oList.length + '家)：</span>' +
+                '<div class="uf-tag-group">' + ownerTagsHtml + '</div>' +
+            '</div>' +
+            '<div style="margin-top:8px;font-size:0.78rem;color:#64748b;">✨ 已生效您的专属关注规则。点击下方日历中任意日期进入每日简报，即可查看命中您专属规则的标讯高亮。</div>';
+
+        restoreHomeFocusToDefault();
     }
 }
 
@@ -2324,6 +2619,10 @@ async function loadUserFullConfig() {
         renderFavOwnersUI();
         renderFavAlertsUI();
         renderFavSnapshotsUI();
+        try {
+            localStorage.setItem('gxzb_user_focus_config', JSON.stringify(currentUserConfig));
+        } catch (e) {}
+        renderHomeFocusBanner(currentUserConfig);
     } catch (err) {
         console.error('加载用户独立配置异常:', err);
     }
@@ -2535,14 +2834,19 @@ function escapeHtmlStr(str) {
             if (data && data.authenticated && data.user) {
                 currentUserState = data.user;
                 updateUserPortalUI(data.user);
+                loadUserFullConfig();
                 if (window.location.search.indexOf('open_user=1') !== -1) {
                     setTimeout(function() {
                         openFavoritesModal();
                     }, 200);
                 }
+            } else {
+                renderHomeFocusBanner(null);
             }
         })
-        .catch(function() {});
+        .catch(function() {
+            renderHomeFocusBanner(null);
+        });
 
     // 2. 管理员状态检测
     fetch('/api/check_auth')
@@ -2563,6 +2867,38 @@ function escapeHtmlStr(str) {
         })
         .catch(function() {});
 })();
+
+// 3. 跨页面多窗口重点配置变更实时联动
+if (window.BroadcastChannel) {
+    try {
+        var focusBc = new BroadcastChannel('gxzb_focus_channel');
+        focusBc.onmessage = function(ev) {
+            if (ev.data && currentUserState) {
+                if (ev.data.focus_projects) currentUserConfig.focus_projects = ev.data.focus_projects;
+                if (ev.data.focus_owners) currentUserConfig.focus_owners = ev.data.focus_owners;
+                if (ev.data.alert_keywords) currentUserConfig.alert_keywords = ev.data.alert_keywords;
+                if (ev.data.alert_min_amount !== undefined) currentUserConfig.alert_min_amount = ev.data.alert_min_amount;
+                renderFavProjectsUI();
+                renderFavOwnersUI();
+                renderFavAlertsUI();
+                renderHomeFocusBanner(currentUserConfig);
+            }
+        };
+    } catch (e) {}
+}
+
+window.addEventListener('gxzb_focus_config_changed', function(ev) {
+    if (ev.detail && currentUserState) {
+        if (ev.detail.focus_projects) currentUserConfig.focus_projects = ev.detail.focus_projects;
+        if (ev.detail.focus_owners) currentUserConfig.focus_owners = ev.detail.focus_owners;
+        if (ev.detail.alert_keywords) currentUserConfig.alert_keywords = ev.detail.alert_keywords;
+        if (ev.detail.alert_min_amount !== undefined) currentUserConfig.alert_min_amount = ev.detail.alert_min_amount;
+        renderFavProjectsUI();
+        renderFavOwnersUI();
+        renderFavAlertsUI();
+        renderHomeFocusBanner(currentUserConfig);
+    }
+});
 </script>
 """
 

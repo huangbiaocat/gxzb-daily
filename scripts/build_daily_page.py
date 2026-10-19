@@ -2515,7 +2515,7 @@ function renderFavUI() {
         if (oList.length === 0) {
             oContainer.innerHTML = '<div style="color:#94a3b8;font-size:0.82rem;font-style:italic;padding:8px;width:100%;text-align:center;">暂无关注业主，可从下方添加</div>';
         } else {
-            pContainer.innerHTML = oList.map(function(name, idx) {
+            oContainer.innerHTML = oList.map(function(name, idx) {
                 return '<span class="fav-chip fav-chip-owner">🏢 ' + escapeHtml(name) + '<span class="fav-chip-del" onclick="removeSingleOwner(' + idx + ')">&times;</span></span>';
             }).join('');
         }
