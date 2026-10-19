@@ -77,6 +77,7 @@ import diff_missing  # noqa: E402
 
 PY = sys.executable
 SCRIPT = REPO / "scripts"
+priority_lock = None
 
 
 def banner(step, text):
@@ -410,7 +411,7 @@ def main(argv=None):
                     send_alert(day, "采集步骤全部失败，已中断后续生成", "collect")
                 except Exception as exc:
                     print("告警推送异常：", exc)
-            return finish(day, failed_steps, args)
+            return finish(day, failed_steps, args, priority_lock=priority_lock)
 
     # 2) 入库对账 / 合并
     banner("2/8", "入库对账（缺失 = 全量 - 已入库）")
@@ -434,7 +435,7 @@ def main(argv=None):
                 send_alert(day, "明细页生成失败，已中断后续流程", "build_daily_page")
             except Exception as exc:
                 print("告警推送异常：", exc)
-        return finish(day, failed_steps, args)
+        return finish(day, failed_steps, args, priority_lock=priority_lock)
 
     # 4) 归档首页
     if args.skip_archive:
@@ -563,10 +564,10 @@ def main(argv=None):
         except Exception as exc_jjt:
             print("交建通推送异常：", exc_jjt)
 
-    return finish(day, failed_steps, args, res, is_final=is_final)
+    return finish(day, failed_steps, args, res, is_final=is_final, priority_lock=priority_lock)
 
 
-def finish(day, failed_steps, args, res=None, is_final=False):
+def finish(day, failed_steps, args, res=None, is_final=False, priority_lock=None):
     res = res or {}
     missing = int(res.get("missing_count") or 0)
     now_stamp = config.now_stamp()
