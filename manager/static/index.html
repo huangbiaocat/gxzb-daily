@@ -184,6 +184,10 @@
                    </svg>
                    <span>用户与关注监控</span>
                </button>
+              <button id="tab-btn-terminal" onclick="switchTab('terminal')" class="tab-btn px-2.5 sm:px-3 py-1.5 text-xs font-medium flex items-center space-x-1.5 whitespace-nowrap text-emerald-700 bg-emerald-50/70 border border-emerald-200/80">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>实时终端</span>
+              </button>
            </nav>
 
             <!-- 顶部跨日期全盘搜索快捷输入框 -->
@@ -216,6 +220,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
                 </button>
+
+               <!-- 实时终端独立大屏窗口快捷入口 -->
+               <a href="/admin/terminal" target="_blank" class="hidden sm:flex text-xs font-semibold px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 hover:text-emerald-300 rounded-lg transition items-center space-x-1.5 shadow-xs border border-slate-700 whitespace-nowrap" title="在新窗口中全屏打开实时终端监视器">
+                   <span class="text-sm">🖥️</span>
+                   <span class="hidden md:inline">实时终端</span>
+               </a>
 
                 <!-- 分割线 -->
                 <div class="hidden md:block h-4 w-px bg-slate-200 mx-0.5"></div>
@@ -1607,6 +1617,27 @@
             </div>
         </div>
 
+        <!-- ============================================== -->
+        <!-- 实时终端监视器面板 (Live Server Terminal & Activity) -->
+        <!-- ============================================== -->
+        <div id="tab-content-terminal" class="hidden space-y-4">
+            <div class="flex items-center justify-between bg-slate-900 text-slate-300 px-4 py-2.5 rounded-xl border border-slate-800 shadow-sm">
+                <div class="flex items-center space-x-2">
+                    <span class="text-emerald-400 text-base">🖥️</span>
+                    <span class="text-xs font-semibold text-white">服务器实时活动终端 (Live Activity Terminal)</span>
+                    <span class="text-[11px] text-slate-400 hidden sm:inline">— 毫秒级探测 CPU、内存、实时活跃进程与系统执行流</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <a href="/admin/terminal" target="_blank" class="text-xs px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 hover:text-emerald-300 rounded-lg border border-slate-700 transition flex items-center space-x-1">
+                        <span>↗ 独立新窗口打开</span>
+                    </a>
+                </div>
+            </div>
+            <div class="w-full h-[calc(100vh-175px)] min-h-[640px] rounded-xl border border-slate-800 shadow-xl overflow-hidden bg-slate-950">
+                <iframe src="/admin/terminal" class="w-full h-full border-0" title="实时终端"></iframe>
+            </div>
+        </div>
+
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400">
@@ -1651,6 +1682,10 @@
                 <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                 <span>用户与关注监控</span>
             </button>
+           <button onclick="switchTab('terminal');closeMobileMoreMenu()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-emerald-700 bg-emerald-50/60 hover:bg-emerald-100/60 active:bg-emerald-100 transition font-medium">
+               <span class="text-base">🖥️</span>
+               <span>实时活动终端</span>
+           </button>
             <div class="border-t border-slate-100 my-2"></div>
             <button onclick="openDeleteDateModal();closeMobileMoreMenu()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition">
                 <svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -1838,7 +1873,7 @@
             currentTab = tabId;
             localStorage.setItem("active_tab", tabId);
 
-            const allTabs = ["business", "search", "env", "dashboard", "history", "users"];
+           const allTabs = ["business", "search", "env", "dashboard", "history", "users", "terminal"];
             allTabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-${t}`);
                 const content = document.getElementById(`tab-content-${t}`);

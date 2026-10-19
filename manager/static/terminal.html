@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>服务器实时活动终端 | Live Server Terminal</title>
+  <style>
+    :root {
+      --bg-dark: #0a0e14;
+      --bg-card: #121820;
+      --bg-term: #05070a;
+      --border: #232c37;
+      --border-focus: #3b82f6;
+      --text-main: #e2e8f0;
+      --text-muted: #8b9bb4;
+      --green: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.25);
+      --blue: #3b82f6;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --purple: #8b5cf6;
+      --cyan: #06b6d4;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, Consolas, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background-color: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      gap: 12px;
+      z-index: 10;
+    }
+    .brand-group { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid #334155;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.4);
+    }
+    .brand-title {
+      font-size: 15px; font-weight: 700; color: #fff;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .live-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: var(--green);
+      font-size: 11px; padding: 2px 8px; border-radius: 12px;
+      font-weight: 600; font-family: var(--font-mono);
+    }
+    .pulse-dot {
+      width: 7px; height: 7px; background-color: var(--green);
+      border-radius: 50%; box-shadow: 0 0 8px var(--green);
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .top-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .btn {
+      background: #1e2633; color: #cbd5e1; border: 1px solid var(--border);
+      padding: 5px 11px; border-radius: 6px; font-size: 12px; font-weight: 500;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+      transition: all 0.15s ease; text-decoration: none; user-select: none;
+    }
+    .btn:hover { background: #2b3547; color: #fff; border-color: #475569; }
+    select.select-custom {
+      background: #1e2633; color: #cbd5e1; border: 1px solid var(--border);
+      padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; outline: none;
+    }
+    select.select-custom:focus { border-color: var(--border-focus); }
+    main {
+      flex: 1; display: flex; flex-direction: column;
+      padding: 12px 16px; gap: 12px; overflow: hidden;
+    }
+    .status-banner {
+      background: linear-gradient(90deg, #131b26 0%, #172130 100%);
+      border: 1px solid #233144; border-left: 4px solid var(--green);
+      border-radius: 8px; padding: 10px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.3); flex-shrink: 0;
+    }
+    .status-banner.busy {
+      border-left-color: var(--amber);
+      background: linear-gradient(90deg, #231b12 0%, #291f16 100%);
+      border-color: #4a341b;
+    }
+    .status-banner.rebooted { border-left-color: var(--cyan); }
+    .banner-text-group { display: flex; align-items: center; gap: 12px; overflow: hidden; }
+    .banner-icon { font-size: 20px; flex-shrink: 0; }
+    .banner-title {
+      font-size: 14px; font-weight: 600; color: #fff;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .banner-meta { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); white-space: nowrap; }
+    .metrics-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px; flex-shrink: 0;
+    }
+    .metric-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .metric-header {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;
+    }
+    .metric-val {
+      font-size: 18px; font-weight: 700; color: #fff; font-family: var(--font-mono);
+      display: flex; align-items: baseline; gap: 4px;
+    }
+    .metric-sub { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+    .progress-bar-bg { height: 4px; background: #1e2633; border-radius: 2px; overflow: hidden; margin-top: 2px; }
+    .progress-bar-fill { height: 100%; background: var(--blue); border-radius: 2px; transition: width 0.3s ease, background 0.3s ease; }
+    .workspace-split {
+      flex: 1; display: grid; grid-template-columns: 380px 1fr;
+      gap: 12px; overflow: hidden; min-height: 0;
+    }
+    @media (max-width: 980px) {
+      .workspace-split { grid-template-columns: 1fr; grid-template-rows: 240px 1fr; }
+    }
+    .panel {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; display: flex; flex-direction: column; overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+    .panel-header {
+      background: #141b24; border-bottom: 1px solid var(--border);
+      padding: 8px 14px; display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; gap: 8px;
+    }
+    .panel-title { font-size: 13px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .proc-table-wrap { flex: 1; overflow-y: auto; font-family: var(--font-mono); font-size: 11px; }
+    .proc-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .proc-table th {
+      background: #17202c; color: var(--text-muted); padding: 6px 10px; font-weight: 600;
+      border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 2; font-size: 10px; text-transform: uppercase;
+    }
+    .proc-table td { padding: 7px 10px; border-bottom: 1px solid #1a222d; color: #cbd5e1; white-space: nowrap; }
+    .proc-table tr:hover { background: rgba(59, 130, 246, 0.08); }
+    .proc-table tr.core-task { background: rgba(16, 185, 129, 0.08); }
+    .tag-badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px; font-weight: 600; border: 1px solid transparent; }
+    .tag-emerald { background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }
+    .tag-amber   { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); }
+    .tag-sky     { background: rgba(14, 165, 233, 0.15); color: #38bdf8; border-color: rgba(14, 165, 233, 0.3); }
+    .tag-indigo  { background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }
+    .tag-teal    { background: rgba(20, 184, 166, 0.15); color: #2dd4bf; border-color: rgba(20, 184, 166, 0.3); }
+    .tag-violet  { background: rgba(139, 92, 246, 0.15); color: #a78bfa; border-color: rgba(139, 92, 246, 0.3); }
+    .tag-slate   { background: rgba(148, 163, 184, 0.12); color: #94a3b8; border-color: rgba(148, 163, 184, 0.2); }
+    .terminal-container { flex: 1; display: flex; flex-direction: column; background: var(--bg-term); overflow: hidden; }
+    .terminal-tabs { display: flex; align-items: center; gap: 4px; overflow-x: auto; padding: 2px 0; }
+    .term-tab {
+      background: transparent; border: none; color: var(--text-muted);
+      padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 500;
+      cursor: pointer; font-family: var(--font-mono); display: flex; align-items: center; gap: 5px;
+      white-space: nowrap; transition: all 0.15s ease;
+    }
+    .term-tab:hover { color: #fff; background: #17202c; }
+    .term-tab.active { color: var(--blue); background: #1a2433; font-weight: 600; }
+    .term-window {
+      flex: 1; padding: 12px 16px; overflow-y: auto; font-family: var(--font-mono);
+      font-size: 12px; line-height: 1.6; color: #94a3b8; white-space: pre-wrap; word-break: break-all;
+      background: #05070a;
+    }
+    .term-window::-webkit-scrollbar { width: 6px; height: 6px; }
+    .term-window::-webkit-scrollbar-thumb { background: #232c37; border-radius: 3px; }
+    .term-window::-webkit-scrollbar-thumb:hover { background: #3b4758; }
+    .term-line-error { color: #f87171; }
+    .term-line-warn { color: #fbbf24; }
+    .term-line-success { color: #34d399; }
+    .term-line-info { color: #38bdf8; }
+    .term-footer {
+      background: #0d121a; border-top: 1px solid var(--border); padding: 6px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);
+    }
+    .terminal-cursor {
+      display: inline-block; width: 8px; height: 14px; background: var(--green);
+      vertical-align: middle; animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand-group">
+      <div class="logo-icon">🖥️</div>
+      <div class="brand-title">
+        <span>实时终端监视器</span>
+        <div class="live-badge" id="live-indicator">
+          <span class="pulse-dot" id="pulse-dot"></span>
+          <span id="live-status-text">LIVE</span>
+        </div>
+      </div>
+    </div>
+    <div class="top-controls">
+      <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);" id="clock-display">--:--:--</span>
+      <label style="font-size: 11px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px;">
+        刷新:
+        <select class="select-custom" id="refresh-rate-select" onchange="changeRefreshRate(this.value)">
+          <option value="1000">1秒 (高频)</option>
+          <option value="2000" selected>2秒 (推荐)</option>
+          <option value="5000">5秒 (平缓)</option>
+          <option value="0">暂停刷新</option>
+        </select>
+      </label>
+      <button class="btn" onclick="fetchMetrics(true)" title="立即获取最新状态">🔄 刷新</button>
+      <button class="btn" onclick="clearTerminal()" title="清空终端当前内容 (Ctrl+L)">🧹 清屏</button>
+      <button class="btn" onclick="copyTerminalText()" title="复制终端日志">📋 复制</button>
+      <a class="btn" href="/admin/" title="进入管理后台控制面板">⚙️ 后台管理</a>
+    </div>
+  </header>
+  <main>
+    <div class="status-banner" id="status-banner">
+      <div class="banner-text-group">
+        <div class="banner-icon" id="banner-icon">🟢</div>
+        <div>
+          <div class="banner-title" id="banner-title">正在获取服务器活动状态...</div>
+          <div class="banner-meta" id="banner-meta">主机: 8.134.69.22 | 系统开机时间计算中...</div>
+        </div>
+      </div>
+      <div style="text-align: right; font-family: var(--font-mono);">
+        <div style="font-size: 11px; color: var(--text-muted);">运行时间 (Uptime)</div>
+        <div style="font-size: 14px; font-weight: 700; color: #fff;" id="banner-uptime">--</div>
+      </div>
+    </div>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-header"><span>CPU 占用率</span><span id="metric-cpu-cores">-- 核</span></div>
+        <div class="metric-val" id="metric-cpu-val">0%</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="metric-cpu-bar" style="width: 0%;"></div></div>
+        <div class="metric-sub" id="metric-load-avg">Load: --, --, --</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-header"><span>物理内存 (RAM)</span><span id="metric-mem-ratio">-- / --</span></div>
+        <div class="metric-val" id="metric-mem-val">0%</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="metric-mem-bar" style="width: 0%;"></div></div>
+        <div class="metric-sub" id="metric-mem-sub">可用: -- MB</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-header"><span>虚拟内存 (Swap)</span><span id="metric-swap-ratio">-- / --</span></div>
+        <div class="metric-val" id="metric-swap-val">0%</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="metric-swap-bar" style="width: 0%;"></div></div>
+        <div class="metric-sub" id="metric-swap-sub">防 OOM 缓冲</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-header"><span>磁盘空间</span><span id="metric-disk-free">剩余 -- GB</span></div>
+        <div class="metric-val" id="metric-disk-val">0%</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="metric-disk-bar" style="width: 0%;"></div></div>
+        <div class="metric-sub" id="metric-disk-sub">总计: -- GB</div>
+      </div>
+    </div>
+    <div class="workspace-split">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><span>⚡ 当前运行进程 (Top)</span></div>
+          <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);" id="proc-count-label">-- 项</span>
+        </div>
+        <div class="proc-table-wrap">
+          <table class="proc-table">
+            <thead>
+              <tr><th>PID</th><th>业务/角色</th><th>CPU%</th><th>内存%</th><th>时长</th><th>指令</th></tr>
+            </thead>
+            <tbody id="proc-table-body">
+              <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">正在扫描进程...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel terminal-container">
+        <div class="panel-header">
+          <div class="terminal-tabs">
+            <button class="term-tab active" onclick="switchLogSource('active', this)">⚡ 活动任务输出</button>
+            <button class="term-tab" onclick="switchLogSource('daily', this)">📅 每日采集日志</button>
+            <button class="term-tab" onclick="switchLogSource('service', this)">🌐 后台服务日志</button>
+            <button class="term-tab" onclick="switchLogSource('access', this)">📊 访问请求流</button>
+            <button class="term-tab" onclick="switchLogSource('system', this)">⚠️ 内核与告警</button>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="font-size: 11px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+              <input type="checkbox" id="auto-scroll-toggle" checked> 自动滚屏
+            </label>
+            <select class="select-custom" id="log-lines-select" onchange="fetchMetrics(true)" style="padding: 2px 6px; font-size: 11px;">
+              <option value="60">60行</option>
+              <option value="120" selected>120行</option>
+              <option value="250">250行</option>
+            </select>
+          </div>
+        </div>
+        <div class="term-window" id="terminal-window">连接中...</div>
+        <div class="term-footer">
+          <span id="term-status-left">终端提示符: root@gxzb-server:~$ <span class="terminal-cursor"></span></span>
+          <span id="term-status-right">最后更新: --:--:--</span>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>
+    let currentSource = 'active';
+    let refreshIntervalMs = 2000;
+    let timerId = null;
+    let isFetching = false;
+    let userScrolledUp = false;
+
+    const termWin = document.getElementById('terminal-window');
+    const autoScrollToggle = document.getElementById('auto-scroll-toggle');
+
+    termWin.addEventListener('scroll', () => {
+      const isAtBottom = termWin.scrollHeight - termWin.scrollTop - termWin.clientHeight < 30;
+      userScrolledUp = !isAtBottom;
+    });
+
+    function switchLogSource(source, btn) {
+      currentSource = source;
+      document.querySelectorAll('.term-tab').forEach(el => el.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      fetchMetrics(true);
+    }
+
+    function changeRefreshRate(val) {
+      refreshIntervalMs = parseInt(val, 10);
+      if (timerId) clearInterval(timerId);
+      if (refreshIntervalMs > 0) {
+        timerId = setInterval(fetchMetrics, refreshIntervalMs);
+        document.getElementById('pulse-dot').style.display = 'inline-block';
+        document.getElementById('live-status-text').textContent = 'LIVE';
+      } else {
+        document.getElementById('pulse-dot').style.display = 'none';
+        document.getElementById('live-status-text').textContent = 'PAUSED';
+      }
+    }
+
+    function clearTerminal() {
+      termWin.innerHTML = '<span style="color: var(--text-muted);">[终端已清空，等待新日志流输入...]</span>\n';
+    }
+
+    function copyTerminalText() {
+      const text = termWin.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('终端日志已成功复制到剪贴板！');
+      }).catch(err => {
+        alert('复制失败，请手动选取复制。');
+      });
+    }
+
+    function renderFormattedLog(raw) {
+      if (!raw) return '';
+      const escaped = raw
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      const lines = escaped.split('\n');
+      return lines.map(line => {
+        const l = line.toLowerCase();
+        if (l.includes('error') || l.includes('failed') || l.includes('exception') || l.includes('traceback') || l.includes('oom')) {
+          return `<span class="term-line-error">${line}</span>`;
+        }
+        if (l.includes('warn') || l.includes('warning') || l.includes('retry')) {
+          return `<span class="term-line-warn">${line}</span>`;
+        }
+        if (l.includes('success') || l.includes('completed') || l.includes('ok') || l.includes('成功') || l.includes('完成')) {
+          return `<span class="term-line-success">${line}</span>`;
+        }
+        if (l.includes('info') || l.includes('start') || l.includes('build') || l.includes('collect') || l.includes('抓取')) {
+          return `<span class="term-line-info">${line}</span>`;
+        }
+        return line;
+      }).join('\n');
+    }
+
+    async function fetchMetrics(isManual = false) {
+      if (isFetching && !isManual) return;
+      isFetching = true;
+
+      const lines = document.getElementById('log-lines-select').value || '120';
+      const url = `/api/live_monitor?source=${encodeURIComponent(currentSource)}&lines=${encodeURIComponent(lines)}&_t=${Date.now()}`;
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        renderUI(data);
+
+        document.getElementById('live-status-text').textContent = refreshIntervalMs > 0 ? 'LIVE' : 'PAUSED';
+        document.getElementById('live-indicator').style.borderColor = 'rgba(16, 185, 129, 0.35)';
+        document.getElementById('live-indicator').style.color = 'var(--green)';
+      } catch (err) {
+        document.getElementById('live-status-text').textContent = 'CONNECTING...';
+        document.getElementById('live-indicator').style.borderColor = 'rgba(239, 68, 68, 0.4)';
+        document.getElementById('live-indicator').style.color = 'var(--red)';
+      } finally {
+        isFetching = false;
+      }
+    }
+
+    function renderUI(data) {
+      const nowStr = data.time_str || new Date().toLocaleTimeString();
+      document.getElementById('clock-display').textContent = nowStr;
+      document.getElementById('term-status-right').textContent = `更新于: ${nowStr}`;
+
+      const sys = data.system || {};
+      const act = data.activity || {};
+
+      const banner = document.getElementById('status-banner');
+      const bannerTitle = document.getElementById('banner-title');
+      const bannerMeta = document.getElementById('banner-meta');
+      const bannerIcon = document.getElementById('banner-icon');
+      const bannerUptime = document.getElementById('banner-uptime');
+
+      bannerUptime.textContent = sys.uptime_str || '--';
+
+      if (act.is_busy) {
+        banner.className = 'status-banner busy';
+        bannerIcon.textContent = '🚀';
+        bannerTitle.textContent = act.summary || '服务器正在执行耗时任务';
+      } else {
+        banner.className = 'status-banner';
+        bannerIcon.textContent = '🟢';
+        bannerTitle.textContent = act.summary || '系统空闲待机中，仅后台守护服务在线';
+      }
+
+      let bootMeta = `开机时间: ${sys.boot_time || '--'} (已在线 ${sys.uptime_str || '--'})`;
+      if (sys.is_recently_booted) {
+        bootMeta = `⚠️ 系统于 ${sys.boot_time} 刚刚开机/重启 (已运行 ${sys.uptime_str})，自愈就绪`;
+        banner.classList.add('rebooted');
+      }
+      bannerMeta.textContent = bootMeta;
+
+      const cpuPct = sys.cpu_percent || 0;
+      document.getElementById('metric-cpu-val').textContent = `${cpuPct}%`;
+      document.getElementById('metric-cpu-cores').textContent = `${sys.cpu_cores || 1} 核心`;
+      const cpuBar = document.getElementById('metric-cpu-bar');
+      cpuBar.style.width = `${Math.min(100, cpuPct)}%`;
+      cpuBar.style.background = cpuPct > 80 ? 'var(--red)' : (cpuPct > 50 ? 'var(--amber)' : 'var(--blue)');
+      if (sys.load_avg) {
+        document.getElementById('metric-load-avg').textContent = `Load: ${sys.load_avg.join(', ')}`;
+      }
+
+      const mem = sys.memory || {};
+      document.getElementById('metric-mem-val').textContent = `${mem.percent || 0}%`;
+      document.getElementById('metric-mem-ratio').textContent = `${mem.used_mb || 0} / ${mem.total_mb || 0} MB`;
+      document.getElementById('metric-mem-sub').textContent = `可用: ${mem.avail_mb || 0} MB`;
+      const memBar = document.getElementById('metric-mem-bar');
+      memBar.style.width = `${Math.min(100, mem.percent || 0)}%`;
+      memBar.style.background = (mem.percent > 85) ? 'var(--red)' : ((mem.percent > 70) ? 'var(--amber)' : 'var(--green)');
+
+      const swap = sys.swap || {};
+      document.getElementById('metric-swap-val').textContent = `${swap.percent || 0}%`;
+      document.getElementById('metric-swap-ratio').textContent = `${swap.used_mb || 0} / ${swap.total_mb || 0} MB`;
+      const swapBar = document.getElementById('metric-swap-bar');
+      swapBar.style.width = `${Math.min(100, swap.percent || 0)}%`;
+      swapBar.style.background = swap.percent > 50 ? 'var(--red)' : 'var(--purple)';
+
+      const disk = sys.disk || {};
+      document.getElementById('metric-disk-val').textContent = `${disk.percent || 0}%`;
+      document.getElementById('metric-disk-free').textContent = `剩余 ${disk.free_gb || 0} GB`;
+      document.getElementById('metric-disk-sub').textContent = `已用 ${disk.used_gb || 0} / 总计 ${disk.total_gb || 0} GB`;
+      document.getElementById('metric-disk-bar').style.width = `${Math.min(100, disk.percent || 0)}%`;
+
+      const procs = data.processes || [];
+      document.getElementById('proc-count-label').textContent = `${procs.length} 个`;
+      const tbody = document.getElementById('proc-table-body');
+      if (procs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 15px;">无活跃进程数据</td></tr>';
+      } else {
+        tbody.innerHTML = procs.map(p => {
+          const tagHtml = p.tag ? `<span class="tag-badge tag-${p.color || 'slate'}">${p.tag}</span>` : `<span style="color:var(--text-muted)">${p.comm || '-'}</span>`;
+          const rowClass = p.is_core ? 'core-task' : '';
+          const cpuColor = parseFloat(p.cpu) > 30 ? 'color:#f87171;font-weight:700;' : (parseFloat(p.cpu) > 10 ? 'color:#fbbf24;' : '');
+          return `
+            <tr class="${rowClass}">
+              <td>${p.pid}</td>
+              <td>${tagHtml}</td>
+              <td style="${cpuColor}">${p.cpu}%</td>
+              <td>${p.mem}%</td>
+              <td style="color:var(--text-muted);">${p.time}</td>
+              <td title="${p.args || ''}" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis;">${p.args || p.comm}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      const logData = data.log || {};
+      const formatted = renderFormattedLog(logData.content || '');
+      termWin.innerHTML = formatted;
+
+      if (autoScrollToggle.checked && !userScrolledUp) {
+        termWin.scrollTop = termWin.scrollHeight;
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        clearTerminal();
+      }
+    });
+
+    fetchMetrics(true);
+    timerId = setInterval(fetchMetrics, refreshIntervalMs);
+  </script>
+</body>
+</html>

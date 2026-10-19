@@ -1,9 +1,27 @@
 {
-  "version": "v0.1.26",
-  "commit": "269fbaf",
+  "version": "v0.1.28",
+  "commit": "4bb2ae0",
   "date": "2026-10-19",
-  "message": "chore(release): bump version v0.1.26",
+  "message": "chore(release): bump version v0.1.28",
   "commits": [
+    {
+      "commit": "4bb2ae0",
+      "author": "黄彪",
+      "date": "2026-10-19",
+      "message": "chore(release): bump version v0.1.28"
+    },
+    {
+      "commit": "0162075",
+      "author": "黄彪",
+      "date": "2026-10-19",
+      "message": "chore(release): bump version v0.1.27"
+    },
+    {
+      "commit": "1b11a24",
+      "author": "黄彪",
+      "date": "2026-10-19",
+      "message": "chore: sync version.json"
+    },
     {
       "commit": "269fbaf",
       "author": "黄彪",
@@ -21,24 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-19",
       "message": "chore(release): bump version v0.1.25"
-    },
-    {
-      "commit": "4a88fe4",
-      "author": "黄彪",
-      "date": "2026-10-19",
-      "message": "fix(portal): 彻底修复登录用户清空关注后首页重点未清零问题，新增 /api/user/calendar_focus 专属重点日历聚合与双端部署同步"
-    },
-    {
-      "commit": "452d5ac",
-      "author": "黄彪",
-      "date": "2026-10-19",
-      "message": "chore(release): bump version v0.1.24"
-    },
-    {
-      "commit": "32f0023",
-      "author": "黄彪",
-      "date": "2026-10-19",
-      "message": "feat(portal): 用户登录后首页展示专属重点项目与业主规则，未填写时显示为空"
     }
   ]
 }

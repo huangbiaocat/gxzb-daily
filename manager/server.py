@@ -944,6 +944,296 @@ def get_scheduled_task_status():
         pass
     return res_info
 
+def get_live_server_metrics(log_source: str = "active", log_lines: int = 120) -> dict:
+    """实时采集服务器系统底层指标、活跃进程与业务状态以及多源日志"""
+    now = time.time()
+
+    # 1. 运行时间与开机时间
+    uptime_sec = 0.0
+    if Path("/proc/uptime").exists():
+        try:
+            with open("/proc/uptime", "r", encoding="utf-8") as f:
+                uptime_sec = float(f.read().split()[0])
+        except Exception:
+            pass
+    if not uptime_sec:
+        try:
+            out = subprocess.check_output(["sysctl", "-n", "kern.boottime"], timeout=1).decode("utf-8", errors="ignore")
+            sec = int(out.split("sec =")[1].split(",")[0].strip())
+            uptime_sec = max(0.0, now - sec)
+        except Exception:
+            uptime_sec = 3600.0
+
+    boot_dt = datetime.now() - timedelta(seconds=uptime_sec)
+    boot_time_str = boot_dt.strftime("%Y-%m-%d %H:%M:%S")
+    days = int(uptime_sec // 86400)
+    hours = int((uptime_sec % 86400) // 3600)
+    mins = int((uptime_sec % 3600) // 60)
+    secs = int(uptime_sec % 60)
+    if days > 0:
+        uptime_str = f"{days}天{hours}小时{mins}分"
+    elif hours > 0:
+        uptime_str = f"{hours}小时{mins}分"
+    else:
+        uptime_str = f"{mins}分{secs}秒"
+
+    is_recently_booted = uptime_sec < 900  # 15分钟内刚开机或刚重启
+
+    # 2. 负载与 CPU
+    load_avg = [round(x, 2) for x in os.getloadavg()]
+    cpu_cores = os.cpu_count() or 1
+    # 估算 CPU 综合负载百分比 (基于 1 分钟 load / 核心数)
+    cpu_percent = min(100.0, round((load_avg[0] / max(1, cpu_cores)) * 100.0, 1))
+
+    # 3. 内存与 Swap
+    mem_info = {"total_mb": 0, "used_mb": 0, "avail_mb": 0, "percent": 0.0}
+    swap_info = {"total_mb": 0, "used_mb": 0, "percent": 0.0}
+    if Path("/proc/meminfo").exists():
+        try:
+            mem = {}
+            with open("/proc/meminfo", "r", encoding="utf-8") as f:
+                for line in f:
+                    p = line.split(":")
+                    if len(p) == 2:
+                        mem[p[0].strip()] = int(p[1].strip().split()[0])
+            t = mem.get("MemTotal", 0)
+            a = mem.get("MemAvailable", mem.get("MemFree", 0))
+            u = max(0, t - a)
+            mem_info = {
+                "total_mb": t // 1024,
+                "used_mb": u // 1024,
+                "avail_mb": a // 1024,
+                "percent": round(u / max(1, t) * 100.0, 1)
+            }
+            st = mem.get("SwapTotal", 0)
+            sf = mem.get("SwapFree", 0)
+            su = max(0, st - sf)
+            swap_info = {
+                "total_mb": st // 1024,
+                "used_mb": su // 1024,
+                "percent": round(su / max(1, st) * 100.0, 1) if st else 0.0
+            }
+        except Exception:
+            pass
+    if mem_info["total_mb"] == 0:
+        mem_info = {"total_mb": 2048, "used_mb": 512, "avail_mb": 1536, "percent": 25.0}
+
+    # 4. 磁盘
+    try:
+        du = shutil.disk_usage(get_site_dir())
+        disk_info = {
+            "total_gb": round(du.total / (1024**3), 1),
+            "used_gb": round(du.used / (1024**3), 1),
+            "free_gb": round(du.free / (1024**3), 1),
+            "percent": round(du.used / max(1, du.total) * 100.0, 1)
+        }
+    except Exception:
+        disk_info = {"total_gb": 40.0, "used_gb": 10.0, "free_gb": 30.0, "percent": 25.0}
+
+    # 5. 核心活跃进程采集与业务识别
+    procs = []
+    top_active_action = None
+    try:
+        cmd = ['ps', '-eo', 'pid,%cpu,%mem,etime,stat,comm,args', '--sort=-%cpu'] if sys.platform != 'darwin' else ['ps', '-A', '-o', 'pid,%cpu,%mem,etime,state,comm,command', '-r']
+        p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=2)
+        text = p.stdout.decode('utf-8', errors='ignore')
+        lines = text.strip().split('\n')
+        for line in lines[1:25]:
+            parts = line.split(None, 6)
+            if len(parts) >= 7:
+                pid, cpu, mem, etime, stat, comm, args = parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6]
+
+                role = "other"
+                tag = ""
+                is_core = False
+                color = "slate"
+
+                args_lower = args.lower()
+                if "run_daily.py" in args_lower:
+                    role = "daily_task"
+                    tag = "每日定时全流程采集"
+                    is_core = True
+                    color = "emerald"
+                elif "collect.py" in args_lower:
+                    role = "collector"
+                    tag = "多源数据爬取中"
+                    is_core = True
+                    color = "sky"
+                elif "build_archive_page.py" in args_lower:
+                    role = "archive_builder"
+                    tag = "全量日历归档构建"
+                    is_core = True
+                    color = "amber"
+                elif "build_search_index.py" in args_lower:
+                    role = "search_indexer"
+                    tag = "全文检索索引生成"
+                    is_core = True
+                    color = "indigo"
+               elif "build_search_page.py" in args_lower:
+                   role = "search_builder"
+                   tag = "全盘检索页面渲染"
+                   is_core = True
+                   color = "indigo"
+                elif "build_daily_page.py" in args_lower:
+                    role = "daily_builder"
+                    tag = "每日静态快报渲染"
+                    is_core = True
+                    color = "cyan"
+                elif "manager/server.py" in args_lower or "manager" in args_lower:
+                    role = "manager"
+                    tag = "控制台与终端监控API"
+                    color = "violet"
+                elif "nginx" in comm.lower() or "nginx" in args_lower:
+                    role = "nginx"
+                    tag = "Web静态服务与反代"
+                    color = "teal"
+                elif "cloudflared" in comm.lower() or "cloudflared" in args_lower:
+                    role = "cloudflared"
+                    tag = "安全穿透隧道 / CDN"
+                    color = "orange"
+                elif "1panel" in args_lower or "1panel" in comm.lower():
+                    role = "1panel"
+                    tag = "1Panel 容器运维面板"
+                    color = "blue"
+
+                if is_core and not top_active_action:
+                    top_active_action = {
+                        "tag": tag,
+                        "pid": pid,
+                        "cpu": cpu,
+                        "mem": mem,
+                        "time": etime,
+                        "cmd": args
+                    }
+
+                procs.append({
+                    "pid": pid,
+                    "cpu": cpu,
+                    "mem": mem,
+                    "time": etime,
+                    "stat": stat,
+                    "comm": comm,
+                    "args": args,
+                    "role": role,
+                    "tag": tag,
+                    "is_core": is_core,
+                    "color": color
+                })
+    except Exception:
+        pass
+
+    # 6. 提炼“服务器正在干什么”总结状态
+    task_state = PROC_MGR.get_state() if 'PROC_MGR' in globals() else {"is_running": False}
+    is_busy = False
+    activity_summary = ""
+
+    if top_active_action:
+        is_busy = True
+        activity_summary = f"🚀 正在执行【{top_active_action['tag']}】(PID: {top_active_action['pid']}, CPU: {top_active_action['cpu']}%, 已运行: {top_active_action['time']})"
+    elif task_state.get("is_running") or task_state.get("is_busy"):
+        is_busy = True
+        cmd_text = task_state.get("running_command") or "后台任务执行中"
+        activity_summary = f"⚡ 控制台正在运行任务: {cmd_text} (已耗时 {task_state.get('elapsed_seconds', 0)}秒)"
+    else:
+        activity_summary = "🟢 系统处于空闲待机状态，核心守护进程平稳运行中"
+
+    # 7. 多源日志采集 (Live Log Streams)
+    log_content = ""
+    log_lines = min(max(int(log_lines), 20), 300)
+
+    if log_source == "active":
+        if task_state.get("is_running") or task_state.get("is_busy"):
+            log_content = "\n".join(task_state.get("logs", []))
+        else:
+            try:
+                cp = subprocess.run(["journalctl", "-u", "gxzb-daily", "-n", str(log_lines), "--no-pager"], capture_output=True, timeout=2)
+                if cp.returncode == 0 and cp.stdout:
+                    log_content = cp.stdout.decode("utf-8", errors="ignore")
+            except Exception:
+                pass
+            if not log_content.strip():
+                log_candidates = [ROOT_DIR / "run.log", ROOT_DIR / "logs" / "run_daily.log", ROOT_DIR / "logs" / "access.log"]
+                for cand in log_candidates:
+                    if cand.exists():
+                        try:
+                            lines = cand.read_text(encoding="utf-8", errors="ignore").splitlines()
+                            log_content = "\n".join(lines[-log_lines:])
+                            break
+                        except Exception:
+                            pass
+    elif log_source == "daily":
+        try:
+            cp = subprocess.run(["journalctl", "-u", "gxzb-daily", "-n", str(log_lines), "--no-pager"], capture_output=True, timeout=2)
+            if cp.returncode == 0 and cp.stdout:
+                log_content = cp.stdout.decode("utf-8", errors="ignore")
+        except Exception:
+            pass
+        if not log_content.strip():
+            log_f = ROOT_DIR / "logs" / "run_daily.log"
+            if log_f.exists():
+                lines = log_f.read_text(encoding="utf-8", errors="ignore").splitlines()
+                log_content = "\n".join(lines[-log_lines:])
+    elif log_source == "service":
+        try:
+            cp = subprocess.run(["journalctl", "-u", "gxzb-web", "-n", str(log_lines), "--no-pager"], capture_output=True, timeout=2)
+            if cp.returncode == 0 and cp.stdout:
+                log_content = cp.stdout.decode("utf-8", errors="ignore")
+        except Exception:
+            pass
+        if not log_content.strip():
+            acc_f = ROOT_DIR / "logs" / "access.log"
+            if acc_f.exists():
+                lines = acc_f.read_text(encoding="utf-8", errors="ignore").splitlines()
+                log_content = "\n".join(lines[-log_lines:])
+    elif log_source == "access":
+        acc_f = ROOT_DIR / "logs" / "access.log"
+        if acc_f.exists():
+            try:
+                lines = acc_f.read_text(encoding="utf-8", errors="ignore").splitlines()
+                log_content = "\n".join(lines[-log_lines:])
+            except Exception:
+                pass
+    elif log_source == "system":
+        try:
+            cp = subprocess.run(["dmesg", "-T"], capture_output=True, timeout=2)
+            if cp.returncode == 0 and cp.stdout:
+                lines = cp.stdout.decode("utf-8", errors="ignore").splitlines()
+                log_content = "\n".join(lines[-log_lines:])
+        except Exception:
+            pass
+
+    if not log_content.strip():
+        log_content = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 暂无对应日志输出或日志文件为空。"
+
+    return {
+        "ok": True,
+        "timestamp": now,
+        "time_str": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "system": {
+            "uptime_sec": round(uptime_sec, 1),
+            "uptime_str": uptime_str,
+            "boot_time": boot_time_str,
+            "is_recently_booted": is_recently_booted,
+            "load_avg": load_avg,
+            "cpu_cores": cpu_cores,
+            "cpu_percent": cpu_percent,
+            "memory": mem_info,
+            "swap": swap_info,
+            "disk": disk_info
+        },
+        "activity": {
+            "is_busy": is_busy,
+            "summary": activity_summary,
+            "top_action": top_active_action
+        },
+        "processes": procs[:15],
+        "log": {
+            "source": log_source,
+            "lines": log_lines,
+            "content": log_content
+        }
+    }
+
 def get_system_status():
     """获取系统整体统计与数据概览"""
     site_dir = get_site_dir()
@@ -1621,6 +1911,19 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
                 self.send_error(404, "Admin index.html not found")
             return
 
+        if path in ("/terminal", "/terminal.html", "/admin/terminal", "/admin/terminal.html"):
+            term_page = STATIC_DIR / "terminal.html"
+            if not term_page.exists():
+                for cand in [Path(__file__).resolve().parent / "static" / "terminal.html", ROOT_DIR / "manager" / "static" / "terminal.html"]:
+                    if cand.exists():
+                        term_page = cand
+                        break
+            if term_page.exists():
+                self.serve_file(term_page, "text/html")
+            else:
+                self.send_error(404, "Terminal page not found")
+            return
+
         if path.startswith("/admin/"):
             # 管理后台静态资源映射（例如 /admin/static/... 或 /admin/style.css）
             rel = path[len("/admin/"):]
@@ -1828,6 +2131,17 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
 
         if path == "/api/task_state":
             self.send_json(PROC_MGR.get_state())
+            return
+
+        if path == "/api/live_monitor":
+            qs = parse_qs(parsed.query)
+            source = qs.get("source", ["active"])[0]
+            try:
+                lines = int(qs.get("lines", [120])[0])
+            except (ValueError, TypeError):
+                lines = 120
+            metrics = get_live_server_metrics(log_source=source, log_lines=lines)
+            self.send_json(metrics)
             return
 
         if path == "/api/config":
