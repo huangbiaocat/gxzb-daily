@@ -1069,11 +1069,11 @@ def get_live_server_metrics(log_source: str = "active", log_lines: int = 120) ->
                     tag = "全文检索索引生成"
                     is_core = True
                     color = "indigo"
-               elif "build_search_page.py" in args_lower:
-                   role = "search_builder"
-                   tag = "全盘检索页面渲染"
-                   is_core = True
-                   color = "indigo"
+                elif "build_search_page.py" in args_lower:
+                    role = "search_builder"
+                    tag = "全盘检索页面渲染"
+                    is_core = True
+                    color = "indigo"
                 elif "build_daily_page.py" in args_lower:
                     role = "daily_builder"
                     tag = "每日静态快报渲染"
