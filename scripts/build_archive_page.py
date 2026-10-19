@@ -2097,6 +2097,61 @@ function handleFavModalBackdrop(e) {
     }
 }
 
+function switchFavTab(tabKey) {
+    var tabs = [
+        { key: 'projects', btnId: 'favTabBtnProjects', panelId: 'favPanelProjects' },
+        { key: 'owners', btnId: 'favTabBtnOwners', panelId: 'favPanelOwners' },
+        { key: 'alerts', btnId: 'favTabBtnAlerts', panelId: 'favPanelAlerts' },
+        { key: 'snapshots', btnId: 'favTabBtnSnapshots', panelId: 'favPanelSnapshots' }
+    ];
+    tabs.forEach(function(item) {
+        var btn = document.getElementById(item.btnId);
+        var panel = document.getElementById(item.panelId);
+        if (btn) {
+            if (item.key === tabKey) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+        if (panel) {
+            panel.style.display = (item.key === tabKey) ? 'block' : 'none';
+        }
+    });
+}
+
+function toggleBatchEdit(type) {
+    var tagBox = document.getElementById(type === 'projects' ? 'favProjectsTagContainer' : 'favOwnersTagContainer');
+    var batchBox = document.getElementById(type === 'projects' ? 'favProjectsBatchContainer' : 'favOwnersBatchContainer');
+    var textarea = document.getElementById(type === 'projects' ? 'favProjectsTextarea' : 'favOwnersTextarea');
+    var btn = document.getElementById(type === 'projects' ? 'btnToggleBatchProjects' : 'btnToggleBatchOwners');
+    if (!batchBox) return;
+
+    var isBatch = (batchBox.style.display !== 'none');
+    if (isBatch) {
+        var raw = textarea ? textarea.value : '';
+        var lines = raw.split('\\n').map(function(s) { return s.trim(); }).filter(Boolean);
+        var uniq = [];
+        lines.forEach(function(l) { if (uniq.indexOf(l) === -1) uniq.push(l); });
+        if (type === 'projects') {
+            currentUserConfig.focus_projects = uniq;
+            renderFavProjectsUI();
+        } else {
+            currentUserConfig.focus_owners = uniq;
+            renderFavOwnersUI();
+        }
+        batchBox.style.display = 'none';
+        if (tagBox) tagBox.style.display = 'flex';
+        if (btn) btn.innerText = '切换批量文本编辑';
+    } else {
+        var list = (type === 'projects') ? (currentUserConfig.focus_projects || []) : (currentUserConfig.focus_owners || []);
+        if (textarea) textarea.value = list.join('\\n');
+        if (tagBox) tagBox.style.display = 'none';
+        batchBox.style.display = 'block';
+        if (btn) btn.innerText = '完成并保存文本列表';
+    }
+}
+
 function switchAuthTab(tab) {
     var btnLogin = document.getElementById('tabBtnUserLogin');
     var btnReg = document.getElementById('tabBtnUserRegister');
