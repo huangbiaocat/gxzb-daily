@@ -1,9 +1,33 @@
 {
-  "version": "v0.1.24",
-  "commit": "452d5ac",
+  "version": "v0.1.26",
+  "commit": "269fbaf",
   "date": "2026-10-19",
-  "message": "chore(release): bump version v0.1.24",
+  "message": "chore(release): bump version v0.1.26",
   "commits": [
+    {
+      "commit": "269fbaf",
+      "author": "黄彪",
+      "date": "2026-10-19",
+      "message": "chore(release): bump version v0.1.26"
+    },
+    {
+      "commit": "bd72e08",
+      "author": "黄彪",
+      "date": "2026-10-19",
+      "message": "fix(deploy): 打包脚本排除本地精简版 index.html 覆盖生产端，改为在 VPS 生产端全量构建首页"
+    },
+    {
+      "commit": "6b139e9",
+      "author": "黄彪",
+      "date": "2026-10-19",
+      "message": "chore(release): bump version v0.1.25"
+    },
+    {
+      "commit": "4a88fe4",
+      "author": "黄彪",
+      "date": "2026-10-19",
+      "message": "fix(portal): 彻底修复登录用户清空关注后首页重点未清零问题，新增 /api/user/calendar_focus 专属重点日历聚合与双端部署同步"
+    },
     {
       "commit": "452d5ac",
       "author": "黄彪",
@@ -15,30 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-19",
       "message": "feat(portal): 用户登录后首页展示专属重点项目与业主规则，未填写时显示为空"
-    },
-    {
-      "commit": "e393204",
-      "author": "黄彪",
-      "date": "2026-10-18",
-      "message": "chore: sync version.json after release v0.1.23"
-    },
-    {
-      "commit": "f60a8f4",
-      "author": "黄彪",
-      "date": "2026-10-18",
-      "message": "chore(release): bump version v0.1.23"
-    },
-    {
-      "commit": "016ecc3",
-      "author": "黄彪",
-      "date": "2026-10-18",
-      "message": "feat: 规则配置中心支持删除单条历史配置快照并实时刷新计数"
-    },
-    {
-      "commit": "d0ec341",
-      "author": "黄彪",
-      "date": "2026-10-18",
-      "message": "chore(release): bump version v0.1.22"
     }
   ]
 }
