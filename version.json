@@ -1,44 +1,44 @@
 {
-  "version": "v0.1.28",
-  "commit": "4bb2ae0",
+  "version": "v0.1.31",
+  "commit": "17ed95f",
   "date": "2026-10-19",
-  "message": "chore(release): bump version v0.1.28",
+  "message": "chore(release): bump version v0.1.31",
   "commits": [
     {
-      "commit": "4bb2ae0",
+      "commit": "17ed95f",
       "author": "黄彪",
       "date": "2026-10-19",
-      "message": "chore(release): bump version v0.1.28"
+      "message": "chore(release): bump version v0.1.31"
     },
     {
-      "commit": "0162075",
+      "commit": "dcfc881",
       "author": "黄彪",
       "date": "2026-10-19",
-      "message": "chore(release): bump version v0.1.27"
+      "message": "fix(terminal): 将占位主机展示优化为正式域名 ztb.139771.xyz"
     },
     {
-      "commit": "1b11a24",
+      "commit": "a8670b6",
       "author": "黄彪",
       "date": "2026-10-19",
-      "message": "chore: sync version.json"
+      "message": "chore(release): bump version v0.1.30"
     },
     {
-      "commit": "269fbaf",
+      "commit": "890ef7b",
       "author": "黄彪",
       "date": "2026-10-19",
-      "message": "chore(release): bump version v0.1.26"
+      "message": "fix(ui): 移除实时终端内的套娃后台管理按钮并修复 run_daily 锁异常"
     },
     {
-      "commit": "bd72e08",
+      "commit": "6c08f75",
       "author": "黄彪",
       "date": "2026-10-19",
-      "message": "fix(deploy): 打包脚本排除本地精简版 index.html 覆盖生产端，改为在 VPS 生产端全量构建首页"
+      "message": "chore(release): bump version v0.1.29"
     },
     {
-      "commit": "6b139e9",
+      "commit": "1fd6dff",
       "author": "黄彪",
       "date": "2026-10-19",
-      "message": "chore(release): bump version v0.1.25"
+      "message": "feat(monitor): 关联后台断点续跑任务与实时终端，优化任务冲突一键直达查看体验"
     }
   ]
 }
