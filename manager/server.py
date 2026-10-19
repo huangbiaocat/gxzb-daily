@@ -1079,6 +1079,11 @@ def get_live_server_metrics(log_source: str = "active", log_lines: int = 120) ->
                     tag = "每日静态快报渲染"
                     is_core = True
                     color = "cyan"
+                elif "batch_scan.py" in args_lower:
+                    role = "batch_scanner"
+                    tag = "历史数据批量补扫续跑"
+                    is_core = True
+                    color = "amber"
                 elif "manager/server.py" in args_lower or "manager" in args_lower:
                     role = "manager"
                     tag = "控制台与终端监控API"
@@ -1127,13 +1132,15 @@ def get_live_server_metrics(log_source: str = "active", log_lines: int = 120) ->
     is_busy = False
     activity_summary = ""
 
-    if top_active_action:
+    is_task_running = bool(task_state.get("running") or task_state.get("status") == "running" or task_state.get("is_running") or task_state.get("is_busy"))
+    task_name = task_state.get("task_name") or task_state.get("running_command") or "后台任务执行中"
+
+    if is_task_running:
+        is_busy = True
+        activity_summary = f"⚡ 正在运行控制台任务: 【{task_name}】"
+    elif top_active_action:
         is_busy = True
         activity_summary = f"🚀 正在执行【{top_active_action['tag']}】(PID: {top_active_action['pid']}, CPU: {top_active_action['cpu']}%, 已运行: {top_active_action['time']})"
-    elif task_state.get("is_running") or task_state.get("is_busy"):
-        is_busy = True
-        cmd_text = task_state.get("running_command") or "后台任务执行中"
-        activity_summary = f"⚡ 控制台正在运行任务: {cmd_text} (已耗时 {task_state.get('elapsed_seconds', 0)}秒)"
     else:
         activity_summary = "🟢 系统处于空闲待机状态，核心守护进程平稳运行中"
 
@@ -1142,8 +1149,13 @@ def get_live_server_metrics(log_source: str = "active", log_lines: int = 120) ->
     log_lines = min(max(int(log_lines), 20), 300)
 
     if log_source == "active":
-        if task_state.get("is_running") or task_state.get("is_busy"):
-            log_content = "\n".join(task_state.get("logs", []))
+        raw_log = task_state.get("log") or task_state.get("logs") or ""
+        if is_task_running or (isinstance(raw_log, str) and raw_log.strip()) or (isinstance(raw_log, list) and raw_log):
+            if isinstance(raw_log, list):
+                log_content = "\n".join(raw_log[-log_lines:])
+            else:
+                lines = raw_log.splitlines()
+                log_content = "\n".join(lines[-log_lines:])
         else:
             try:
                 cp = subprocess.run(["journalctl", "-u", "gxzb-daily", "-n", str(log_lines), "--no-pager"], capture_output=True, timeout=2)

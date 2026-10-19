@@ -3703,9 +3703,16 @@
                 const d = await res.json();
                 if (d.ok) {
                     startPollingLog();
+                    switchTab("terminal");
                 } else {
                     logEl.textContent += `[Web Controller 启动失败] ${d.msg || '未知错误'}\n`;
-                    alert("启动批量补扫失败: " + d.msg);
+                    if (d.msg && d.msg.includes("已有任务正在运行")) {
+                        if (confirm(`${d.msg}\n\n是否立即前往【实时终端】查看当前正在运行的任务进度与输出？`)) {
+                            switchTab("terminal");
+                        }
+                    } else {
+                        alert("启动批量补扫失败: " + d.msg);
+                    }
                 }
             } catch (err) {
                 logEl.textContent += `[System Error] 请求异常: ${err}
@@ -4033,8 +4040,9 @@
                             </button>
                             <div class="flex items-center space-x-2">
                                 ${resumeBtnHtml}
-                                <button onclick="switchTab('dashboard')" class="px-2.5 py-1.5 text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition">
-                                    控制台终端
+                               <button onclick="switchTab('terminal')" class="px-2.5 py-1.5 text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 rounded-lg transition flex items-center space-x-1 font-medium">
+                                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                   <span>查看实时终端</span>
                                 </button>
                             </div>
                         </div>
@@ -4106,9 +4114,16 @@
                 if (d.ok) {
                     logEl.textContent += `[Web Controller] ${d.msg}\n`;
                     startPollingLog();
+                    switchTab("terminal");
                 } else {
                     logEl.textContent += `[Web Controller 启动失败] ${d.msg || '未知错误'}\n`;
-                    alert("启动断点续跑失败: " + d.msg);
+                    if (d.msg && d.msg.includes("已有任务正在运行")) {
+                        if (confirm(`${d.msg}\n\n是否立即前往【实时终端】查看当前正在运行的任务进度与输出？`)) {
+                            switchTab("terminal");
+                        }
+                    } else {
+                        alert("启动断点续跑失败: " + d.msg);
+                    }
                 }
             } catch (err) {
                 logEl.textContent += `[System Error] 启动异常: ${err}\n`;
