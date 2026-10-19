@@ -162,7 +162,8 @@ def main():
         return res.returncode
         
     # 同时也把最新的 html 页面传上去
-    htmls = list(dist_dir.glob("*.html"))
+    # 注意：排除本地精简环境生成的 index.html，防止覆盖生产服务器基于 2000+ 天全量数据构建的首页
+    htmls = [h for h in dist_dir.glob("*.html") if h.name != "index.html"]
     if htmls:
         cmd_html = ["scp", "-P", port, "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", "-o", "ControlMaster=auto", "-o", "ControlPath=/tmp/ssh-%r@%h:%p", "-o", "ControlPersist=10m"] + [str(h) for h in htmls] + [f"{user}@{host}:{remote_path}"]
         res_html = subprocess.run(cmd_html)
@@ -172,10 +173,12 @@ def main():
         if res_html.returncode == 0:
             print(f"  -> {len(htmls)} 个 HTML 页面上传 VPS (/opt/1panel 和 /opt/gxzb/dist) 成功！")
             
-    # 自动通知 VPS 生产环境 git pull 并重启 gxzb-web.service
-    print("[Remote] 触发 VPS 生产端代码拉取与服务重启 ...")
+    # 自动通知 VPS 生产环境 git pull、基于全量数据重新构建全景首页并重启 gxzb-web.service
+    print("[Remote] 触发 VPS 生产端代码拉取、基于全量数据构建首页与服务重启 ...")
     remote_cmd = (
         "cd /opt/gxzb && git fetch origin && git reset --hard origin/main && "
+        "PYTHONPATH=/opt/gxzb /opt/gxzb/venv/bin/python3 scripts/build_archive_page.py && "
+        "cp -f /opt/gxzb/dist/index.html /opt/1panel/www/tender_site/index.html && "
         "systemctl restart gxzb-web.service && systemctl status gxzb-web.service --no-pager -n 3"
     )
     ssh_proc = subprocess.run(
