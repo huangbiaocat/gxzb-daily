@@ -2032,6 +2032,14 @@ admin_modal_script = """
 <script>
 var currentUserState = null;
 var isAdminState = false;
+var currentUserConfig = {
+    focus_projects: [],
+    focus_owners: [],
+    alert_keywords: [],
+    alert_min_amount: 1000.0,
+    snapshots: []
+};
+var defaultHomeStatsCache = null;
 
 function openUserPortalModal() {
     if (currentUserState && currentUserState.username) {
@@ -2345,6 +2353,7 @@ function applyUserFocusZeroOnHome(isZero) {
     if (isZero) {
         defaultHomeStatsCache.cells.forEach(function(item) {
             item.el.setAttribute('data-focus', '0');
+            item.el.classList.remove('has-focus');
             if (item.metaEl) {
                 item.metaEl.className = 'cal-meta-zero';
                 item.metaEl.innerHTML = '重点 0';
@@ -2366,7 +2375,7 @@ function applyUserFocusZeroOnHome(isZero) {
             item.el.innerHTML = '<span>重点 0</span>';
         });
         if (defaultHomeStatsCache.hintEl) {
-            defaultHomeStatsCache.hintEl.innerHTML = defaultHomeStatsCache.hintHtml.replace(new RegExp("重点信息 <strong>[0-9,]+</strong> 条"), '重点信息 <strong>0</strong> 条 <span style="font-size:0.82rem;color:#94a3b8;font-weight:600;">(专属重点为空)</span>');
+            defaultHomeStatsCache.hintEl.innerHTML = (defaultHomeStatsCache.hintHtml || '').replace(/(历史重点|重点信息)\\s*<strong>[0-9,]+<\\/strong>\\s*条/, '$1 <strong>0</strong> 条 <span style="font-size:0.82rem;color:#94a3b8;font-weight:600;">(专属重点为空)</span>');
         }
     } else {
         restoreHomeFocusToDefault();
@@ -2385,6 +2394,11 @@ function applyUserCalendarFocus(data) {
     defaultHomeStatsCache.cells.forEach(function(item) {
         var cnt = byDate[item.date] || 0;
         item.el.setAttribute('data-focus', String(cnt));
+        if (cnt > 0) {
+            item.el.classList.add('has-focus');
+        } else {
+            item.el.classList.remove('has-focus');
+        }
         if (item.metaEl) {
             if (cnt > 0) {
                 item.metaEl.className = 'cal-meta-focus';
@@ -2435,7 +2449,7 @@ function applyUserCalendarFocus(data) {
     });
 
     if (defaultHomeStatsCache.hintEl) {
-        defaultHomeStatsCache.hintEl.innerHTML = defaultHomeStatsCache.hintHtml.replace(new RegExp("重点信息 <strong>[0-9,]+</strong> 条"), '重点信息 <strong>' + totalFocus.toLocaleString() + '</strong> 条 <span style="font-size:0.82rem;color:#0284c7;font-weight:700;">(专属重点已生效)</span>');
+        defaultHomeStatsCache.hintEl.innerHTML = (defaultHomeStatsCache.hintHtml || '').replace(/(历史重点|重点信息)\\s*<strong>[0-9,]+<\\/strong>\\s*条/, '$1 <strong>' + totalFocus.toLocaleString() + '</strong> 条 <span style="font-size:0.82rem;color:#0284c7;font-weight:700;">(专属重点已生效)</span>');
     }
 }
 
@@ -2443,6 +2457,11 @@ function restoreHomeFocusToDefault() {
     if (!defaultHomeStatsCache) return;
     defaultHomeStatsCache.cells.forEach(function(item) {
         item.el.setAttribute('data-focus', item.dataFocus);
+        if (parseInt(item.dataFocus || '0', 10) > 0) {
+            item.el.classList.add('has-focus');
+        } else {
+            item.el.classList.remove('has-focus');
+        }
         if (item.metaEl) {
             item.metaEl.className = item.metaClass;
             item.metaEl.innerHTML = item.metaHtml;
@@ -2957,9 +2976,9 @@ if (window.BroadcastChannel) {
 
 window.addEventListener('gxzb_focus_config_changed', function(ev) {
     if (ev.detail && currentUserState) {
-        if (ev.detail.focus_projects) currentUserConfig.focus_projects = ev.detail.focus_projects;
-        if (ev.detail.focus_owners) currentUserConfig.focus_owners = ev.detail.focus_owners;
-        if (ev.detail.alert_keywords) currentUserConfig.alert_keywords = ev.detail.alert_keywords;
+        if (Array.isArray(ev.detail.focus_projects)) currentUserConfig.focus_projects = ev.detail.focus_projects;
+        if (Array.isArray(ev.detail.focus_owners)) currentUserConfig.focus_owners = ev.detail.focus_owners;
+        if (Array.isArray(ev.detail.alert_keywords)) currentUserConfig.alert_keywords = ev.detail.alert_keywords;
         if (ev.detail.alert_min_amount !== undefined) currentUserConfig.alert_min_amount = ev.detail.alert_min_amount;
         renderFavProjectsUI();
         renderFavOwnersUI();
