@@ -1269,6 +1269,15 @@ extra_style = """
             color: #92400e;
             font-size: 0.88rem;
         }
+        .alert-pill.alert-pill-zero {
+            background: #f1f5f9 !important;
+            color: #64748b !important;
+            border-color: #cbd5e1 !important;
+        }
+        .year-stat-focus-zero {
+            color: #94a3b8 !important;
+            font-weight: 500 !important;
+        }
     </style>
 """
 
@@ -1435,8 +1444,8 @@ for yr in years_in_data:
         '<span class="year-badge year-badge-past">往年归档</span>'
     )
     stat_desc = f"{len(cards)} 个月份 · {yr_day_cnt} 天已归档 · {comma(yr_notices)} 条公告"
-    if yr_focus > 0:
-        stat_desc += f" · 重点关注 {comma(yr_focus)}"
+    focus_display = comma(yr_focus) if yr_focus > 0 else "0"
+    stat_desc += f' · <span class="year-stat-focus{" year-stat-focus-zero" if yr_focus == 0 else ""}">重点关注 <strong class="year-focus-num">{focus_display}</strong></span>'
 
     group_html = f"""<details class="year-archive-group{curr_cls}"{open_attr} data-year="{yr}">
   <summary class="year-group-summary">
@@ -2265,20 +2274,42 @@ function cacheDefaultHomeStats() {
         cellsData.push({
             el: cell,
             dataFocus: cell.getAttribute('data-focus') || '0',
+            date: cell.getAttribute('data-date') || '',
+            title: cell.getAttribute('title') || '',
             metaEl: focusMeta,
             metaClass: focusMeta ? focusMeta.className : '',
             metaHtml: focusMeta ? focusMeta.innerHTML : ''
         });
     });
 
-    var monthCards = document.querySelectorAll('.month-card');
+    var monthCards = document.querySelectorAll('.month-calendar-card');
     var monthsData = [];
     monthCards.forEach(function(card) {
-        var alertPill = card.querySelector('.alert-pill strong');
+        var alertPill = card.querySelector('.alert-pill');
+        var pillStrong = alertPill ? alertPill.querySelector('strong') : null;
         monthsData.push({
             el: card,
+            ym: card.getAttribute('data-year-month') || '',
             pillEl: alertPill,
-            val: alertPill ? alertPill.innerText : ''
+            pillStrong: pillStrong,
+            val: pillStrong ? pillStrong.innerText : '0',
+            cls: alertPill ? alertPill.className : ''
+        });
+    });
+
+    var yearCards = document.querySelectorAll('.year-archive-group');
+    var yearsData = [];
+    yearCards.forEach(function(yg) {
+        var yr = yg.getAttribute('data-year') || '';
+        var fWrap = yg.querySelector('.year-stat-focus');
+        var fStrong = fWrap ? fWrap.querySelector('.year-focus-num') : null;
+        yearsData.push({
+            el: yg,
+            yr: yr,
+            fWrap: fWrap,
+            fStrong: fStrong,
+            val: fStrong ? fStrong.innerText : '0',
+            cls: fWrap ? fWrap.className : ''
         });
     });
 
@@ -2288,8 +2319,10 @@ function cacheDefaultHomeStats() {
     var listChips = document.querySelectorAll('.chip-alert, .chip-zero');
     var chipsData = [];
     listChips.forEach(function(chip) {
+        var parentRow = chip.closest('[data-date]');
         chipsData.push({
             el: chip,
+            date: parentRow ? parentRow.getAttribute('data-date') : '',
             cls: chip.className,
             html: chip.innerHTML
         });
@@ -2298,6 +2331,7 @@ function cacheDefaultHomeStats() {
     defaultHomeStatsCache = {
         cells: cellsData,
         months: monthsData,
+        years: yearsData,
         hintEl: hintEl,
         hintHtml: hintHtml,
         chips: chipsData
@@ -2312,22 +2346,96 @@ function applyUserFocusZeroOnHome(isZero) {
         defaultHomeStatsCache.cells.forEach(function(item) {
             item.el.setAttribute('data-focus', '0');
             if (item.metaEl) {
-                item.metaEl.className = 'cal-meta-line cal-meta-zero';
+                item.metaEl.className = 'cal-meta-zero';
                 item.metaEl.innerHTML = '重点 0';
+            }
+            if (item.title) {
+                item.el.setAttribute('title', item.title.replace(/（重点信息 [0-9]+ 条）/, '（重点信息 0 条）'));
             }
         });
         defaultHomeStatsCache.months.forEach(function(item) {
-            if (item.pillEl) item.pillEl.innerText = '0';
+            if (item.pillStrong) item.pillStrong.innerText = '0';
+            if (item.pillEl) item.pillEl.className = 'alert-pill alert-pill-zero';
+        });
+        defaultHomeStatsCache.years.forEach(function(item) {
+            if (item.fStrong) item.fStrong.innerText = '0';
+            if (item.fWrap) item.fWrap.className = 'year-stat-focus year-stat-focus-zero';
         });
         defaultHomeStatsCache.chips.forEach(function(item) {
             item.el.className = 'f-chip chip-zero';
             item.el.innerHTML = '<span>重点 0</span>';
         });
         if (defaultHomeStatsCache.hintEl) {
-            defaultHomeStatsCache.hintEl.innerHTML = defaultHomeStatsCache.hintHtml.replace(/重点信息 <strong>[0-9]+<\\/strong> 条/, '重点信息 <strong>0</strong> 条 <span style="font-size:0.82rem;color:#94a3b8;">(专属重点为空)</span>');
+            defaultHomeStatsCache.hintEl.innerHTML = defaultHomeStatsCache.hintHtml.replace(new RegExp("重点信息 <strong>[0-9,]+</strong> 条"), '重点信息 <strong>0</strong> 条 <span style="font-size:0.82rem;color:#94a3b8;font-weight:600;">(专属重点为空)</span>');
         }
     } else {
         restoreHomeFocusToDefault();
+    }
+}
+
+function applyUserCalendarFocus(data) {
+    cacheDefaultHomeStats();
+    if (!defaultHomeStatsCache || !data) return;
+
+    var byDate = data.by_date || {};
+    var byMonth = data.by_month || {};
+    var byYear = data.by_year || {};
+    var totalFocus = data.total_focus || 0;
+
+    defaultHomeStatsCache.cells.forEach(function(item) {
+        var cnt = byDate[item.date] || 0;
+        item.el.setAttribute('data-focus', String(cnt));
+        if (item.metaEl) {
+            if (cnt > 0) {
+                item.metaEl.className = 'cal-meta-focus';
+                item.metaEl.innerHTML = '重点 ' + cnt;
+            } else {
+                item.metaEl.className = 'cal-meta-zero';
+                item.metaEl.innerHTML = '重点 0';
+            }
+        }
+        if (item.title) {
+            item.el.setAttribute('title', item.title.replace(/（重点信息 [0-9]+ 条）/, '（重点信息 ' + cnt + ' 条）'));
+        }
+    });
+
+    defaultHomeStatsCache.months.forEach(function(item) {
+        var cnt = byMonth[item.ym] || 0;
+        if (item.pillStrong) item.pillStrong.innerText = cnt.toLocaleString();
+        if (item.pillEl) {
+            if (cnt > 0) {
+                item.pillEl.className = 'alert-pill';
+            } else {
+                item.pillEl.className = 'alert-pill alert-pill-zero';
+            }
+        }
+    });
+
+    defaultHomeStatsCache.years.forEach(function(item) {
+        var cnt = byYear[item.yr] || 0;
+        if (item.fStrong) item.fStrong.innerText = cnt.toLocaleString();
+        if (item.fWrap) {
+            if (cnt > 0) {
+                item.fWrap.className = 'year-stat-focus';
+            } else {
+                item.fWrap.className = 'year-stat-focus year-stat-focus-zero';
+            }
+        }
+    });
+
+    defaultHomeStatsCache.chips.forEach(function(item) {
+        var cnt = byDate[item.date] || 0;
+        if (cnt > 0) {
+            item.el.className = 'f-chip chip-alert';
+            item.el.innerHTML = '<span>重点 ' + cnt + '</span>';
+        } else {
+            item.el.className = 'f-chip chip-zero';
+            item.el.innerHTML = '<span>重点 0</span>';
+        }
+    });
+
+    if (defaultHomeStatsCache.hintEl) {
+        defaultHomeStatsCache.hintEl.innerHTML = defaultHomeStatsCache.hintHtml.replace(new RegExp("重点信息 <strong>[0-9,]+</strong> 条"), '重点信息 <strong>' + totalFocus.toLocaleString() + '</strong> 条 <span style="font-size:0.82rem;color:#0284c7;font-weight:700;">(专属重点已生效)</span>');
     }
 }
 
@@ -2339,9 +2447,15 @@ function restoreHomeFocusToDefault() {
             item.metaEl.className = item.metaClass;
             item.metaEl.innerHTML = item.metaHtml;
         }
+        if (item.title) item.el.setAttribute('title', item.title);
     });
     defaultHomeStatsCache.months.forEach(function(item) {
-        if (item.pillEl) item.pillEl.innerText = item.val;
+        if (item.pillStrong) item.pillStrong.innerText = item.val;
+        if (item.pillEl) item.pillEl.className = item.cls;
+    });
+    defaultHomeStatsCache.years.forEach(function(item) {
+        if (item.fStrong) item.fStrong.innerText = item.val;
+        if (item.fWrap) item.fWrap.className = item.cls;
     });
     defaultHomeStatsCache.chips.forEach(function(item) {
         item.el.className = item.cls;
@@ -2350,6 +2464,30 @@ function restoreHomeFocusToDefault() {
     if (defaultHomeStatsCache.hintEl) {
         defaultHomeStatsCache.hintEl.innerHTML = defaultHomeStatsCache.hintHtml;
     }
+}
+
+function loadUserCalendarFocusData() {
+    if (!currentUserState) {
+        renderHomeFocusBanner(null);
+        return;
+    }
+    fetch('/api/user/calendar_focus')
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (res && res.ok) {
+                if (res.empty) {
+                    applyUserFocusZeroOnHome(true);
+                } else {
+                    applyUserCalendarFocus(res);
+                }
+            } else {
+                applyUserFocusZeroOnHome(true);
+            }
+        })
+        .catch(function(err) {
+            console.warn('获取用户日历聚合失败', err);
+            applyUserFocusZeroOnHome(true);
+        });
 }
 
 function renderHomeFocusBanner(cfg) {
@@ -2374,7 +2512,7 @@ function renderHomeFocusBanner(cfg) {
         banner.className = 'user-focus-home-banner is-empty';
         if (iconEl) iconEl.innerText = '💡';
         if (titleText) titleText.innerHTML = '专属重点跟踪：您当前尚未设置任何重点项目与重点业主，重点跟踪列表为空';
-        contentEl.innerHTML = '<div class="uf-empty-block">您尚未添加专属重点项目与重点业主，全站标讯重点将保持为空。点击右侧“管理重点规则”或下方按钮即可建立您的专属关注库。</div>' +
+        contentEl.innerHTML = '<div class=uf-empty-block>您尚未添加专属重点项目与重点业主，全站标讯重点将保持为空。点击右侧“管理重点规则”或下方按钮即可建立您的专属关注库。</div>' +
             '<div style="margin-top:8px;"><button type="button" class="btn-focus-manage" onclick="openFavoritesModal()">➕ 立即添加重点项目与业主</button></div>';
         applyUserFocusZeroOnHome(true);
     } else {
@@ -2392,81 +2530,11 @@ function renderHomeFocusBanner(cfg) {
             ? oList.map(function(o) { return '<span class="uf-tag uf-tag-owner">🏢 ' + escapeHtmlStr(o) + '</span>'; }).join('')
             : '<span class="uf-empty-text">暂未设置重点业主</span>';
 
-        contentEl.innerHTML = '<div class="uf-row">' +
-                '<span class="uf-row-label">🎯 重点项目 (' + pList.length + '项)：</span>' +
-                '<div class="uf-tag-group">' + projTagsHtml + '</div>' +
-            '</div>' +
-            '<div class="uf-row">' +
-                '<span class="uf-row-label">🏢 重点业主 (' + oList.length + '家)：</span>' +
-                '<div class="uf-tag-group">' + ownerTagsHtml + '</div>' +
-            '</div>' +
-            '<div style="margin-top:8px;font-size:0.78rem;color:#64748b;">✨ 已生效您的专属关注规则。点击下方日历中任意日期进入每日简报，即可查看命中您专属规则的标讯高亮。</div>';
+        contentEl.innerHTML =
+            '<div class="uf-tag-group"><div class="uf-tag-group-title">重点项目：</div><div class="uf-tags-wrap">' + projTagsHtml + '</div></div>' +
+            '<div class="uf-tag-group"><div class="uf-tag-group-title">重点业主：</div><div class="uf-tags-wrap">' + ownerTagsHtml + '</div></div>';
 
-        restoreHomeFocusToDefault();
-    }
-}
-
-var currentUserConfig = {
-    focus_projects: [],
-    focus_owners: [],
-    alert_keywords: [],
-    alert_min_amount: 1000.0,
-    snapshots: []
-};
-var favActiveTab = 'projects';
-
-function switchFavTab(tabKey) {
-    favActiveTab = tabKey;
-    var tabIds = ['projects', 'owners', 'alerts', 'snapshots'];
-    tabIds.forEach(function(k) {
-        var btn = document.getElementById('favTabBtn' + k.charAt(0).toUpperCase() + k.slice(1));
-        var panel = document.getElementById('favPanel' + k.charAt(0).toUpperCase() + k.slice(1));
-        if (btn) btn.classList.toggle('active', k === tabKey);
-        if (panel) panel.style.display = (k === tabKey) ? 'block' : 'none';
-    });
-}
-
-function toggleBatchEdit(type) {
-    var isPrj = type === 'projects';
-    var tagBox = document.getElementById(isPrj ? 'favProjectsTagContainer' : 'favOwnersTagContainer');
-    var batchBox = document.getElementById(isPrj ? 'favProjectsBatchContainer' : 'favOwnersBatchContainer');
-    var textarea = document.getElementById(isPrj ? 'favProjectsTextarea' : 'favOwnersTextarea');
-    var btn = document.getElementById(isPrj ? 'btnToggleBatchProjects' : 'btnToggleBatchOwners');
-
-    if (!batchBox || !tagBox || !textarea) return;
-    var isBatchShowing = batchBox.style.display !== 'none';
-    if (isBatchShowing) {
-        // 从文本域同步回列表
-        var text = textarea.value.replace(/\\r\\n/g, '\\n').replace(/，/g, ',');
-        var list = [];
-        if (text.indexOf('\\n') !== -1) {
-            list = text.split('\\n').map(function(s) { return s.trim(); }).filter(Boolean);
-        } else {
-            list = text.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
-        }
-        // 去重
-        var seen = {};
-        var deduped = [];
-        list.forEach(function(item) {
-            if (!seen[item]) { seen[item] = true; deduped.push(item); }
-        });
-        if (isPrj) {
-            currentUserConfig.focus_projects = deduped;
-            renderFavProjectsUI();
-        } else {
-            currentUserConfig.focus_owners = deduped;
-            renderFavOwnersUI();
-        }
-        batchBox.style.display = 'none';
-        tagBox.style.display = 'flex';
-        if (btn) btn.innerText = '切换批量文本编辑';
-    } else {
-        // 展开批量编辑
-        var curList = isPrj ? currentUserConfig.focus_projects : currentUserConfig.focus_owners;
-        textarea.value = curList.join('\\n');
-        batchBox.style.display = 'block';
-        tagBox.style.display = 'none';
-        if (btn) btn.innerText = '完成文本编辑 (切回标签视图)';
+        loadUserCalendarFocusData();
     }
 }
 

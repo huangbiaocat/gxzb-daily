@@ -52,6 +52,29 @@ try:
 except Exception as _e:
     pass
 
+# 全盘检索索引缓存（供全站搜索与日历重点个性化聚合加速使用）
+_SEARCH_INDEX_CACHE = {"mtime": 0, "path": "", "items": []}
+
+def _get_cached_search_items() -> list:
+    global _SEARCH_INDEX_CACHE
+    p1 = Path(config.DATA_DIR) / "search_index.json"
+    p2 = ROOT_DIR / "dist" / "search_index.json"
+    target = p1 if p1.is_file() else (p2 if p2.is_file() else None)
+    if not target:
+        return []
+    try:
+        mtime = target.stat().st_mtime
+        if _SEARCH_INDEX_CACHE["items"] and _SEARCH_INDEX_CACHE["mtime"] == mtime and _SEARCH_INDEX_CACHE["path"] == str(target):
+            return _SEARCH_INDEX_CACHE["items"]
+        with open(target, "r", encoding="utf-8") as f:
+            items = json.load(f)
+        _SEARCH_INDEX_CACHE["mtime"] = mtime
+        _SEARCH_INDEX_CACHE["path"] = str(target)
+        _SEARCH_INDEX_CACHE["items"] = items
+        return items
+    except Exception:
+        return []
+
 PORT = int(getattr(config, "MANAGER_PORT", os.environ.get("MANAGER_PORT", 8089)))
 
 # ---------------------------------------------------------------------------
@@ -1684,6 +1707,74 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
                 return
             cfg = get_user_full_config(user["id"])
             self.send_json({"ok": True, "config": cfg})
+            return
+
+        # 普通用户定制日历重点聚合接口
+        if path == "/api/user/calendar_focus":
+            user = self.get_current_user()
+            if not user:
+                self.send_json({"ok": False, "error": "unauthorized", "msg": "请先登录普通用户账号"}, status=401)
+                return
+            cfg = get_user_full_config(user["id"])
+            focus_projects = [p.strip() for p in cfg.get("focus_projects", []) if p and p.strip()]
+            focus_owners = [o.strip() for o in cfg.get("focus_owners", []) if o and o.strip()]
+
+            # 如果用户把关注都删了（或新用户从未设置过重点关注）
+            if not focus_projects and not focus_owners:
+                self.send_json({
+                    "ok": True,
+                    "empty": True,
+                    "focus_projects_count": 0,
+                    "focus_owners_count": 0,
+                    "by_date": {},
+                    "by_year": {},
+                    "by_month": {},
+                    "total_focus": 0
+                })
+                return
+
+            # 如果用户有关注项，通过内存索引进行全库匹配
+            items = _get_cached_search_items()
+            proj_lower = [p.lower() for p in focus_projects]
+            owner_lower = [o.lower() for o in focus_owners]
+
+            by_date = {}
+            by_year = {}
+            by_month = {}
+            total_focus = 0
+
+            for it in items:
+                title = (it.get("title") or "").lower()
+                hit = False
+                for p in proj_lower:
+                    if p in title:
+                        hit = True
+                        break
+                if not hit:
+                    for o in owner_lower:
+                        if o in title:
+                            hit = True
+                            break
+                if hit:
+                    d = it.get("date") or ""
+                    if d and len(d) >= 10:
+                        by_date[d] = by_date.get(d, 0) + 1
+                        yr = d[:4]
+                        mo = d[:7]
+                        by_year[yr] = by_year.get(yr, 0) + 1
+                        by_month[mo] = by_month.get(mo, 0) + 1
+                        total_focus += 1
+
+            self.send_json({
+                "ok": True,
+                "empty": False,
+                "focus_projects_count": len(focus_projects),
+                "focus_owners_count": len(focus_owners),
+                "by_date": by_date,
+                "by_year": by_year,
+                "by_month": by_month,
+                "total_focus": total_focus
+            })
             return
 
         # 普通用户历史配置快照列表

@@ -1,9 +1,27 @@
 {
-  "version": "v0.1.23",
-  "commit": "f60a8f4",
-  "date": "2026-10-18",
-  "message": "chore(release): bump version v0.1.23",
+  "version": "v0.1.24",
+  "commit": "452d5ac",
+  "date": "2026-10-19",
+  "message": "chore(release): bump version v0.1.24",
   "commits": [
+    {
+      "commit": "452d5ac",
+      "author": "黄彪",
+      "date": "2026-10-19",
+      "message": "chore(release): bump version v0.1.24"
+    },
+    {
+      "commit": "32f0023",
+      "author": "黄彪",
+      "date": "2026-10-19",
+      "message": "feat(portal): 用户登录后首页展示专属重点项目与业主规则，未填写时显示为空"
+    },
+    {
+      "commit": "e393204",
+      "author": "黄彪",
+      "date": "2026-10-18",
+      "message": "chore: sync version.json after release v0.1.23"
+    },
     {
       "commit": "f60a8f4",
       "author": "黄彪",
@@ -21,24 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-18",
       "message": "chore(release): bump version v0.1.22"
-    },
-    {
-      "commit": "c908e4a",
-      "author": "黄彪",
-      "date": "2026-10-18",
-      "message": "feat: 支持根据用户关注规则实时无刷新渲染重点项目与业主，新用户默认不显示重点"
-    },
-    {
-      "commit": "642a930",
-      "author": "黄彪",
-      "date": "2026-10-18",
-      "message": "chore(release): bump version v0.1.21"
-    },
-    {
-      "commit": "47be8a4",
-      "author": "黄彪",
-      "date": "2026-10-18",
-      "message": "fix(task_event): 修复大任务中断后卡死running状态与重置提示残留问题"
     }
   ]
 }

@@ -54,6 +54,7 @@ FILES_TO_PACK = [
     "templates/index-preview.html",
     "version.json",
     "manager/server.py",
+    "manager/user_db.py",
     "manager/static/index.html",
     "extractors/__init__.py",
     "extractors/normalize.py",
@@ -147,10 +148,13 @@ def main():
     remote_path = getattr(config, "VPS_PATH", "/opt/1panel/www/tender_site/")
     if not remote_path.endswith("/"):
         remote_path += "/"
+    gxzb_dist_path = "/opt/gxzb/dist/"
     
-    print(f"[Upload] 上传 {zip_path.name}、version.json 及 dist 页面到 VPS ({host}:{remote_path}) ...")
+    print(f"[Upload] 上传 {zip_path.name}、version.json 到 VPS ({host}:{remote_path} 和 {gxzb_dist_path}) ...")
     cmd = ["scp", "-P", port, "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", "-o", "ControlMaster=auto", "-o", "ControlPath=/tmp/ssh-%r@%h:%p", "-o", "ControlPersist=10m", str(zip_path), str(dist_v_file), f"{user}@{host}:{remote_path}"]
     res = subprocess.run(cmd)
+    # 同时同步到 /opt/gxzb/dist/
+    subprocess.run(["scp", "-P", port, "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", str(zip_path), str(dist_v_file), f"{user}@{host}:{gxzb_dist_path}"])
     if res.returncode == 0:
         print("  -> update_i5.zip 与 version.json 上传 VPS 成功！")
     else:
@@ -162,8 +166,26 @@ def main():
     if htmls:
         cmd_html = ["scp", "-P", port, "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", "-o", "ControlMaster=auto", "-o", "ControlPath=/tmp/ssh-%r@%h:%p", "-o", "ControlPersist=10m"] + [str(h) for h in htmls] + [f"{user}@{host}:{remote_path}"]
         res_html = subprocess.run(cmd_html)
+        # 同时同步到 Nginx 真实托管根目录 /opt/gxzb/dist/
+        cmd_html_gxzb = ["scp", "-P", port, "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no"] + [str(h) for h in htmls] + [f"{user}@{host}:{gxzb_dist_path}"]
+        res_html_gxzb = subprocess.run(cmd_html_gxzb)
         if res_html.returncode == 0:
-            print(f"  -> {len(htmls)} 个 HTML 页面上传 VPS 成功！")
+            print(f"  -> {len(htmls)} 个 HTML 页面上传 VPS (/opt/1panel 和 /opt/gxzb/dist) 成功！")
+            
+    # 自动通知 VPS 生产环境 git pull 并重启 gxzb-web.service
+    print("[Remote] 触发 VPS 生产端代码拉取与服务重启 ...")
+    remote_cmd = (
+        "cd /opt/gxzb && git fetch origin && git reset --hard origin/main && "
+        "systemctl restart gxzb-web.service && systemctl status gxzb-web.service --no-pager -n 3"
+    )
+    ssh_proc = subprocess.run(
+        ["ssh", "-p", port, "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", f"{user}@{host}", remote_cmd],
+        capture_output=True, text=True
+    )
+    if ssh_proc.returncode == 0:
+        print("  -> VPS 服务端代码同步并重启成功！")
+    else:
+        print(f"  -> [Warn] VPS 远程更新或重启提示: {ssh_proc.stderr or ssh_proc.stdout}")
             
     return 0
 
