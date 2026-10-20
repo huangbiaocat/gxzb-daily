@@ -1,9 +1,21 @@
 {
-  "version": "v0.1.34",
-  "commit": "c8810a3",
-  "date": "2026-10-19",
-  "message": "chore(release): bump version v0.1.34",
+  "version": "v0.1.35",
+  "commit": "40cebdd",
+  "date": "2026-10-20",
+  "message": "chore(release): bump version v0.1.35",
   "commits": [
+    {
+      "commit": "40cebdd",
+      "author": "黄彪",
+      "date": "2026-10-20",
+      "message": "chore(release): bump version v0.1.35"
+    },
+    {
+      "commit": "e31a808",
+      "author": "黄彪",
+      "date": "2026-10-20",
+      "message": "feat(notify): 完成交建通私有化企业自建应用对接与工作台消息协同 (ZTB-27)"
+    },
     {
       "commit": "c8810a3",
       "author": "黄彪",
@@ -27,18 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-19",
       "message": "fix: 补充 pack_and_upload_i5.py 缺失的 datetime 导入"
-    },
-    {
-      "commit": "bc95055",
-      "author": "黄彪",
-      "date": "2026-10-19",
-      "message": "chore(release): bump version v0.1.32"
-    },
-    {
-      "commit": "b5069c7",
-      "author": "黄彪",
-      "date": "2026-10-19",
-      "message": "fix: 修复首页用户重点配置为空时日历重点数字未清零及JS未定义报错问题"
     }
   ]
 }

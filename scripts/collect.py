@@ -236,6 +236,12 @@ def collect(day, centers=None, save_raw=True, quiet=False, page_size=None, recor
 
     for idx, center in enumerate(centers, 1):
         c_name = CENTER_NAMES.get(center, center)
+        # 协作式高优先级让道检查：若定时自动任务进入采集阶段，手动采集主动暂停挂起
+        try:
+            from scripts.priority_lock import wait_for_priority_task
+            wait_for_priority_task(context=f"交易中心 {center} ({c_name})")
+        except Exception:
+            pass
         if not quiet:
             print(f"   [{idx}/{len(centers)}] 正在采集交易中心 {center} ({c_name})...", flush=True)
         try:

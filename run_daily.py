@@ -416,10 +416,20 @@ def main(argv=None):
     # 2) 入库对账 / 合并
     banner("2/8", "入库对账（缺失 = 全量 - 已入库）")
     try:
+        if priority_lock:
+            priority_lock.heartbeat()
         reconcile(day, args.reconcile)
     except Exception as exc:                                   # noqa: BLE001
         failed_steps.append("reconcile")
         print("入库对账失败：", exc)
+
+    # 核心数据采集与入库对账阶段已完成：降级锁状态为 finishing，解除对手动任务的采集互斥挂起
+    if priority_lock:
+        try:
+            priority_lock.set_phase("finishing")
+            print("[*] [优先级避让] 核心数据采集与入库阶段已完成，已解除对手动任务的暂停等待")
+        except Exception:
+            pass
 
     # 3) 生成每日页
     banner("3/8", "生成每日明细页")

@@ -361,7 +361,7 @@ def get_site_dir() -> Path:
 class ProcessManager:
     """管理后台任务进程执行与实时日志捕获"""
     def __init__(self):
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.process = None
         self.log_lines = []
         self.max_log_lines = 1000
@@ -384,7 +384,19 @@ class ProcessManager:
         with self.lock:
             if self.process and self.process.poll() is None:
                 return False, "已有任务正在运行中，请等待完成"
-            self.status = "running"
+
+            # 检测是否有高优先级自动定时任务正在采集中
+            collecting = False
+            lock_info = None
+            try:
+                from scripts.priority_lock import is_priority_collecting, get_running_lock_info
+                collecting = is_priority_collecting()
+                if collecting:
+                    lock_info = get_running_lock_info(check_collecting_only=True)
+            except Exception:
+                pass
+
+            self.status = "waiting_priority" if collecting else "running"
             self.task_name = name
             self.start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.end_time = None
@@ -401,9 +413,28 @@ class ProcessManager:
                     pass
             self.current_event_id = event_id
 
+            if collecting and lock_info:
+                p_task = lock_info.get("task_name", "自动定时任务")
+                p_pid = lock_info.get("pid", "")
+                self.append_log(
+                    f"[{self.start_time}] [任务已创建 - 优先级避让挂起中] 检测到高优先级【{p_task}】(PID {p_pid}) 正在进行数据采集。\n"
+                    f"根据优先级避让规则，当前手动任务【{name}】已成功创建并主动挂起等待，待自动任务完成本阶段采集后自动开始...\n"
+                    + "-" * 50 + "\n"
+                )
+
         def _worker():
             eid = event_id
             try:
+                # 若启动时处于避让挂起阶段，在后台 worker 中安全等待自动任务完成采集
+                try:
+                    from scripts.priority_lock import wait_for_priority_task
+                    wait_for_priority_task(poll_interval=1.0, context=f"后台任务 {name}")
+                except Exception:
+                    pass
+
+                with self.lock:
+                    self.status = "running"
+
                 self.append_log(f"[{self.start_time}] 开始执行任务: {name}\n")
                 self.append_log(f"命令: {' '.join(str(c) for c in cmd)}\n" + "-" * 50 + "\n")
                 # 使用 unbuffered 运行
@@ -493,7 +524,7 @@ class ProcessManager:
                     except Exception:
                         pass
                     self.current_event_id = None
-            is_running = (self.status == "running")
+            is_running = (self.status in ("running", "waiting_priority"))
             log_content = "".join(self.log_lines)
             return {
                 "status": self.status,

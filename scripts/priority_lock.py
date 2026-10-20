@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
-"""高优先级任务锁与协作式让道避让机制。
+"""高优先级任务锁与协作式让道/避让机制。
 
-核心目标：
-1. 定时日更任务（run_daily.py）声明高优先级锁；
-2. 手动长周期批量任务（batch_scan.py、reapply_rules.py）在每完成一天的间隙主动检查该锁；
-3. 若定时任务正在运行，手动任务主动挂起待命（释放 SQLite 连接与系统资源），避免并发写锁竞争与 OOM；
-4. 定时任务完成后释放锁，手动任务毫秒级自动唤醒并继续，全程无须人工干预。
+核心调度规则：
+1. 优先级次序：自动定时任务（run_daily.py 采集阶段） > 手动任务（batch_scan / reapply_rules / 后台手动触发）。
+2. 手动任务在跑时，若自动任务时间到了：
+   自动任务发出采集互斥信号，手动任务在迭代间隙（中心/天/批次）主动暂停挂起；
+   等自动任务完成本阶段采集后，手动任务自动唤醒并继续执行。
+3. 自动任务处于挂起等待、或者未在进行核心采集时：
+   允许手动任务正常启动并跑起来。
+4. 启动手动任务时，若自动任务正在采集：
+   系统允许先创建手动任务，但先挂起不采集，排队等待自动任务完成本阶段采集后再继续执行。
+5. 超时自愈（Anti-Deadlock）：锁内置 15 分钟 TTL 与心跳机制，进程死亡或超时自动释放，绝不永久死锁。
 """
 import os
 import sys
@@ -21,6 +26,10 @@ try:
 except Exception:
     LOCK_FILE = Path(__file__).resolve().parent.parent / "data" / ".priority_job.lock"
 
+# 采集阶段最大允许无心跳超时时间（秒），默认 15 分钟
+DEFAULT_LOCK_TTL_SECONDS = 900
+# 标记当前进程是否为主持锁者（防止子任务误挂起自己）
+_CURRENT_PROCESS_HOLDS_LOCK = False
 
 def is_process_alive(pid: int) -> bool:
     """跨平台检查指定 PID 进程是否存活"""
@@ -55,84 +64,158 @@ def is_process_alive(pid: int) -> bool:
 
 
 class PriorityLock:
-    """高优先级任务运行期守护锁（支持 ContextManager）"""
-    def __init__(self, task_name: str = "定时日更任务", details: Optional[Dict[str, Any]] = None):
+    """高优先级自动任务运行期守护锁（支持 ContextManager、阶段流转与心跳）"""
+    def __init__(self, task_name: str = "定时日更监控", details: Optional[Dict[str, Any]] = None, ttl_seconds: int = DEFAULT_LOCK_TTL_SECONDS):
         self.task_name = task_name
         self.details = details or {}
+        self.ttl_seconds = ttl_seconds
+        self.phase = "collecting"  # "collecting" | "finishing" | "idle"
         self.acquired = False
 
     def __enter__(self):
-        self.acquire()
+        self.acquire(phase=self.phase)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.release()
 
-    def acquire(self):
+    def acquire(self, phase: str = "collecting"):
+        global _CURRENT_PROCESS_HOLDS_LOCK
         try:
             LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+            self.phase = phase
+            now_str = time.strftime("%Y-%m-%d %H:%M:%S")
             info = {
                 "pid": os.getpid(),
                 "task_name": self.task_name,
-                "started_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "phase": self.phase,
+                "started_at": now_str,
+                "updated_at": now_str,
+                "timestamp": time.time(),
+                "ttl_seconds": self.ttl_seconds,
+                "pause_requested": (self.phase == "collecting"),
                 "details": self.details,
             }
             LOCK_FILE.write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8")
             self.acquired = True
+            _CURRENT_PROCESS_HOLDS_LOCK = True
             atexit.register(self.release)
-        except Exception as e:
+        except Exception:
+            pass
+
+    def set_phase(self, phase: str):
+        """切换任务执行阶段。若离开 collecting 阶段，则释放对手动任务的暂停阻塞。"""
+        if not self.acquired:
+            return
+        self.phase = phase
+        try:
+            if LOCK_FILE.exists():
+                info = get_running_lock_info(check_collecting_only=False)
+                if info and info.get("pid") == os.getpid():
+                    info["phase"] = phase
+                    info["pause_requested"] = (phase == "collecting")
+                    info["updated_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+                    info["timestamp"] = time.time()
+                    LOCK_FILE.write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
+    def heartbeat(self):
+        """刷新心跳时间，防止超长采集被超时自愈机制误杀"""
+        if not self.acquired:
+            return
+        try:
+            if LOCK_FILE.exists():
+                info = get_running_lock_info(check_collecting_only=False)
+                if info and info.get("pid") == os.getpid():
+                    info["updated_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+                    info["timestamp"] = time.time()
+                    LOCK_FILE.write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
             pass
 
     def release(self):
+        global _CURRENT_PROCESS_HOLDS_LOCK
         if self.acquired:
             try:
                 if LOCK_FILE.exists():
-                    info = get_running_lock_info()
-                    if info and info.get("pid") == os.getpid():
-                        LOCK_FILE.unlink(missing_ok=True)
-                    elif not info:
+                    info = get_running_lock_info(check_collecting_only=False)
+                    if not info or info.get("pid") == os.getpid():
                         LOCK_FILE.unlink(missing_ok=True)
             except Exception:
                 pass
             self.acquired = False
+            _CURRENT_PROCESS_HOLDS_LOCK = False
 
 
-def get_running_lock_info() -> Optional[Dict[str, Any]]:
-    """读取当前正在持有高优先级锁的信息。若对应进程已死，自动清理过期僵尸锁。"""
+def get_running_lock_info(check_collecting_only: bool = False) -> Optional[Dict[str, Any]]:
+    """
+    读取当前正在持有高优先级锁的信息。
+    - 若对应进程已死亡，自动清理僵尸锁。
+    - 若心跳时间已超过 TTL（默认15分钟），自动判定为卡死僵尸锁并自愈清理。
+    - 若 check_collecting_only=True，仅当任务正处于核心采集阶段（phase="collecting"）时返回信息。
+    """
     if not LOCK_FILE.exists():
         return None
     try:
         data = json.loads(LOCK_FILE.read_text(encoding="utf-8"))
         pid = data.get("pid")
-        if pid and is_process_alive(pid):
-            return data
-        else:
-            # 进程已死亡，清除僵尸锁
+        if not pid or not is_process_alive(pid):
+            # 进程已死亡，清除死锁
             LOCK_FILE.unlink(missing_ok=True)
             return None
+
+        # 检查是否超时（防卡死自愈）
+        lock_ts = data.get("timestamp") or 0
+        ttl = data.get("ttl_seconds") or DEFAULT_LOCK_TTL_SECONDS
+        if lock_ts > 0 and (time.time() - lock_ts) > ttl:
+            # 超过 TTL 未刷新心跳，判定为卡死，自动自愈清除
+            LOCK_FILE.unlink(missing_ok=True)
+            return None
+
+        if check_collecting_only:
+            phase = data.get("phase", "collecting")
+            pause_requested = data.get("pause_requested", True)
+            if phase != "collecting" and not pause_requested:
+                return None
+
+        return data
     except Exception:
         return None
 
 
-def wait_for_priority_task(logger=None, poll_interval: float = 3.0) -> bool:
+def is_priority_collecting() -> bool:
+    """判断当前是否有高优先级自动任务正在进行核心数据采集"""
+    info = get_running_lock_info(check_collecting_only=True)
+    return info is not None
+
+
+def wait_for_priority_task(logger=None, poll_interval: float = 2.0, context: str = "") -> bool:
     """
-    在长周期手动任务（如 batch_scan / reapply_rules）的迭代间隙调用。
-    若检测到高优先级定时任务运行，主动挂起待命并轮询，直到高优先级任务退出后唤醒。
+    在长周期手动任务（如 batch_scan / reapply_rules / collect / 后台手动任务）的关键执行间隙调用。
+    规则：
+    - 若自身就是持锁进程，直接放行。
+    - 若检测到高优先级自动任务正在采集，主动暂停挂起并轮询，直到自动任务完成本阶段采集后唤醒。
     返回 True 表示曾发生过让道等待；返回 False 表示一路通畅无需等待。
     """
-    lock_info = get_running_lock_info()
+    global _CURRENT_PROCESS_HOLDS_LOCK
+    if _CURRENT_PROCESS_HOLDS_LOCK:
+        return False
+
+    lock_info = get_running_lock_info(check_collecting_only=True)
     if not lock_info:
         return False
 
     waited = False
     while lock_info:
         if not waited:
-            task_desc = lock_info.get("task_name", "定时日更任务")
+            task_desc = lock_info.get("task_name", "定时日更监控")
             started_at = lock_info.get("started_at", "")
             pid = lock_info.get("pid")
+            ctx_desc = f" [{context}]" if context else ""
             msg = (
-                f"⏳ [优先级避让] 检测到高优先级【{task_desc}】(PID {pid}, 启动时间 {started_at}) "
-                "正在运行，手动任务主动挂起避让，等待定时任务完成..."
+                f"⏳ [优先级避让]{ctx_desc} 检测到自动定时任务【{task_desc}】(PID {pid}, 启动于 {started_at}) "
+                "正在采集，手动任务已主动暂停挂起，等待自动任务完成本阶段采集..."
             )
             if logger and hasattr(logger, "info"):
                 logger.info(msg)
@@ -141,10 +224,10 @@ def wait_for_priority_task(logger=None, poll_interval: float = 3.0) -> bool:
             waited = True
 
         time.sleep(poll_interval)
-        lock_info = get_running_lock_info()
+        lock_info = get_running_lock_info(check_collecting_only=True)
 
     if waited:
-        msg = "▶️ [避让恢复] 高优先级定时任务已完成，手动任务自动恢复运行！"
+        msg = "▶️ [避让恢复] 自动定时任务本阶段采集已完成，手动任务恢复执行！"
         if logger and hasattr(logger, "info"):
             logger.info(msg)
         else:
