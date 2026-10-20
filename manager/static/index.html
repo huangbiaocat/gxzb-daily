@@ -706,6 +706,9 @@
                                 <span class="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium border border-emerald-200">私有化自建应用 + 群机器人双通道</span>
                             </div>
                             <div class="flex items-center space-x-2">
+                                <button type="button" onclick="testJjtPush('agent')" class="px-2.5 py-1 text-xs font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition flex items-center space-x-1 cursor-pointer">
+                                    <span>测试自建应用</span>
+                                </button>
                                 <button type="button" onclick="testJjtPush('webhook')" class="px-2.5 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition flex items-center space-x-1 cursor-pointer">
                                     <span>测试群机器人</span>
                                 </button>
@@ -736,10 +739,28 @@
                                 <label class="block text-xs font-semibold text-slate-700 mb-1">自建应用凭据 (CORPSECRET)</label>
                                 <input id="cfg-jjt-corpsecret" type="password" placeholder="留空保持原密码不变，填写可修改" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
                             </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">应用编码 (APP_CODE)</label>
+                                <input id="cfg-jjt-app-code" type="text" placeholder="交建通自建应用编码 (如 D3B5E124591D)" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">自建应用 AgentId</label>
+                                <input id="cfg-jjt-agentid" type="number" placeholder="应用 AgentId (如 1003407)" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">工作台接收人员账号 (TOUSER)</label>
+                                <input id="cfg-jjt-touser" type="text" placeholder="多账号以 | 分隔，如 huangbiao|admin" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                                <span class="text-[11px] text-slate-400 mt-1 block">自建应用可直接向指定人员推送工作台卡片消息。</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">工作台接收部门 ID (TOPARTY)</label>
+                                <input id="cfg-jjt-toparty" type="text" placeholder="多部门以 | 分隔，如 77249|100881" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
+                                <span class="text-[11px] text-slate-400 mt-1 block">自建应用向可见部门全员直接推送。</span>
+                            </div>
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-semibold text-slate-700 mb-1">自建应用群聊 ID (DEFAULT_CHATID)</label>
                                 <input id="cfg-jjt-chatid" type="text" placeholder="自建应用通过 appchat/create 生成的群聊 ID" class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono">
-                                <span class="text-[11px] text-slate-400 mt-1 block">以自建应用名义向内部群推送精美图文卡片；若仅使用群机器人 Webhook，此项可留空。</span>
+                                <span class="text-[11px] text-slate-400 mt-1 block">以自建应用名义向内部群推送精美图文卡片；若仅使用自建应用工作台或机器人，此项可留空。</span>
                             </div>
                         </div>
                     </div>
@@ -3026,6 +3047,10 @@
                     setVal("cfg-jjt-api-base", data.api_base_url || "https://jjt.ccccltd.cn/cgi-bin");
                     setVal("cfg-jjt-webhook", data.webhook_url || "");
                     setVal("cfg-jjt-corpid", data.corpid || "");
+                    setVal("cfg-jjt-app-code", data.app_code || "");
+                    setVal("cfg-jjt-agentid", data.agentid ? String(data.agentid) : "");
+                    setVal("cfg-jjt-touser", data.touser || "");
+                    setVal("cfg-jjt-toparty", data.toparty || "");
                     setVal("cfg-jjt-chatid", data.default_chatid || "");
                     const secInput = document.getElementById("cfg-jjt-corpsecret");
                     if (secInput) {
@@ -3045,7 +3070,11 @@
                 api_base_url: (document.getElementById("cfg-jjt-api-base")?.value || "").trim(),
                 webhook_url: (document.getElementById("cfg-jjt-webhook")?.value || "").trim(),
                 corpid: (document.getElementById("cfg-jjt-corpid")?.value || "").trim(),
+                app_code: (document.getElementById("cfg-jjt-app-code")?.value || "").trim(),
+                agentid: (document.getElementById("cfg-jjt-agentid")?.value || "").trim(),
                 corpsecret: (document.getElementById("cfg-jjt-corpsecret")?.value || "").trim(),
+                touser: (document.getElementById("cfg-jjt-touser")?.value || "").trim(),
+                toparty: (document.getElementById("cfg-jjt-toparty")?.value || "").trim(),
                 default_chatid: (document.getElementById("cfg-jjt-chatid")?.value || "").trim(),
                 site_base_url: (document.getElementById("cfg-site-base-url")?.value || "").trim()
             };
@@ -3057,7 +3086,7 @@
                 });
                 const ret = await res.json();
                 if (ret.ok) {
-                    showToast("✓ 交建通群与机器人配置已成功保存！", "success", 4000);
+                    showToast("✓ 交建通自建应用与协同配置已成功保存！", "success", 4000);
                     fetchJjtConfig();
                 } else {
                     showToast("保存失败: " + (ret.msg || ret.error), "error", 5000);
@@ -3070,8 +3099,11 @@
         }
 
         async function testJjtPush(type = "appchat") {
-            const label = type === "webhook" ? "群机器人 Webhook" : "应用群卡片";
-            showToast(`正在向交建通下发【${label}】测试推送...`, "info", 3000);
+            let label = "应用群卡片";
+            if (type === "webhook") label = "群机器人 Webhook";
+            else if (type === "agent") label = "自建应用对接详情";
+            else if (type === "app_msg") label = "自建应用工作台消息";
+            showToast(`正在向交建通下发【${label}】测试触发...`, "info", 3000);
             const webhookVal = (document.getElementById("cfg-jjt-webhook")?.value || "").trim();
             try {
                 const res = await fetch("/api/test_jjt", {
@@ -3081,7 +3113,7 @@
                 });
                 const ret = await res.json();
                 if (ret.ok) {
-                    showToast(`✅ 【${label}】测试推送已触发！请在交建通群内查看。`, "success", 5000);
+                    showToast(`✅ 【${label}】触发成功！请在任务列表或交建通查看。`, "success", 5000);
                 } else {
                     showToast(`❌ 【${label}】触发失败: ${ret.msg || ret.error}`, "error", 5000);
                 }

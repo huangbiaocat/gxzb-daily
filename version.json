@@ -1,44 +1,44 @@
 {
-  "version": "v0.1.31",
-  "commit": "17ed95f",
+  "version": "v0.1.34",
+  "commit": "c8810a3",
   "date": "2026-10-19",
-  "message": "chore(release): bump version v0.1.31",
+  "message": "chore(release): bump version v0.1.34",
   "commits": [
     {
-      "commit": "17ed95f",
+      "commit": "c8810a3",
       "author": "黄彪",
       "date": "2026-10-19",
-      "message": "chore(release): bump version v0.1.31"
+      "message": "chore(release): bump version v0.1.34"
     },
     {
-      "commit": "dcfc881",
+      "commit": "2de1990",
       "author": "黄彪",
       "date": "2026-10-19",
-      "message": "fix(terminal): 将占位主机展示优化为正式域名 ztb.139771.xyz"
+      "message": "fix: 补充首页弹窗缺失的 switchFavTab 与 toggleBatchEdit 函数"
     },
     {
-      "commit": "a8670b6",
+      "commit": "1e24d83",
       "author": "黄彪",
       "date": "2026-10-19",
-      "message": "chore(release): bump version v0.1.30"
+      "message": "chore(release): bump version v0.1.33"
     },
     {
-      "commit": "890ef7b",
+      "commit": "8080e9d",
       "author": "黄彪",
       "date": "2026-10-19",
-      "message": "fix(ui): 移除实时终端内的套娃后台管理按钮并修复 run_daily 锁异常"
+      "message": "fix: 补充 pack_and_upload_i5.py 缺失的 datetime 导入"
     },
     {
-      "commit": "6c08f75",
+      "commit": "bc95055",
       "author": "黄彪",
       "date": "2026-10-19",
-      "message": "chore(release): bump version v0.1.29"
+      "message": "chore(release): bump version v0.1.32"
     },
     {
-      "commit": "1fd6dff",
+      "commit": "b5069c7",
       "author": "黄彪",
       "date": "2026-10-19",
-      "message": "feat(monitor): 关联后台断点续跑任务与实时终端，优化任务冲突一键直达查看体验"
+      "message": "fix: 修复首页用户重点配置为空时日历重点数字未清零及JS未定义报错问题"
     }
   ]
 }

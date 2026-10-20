@@ -59,6 +59,17 @@ def load_config() -> dict:
         cfg["corpid"] = os.environ.get("JJT_CORPID")
     if not cfg.get("corpsecret") and os.environ.get("JJT_CORPSECRET"):
         cfg["corpsecret"] = os.environ.get("JJT_CORPSECRET")
+    if not cfg.get("app_code") and os.environ.get("JJT_APP_CODE"):
+        cfg["app_code"] = os.environ.get("JJT_APP_CODE")
+    if not cfg.get("agentid") and os.environ.get("JJT_AGENTID"):
+        try:
+            cfg["agentid"] = int(os.environ.get("JJT_AGENTID"))
+        except (ValueError, TypeError):
+            pass
+    if not cfg.get("touser") and os.environ.get("JJT_TOUSER"):
+        cfg["touser"] = os.environ.get("JJT_TOUSER")
+    if not cfg.get("toparty") and os.environ.get("JJT_TOPARTY"):
+        cfg["toparty"] = os.environ.get("JJT_TOPARTY")
     if not cfg.get("api_base_url"):
         cfg["api_base_url"] = os.environ.get("JJT_API_BASE_URL", DEFAULT_API_BASE)
     if not cfg.get("default_chatid") and os.environ.get("JJT_DEFAULT_CHATID"):
@@ -222,6 +233,106 @@ def send_webhook_message(webhook_url_or_key: str, msgtype: str, content_payload:
         return False
 
 
+def get_agent_info(agentid: int = None) -> dict:
+    """获取交建通自建应用详情 (agent/get)"""
+    token = get_access_token()
+    if not token:
+        logger.error("获取应用详情失败: 无法获取有效 access_token")
+        return {}
+
+    cfg = load_config()
+    target_agentid = agentid or cfg.get("agentid")
+    if not target_agentid:
+        logger.error("获取应用详情失败: 未配置 agentid")
+        return {}
+
+    api_base = cfg.get("api_base_url", DEFAULT_API_BASE).rstrip("/")
+    url = f"{api_base}/agent/get?access_token={token}&agentid={target_agentid}"
+
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "ZTB-JJT-Client/1.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        if data.get("errcode") == 0:
+            logger.info(f"成功获取交建通自建应用详情: {data.get('name')} (agentid={data.get('agentid')})")
+            return data
+        else:
+            logger.error(f"获取自建应用详情失败: {data}")
+            return data
+    except Exception as e:
+        logger.error(f"请求应用详情异常: {e}")
+        return {"errcode": -1, "errmsg": str(e)}
+
+
+def send_app_message(
+    msgtype: str,
+    content_payload: dict,
+    touser: str = None,
+    toparty: str = None,
+    totag: str = None,
+    agentid: int = None,
+    safe: int = 0
+) -> bool:
+    """以自建应用身份向成员/部门推送工作台消息 (message/send)
+    支持 touser (多账号以 | 分隔), toparty (多部门以 | 分隔), totag
+    支持 msgtype: textcard, markdown, text
+    """
+    token = get_access_token()
+    if not token:
+        logger.error("发送应用工作消息失败: 无法获取有效 access_token")
+        return False
+
+    cfg = load_config()
+    target_agentid = agentid or cfg.get("agentid")
+    if not target_agentid:
+        logger.error("发送应用工作消息失败: 未配置 agentid")
+        return False
+
+    target_touser = touser if touser is not None else cfg.get("touser", "")
+    target_toparty = toparty if toparty is not None else cfg.get("toparty", "")
+    target_totag = totag if totag is not None else cfg.get("totag", "")
+
+    if not target_touser and not target_toparty and not target_totag:
+        logger.error("发送应用工作消息失败: 必须指定 touser、toparty 或 totag 至少一项")
+        return False
+
+    api_base = cfg.get("api_base_url", DEFAULT_API_BASE).rstrip("/")
+    url = f"{api_base}/message/send?access_token={token}"
+
+    payload = {
+        "msgtype": msgtype,
+        "agentid": int(target_agentid),
+        msgtype: content_payload,
+        "safe": safe
+    }
+    if target_touser:
+        payload["touser"] = str(target_touser)
+    if target_toparty:
+        payload["toparty"] = str(target_toparty)
+    if target_totag:
+        payload["totag"] = str(target_totag)
+
+    try:
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        req = urllib.request.Request(
+            url,
+            data=body,
+            headers={"Content-Type": "application/json; charset=utf-8"}
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+
+        if data.get("errcode") == 0:
+            logger.info(f"应用工作消息推送成功 [agentid={target_agentid}, touser={target_touser}, toparty={target_toparty}]")
+            return True
+        else:
+            logger.error(f"应用工作消息推送失败: {data}")
+            return False
+    except Exception as e:
+        logger.error(f"推送应用工作消息异常: {e}")
+        return False
+
+
 def create_appchat(name: str, owner: str, userlist: list, chatid: str = None) -> str:
     """创建应用群聊 (appchat/create)
     文档要求：
@@ -364,13 +475,13 @@ def send_daily_report_card(day_str: str = None, chatid: str = None) -> bool:
 
 def send_daily_summary(day_str: str = None) -> dict:
     """向所有配置的交建通渠道（应用群聊 + 群机器人）发送每日招投标简报
-    返回各渠道推送结果 dict: {"appchat": bool|None, "webhook": bool|None}
+    返回各渠道推送结果 dict: {"appchat": bool|None, "webhook": bool|None, "app_message": bool|None}
     """
     if not day_str:
         day_str = datetime.now().strftime("%Y-%m-%d")
 
     cfg = load_config()
-    results = {"appchat": None, "webhook": None}
+    results = {"appchat": None, "webhook": None, "app_message": None}
 
     # 1. 尝试自建应用群聊卡片推送
     chatid = cfg.get("default_chatid")
@@ -408,6 +519,40 @@ def send_daily_summary(day_str: str = None) -> dict:
             logger.error(f"群机器人推送异常: {e}")
             results["webhook"] = False
 
+    # 3. 尝试自建应用工作台消息推送 (message/send)
+    agentid = cfg.get("agentid")
+    touser = cfg.get("touser")
+    toparty = cfg.get("toparty")
+    if agentid and (touser or toparty) and cfg.get("corpid") and cfg.get("corpsecret"):
+        try:
+            site_base = cfg.get("site_base_url", "https://ztb.139771.xyz").rstrip("/")
+            detail_url = f"{site_base}/{day_str}.html"
+            metrics = get_daily_metrics(day_str)
+            now_time = datetime.now().strftime("%H:%M")
+            description = (
+                f"<div class=\"gray\">期号：{day_str} ({now_time} 更新)</div>"
+                f"<div class=\"normal\">本日共监测标讯 <b>{metrics['total_count']}</b> 条</div>"
+                f"<div class=\"normal\">• 招标公告：<b>{metrics['total_zb']}</b> 条</div>"
+                f"<div class=\"normal\">• 中标候选与结果：<b>{metrics['total_win']}</b> 条</div>"
+                f"<div class=\"highlight\">点击卡片可直接在交建通内查看当日完整日报与项目明细</div>"
+            )
+            card_payload = {
+                "title": f"📢 广西招投标每日情报 ({day_str})",
+                "description": description,
+                "url": detail_url,
+                "btntxt": "进入系统查看详情"
+            }
+            results["app_message"] = send_app_message(
+                msgtype="textcard",
+                content_payload=card_payload,
+                touser=touser,
+                toparty=toparty,
+                agentid=agentid
+            )
+        except Exception as e:
+            logger.error(f"应用工作消息推送异常: {e}")
+            results["app_message"] = False
+
     return results
 
 
@@ -417,7 +562,7 @@ def send_alert(day_str: str = None, message: str = "", step: str = None) -> dict
         day_str = datetime.now().strftime("%Y-%m-%d")
 
     cfg = load_config()
-    results = {"appchat": None, "webhook": None}
+    results = {"appchat": None, "webhook": None, "app_message": None}
     now_time = datetime.now().strftime("%H:%M:%S")
 
     step_info = f"【阶段: {step}】" if step else ""
@@ -454,6 +599,22 @@ def send_alert(day_str: str = None, message: str = "", step: str = None) -> dict
             logger.error(f"交建通机器人告警发送异常: {e}")
             results["webhook"] = False
 
+    agentid = cfg.get("agentid")
+    touser = cfg.get("touser")
+    toparty = cfg.get("toparty")
+    if agentid and (touser or toparty) and cfg.get("corpid") and cfg.get("corpsecret"):
+        try:
+            results["app_message"] = send_app_message(
+                msgtype="markdown",
+                content_payload={"content": md_content},
+                touser=touser,
+                toparty=toparty,
+                agentid=agentid
+            )
+        except Exception as e:
+            logger.error(f"交建通自建应用工作台告警推送异常: {e}")
+            results["app_message"] = False
+
     return results
 
 
@@ -470,6 +631,10 @@ def main():
     parser.add_argument("--webhook", type=str, help="指定群机器人 Webhook URL 或 Key 发送测试消息")
     parser.add_argument("--token", action="store_true", help="测试并打印当前 access_token")
     parser.add_argument("--alert", type=str, help="发送一条测试告警消息")
+    parser.add_argument("--agent-info", action="store_true", help="查询已对接的交建通自建应用详情")
+    parser.add_argument("--send-app-msg", type=str, help="向指定人员或部门发送自建应用测试消息")
+    parser.add_argument("--touser", type=str, help="指定接收人账号 (多账号以 | 分隔)")
+    parser.add_argument("--toparty", type=str, help="指定接收部门 ID (多部门以 | 分隔)")
 
     args = parser.parse_args()
 
@@ -537,6 +702,53 @@ def main():
             print("[OK] 测试消息发送成功！")
         else:
             print("[FAIL] 测试消息发送失败")
+        return
+
+    if args.agent_info:
+        cfg = load_config()
+        agentid = cfg.get("agentid")
+        print(f"正在查询交建通自建应用信息 (AgentId: {agentid})...")
+        info = get_agent_info(agentid)
+        if info and info.get("errcode") == 0:
+            print("[OK] 自建应用对接正常！")
+            print(f"  • 应用名称: {info.get('name')}")
+            print(f"  • 应用ID (AgentId): {info.get('agentid')}")
+            print(f"  • 主页地址: {info.get('home_url')}")
+            print(f"  • 可信域名: {info.get('redirect_domain')}")
+            partys = info.get("allow_partys", {}).get("partyid", [])
+            users = info.get("allow_userinfos", {}).get("user", [])
+            print(f"  • 可见部门ID: {partys}")
+            print(f"  • 可见人员数: {len(users)}")
+        else:
+            print(f"[FAIL] 获取自建应用信息失败: {info}")
+        return
+
+    if args.send_app_msg:
+        cfg = load_config()
+        touser = args.touser or cfg.get("touser")
+        toparty = args.toparty or cfg.get("toparty")
+        print(f"正在以自建应用身份发送测试工作台消息 (touser={touser}, toparty={toparty})...")
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        card_payload = {
+            "title": "🔔 交建通自建应用工作台消息联调测试",
+            "description": (
+                f"<div class=\"gray\">测试时间：{now_str}</div>"
+                f"<div class=\"normal\">{args.send_app_msg}</div>"
+                f"<div class=\"highlight\">系统状态：运行正常</div>"
+            ),
+            "url": cfg.get("site_base_url", "https://ztb.139771.xyz"),
+            "btntxt": "进入系统"
+        }
+        ok = send_app_message(
+            msgtype="textcard",
+            content_payload=card_payload,
+            touser=touser,
+            toparty=toparty
+        )
+        if ok:
+            print("[OK] 自建应用工作台消息发送成功！")
+        else:
+            print("[FAIL] 自建应用工作台消息发送失败")
         return
 
     parser.print_help()

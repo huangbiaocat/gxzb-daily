@@ -44,6 +44,8 @@ FILES_TO_PACK = [
     "scripts/install_tasks.bat",
     "scripts/upload_vps.py",
     "scripts/notify_wechat.py",
+    "scripts/jjt_notify.py",
+    "config_jjt.example.json",
     "scripts/tunnel_guardian.py",
     "scripts/ensure_tunnel.bat",
     "scripts/sync_from_server.bat",
@@ -162,6 +164,12 @@ def main():
         print(f"  -> 上传失败，退出码: {res.returncode}")
         return res.returncode
         
+    # 如果本地配置了 config_jjt.json，同步推送到 VPS /opt/gxzb/config_jjt.json
+    jjt_cfg = REPO / "config_jjt.json"
+    if jjt_cfg.exists():
+        print(f"[Upload] 同步交建通配置文件 {jjt_cfg.name} 到 VPS /opt/gxzb/ ...")
+        subprocess.run(["scp", "-P", port, "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", str(jjt_cfg), f"{user}@{host}:/opt/gxzb/config_jjt.json"])
+
     # 同时也把最新的 html 页面传上去
     # 注意：排除本地精简环境生成的 index.html 以及当天的 HTML，防止覆盖生产服务器正在实时采集的数据
     today_str = datetime.now().strftime("%Y-%m-%d.html")

@@ -1,10 +1,13 @@
 {
   "comment": "交建通自建应用配置模板（真实参数保存在未入库的 config_jjt.json 中，绝不提交 GitHub）",
   "corpid": "wwxxxxxxxxxxxx",
+  "app_code": "D3B5E124591D",
   "agentid": 1000002,
   "corpsecret": "your_secret_here",
   "api_base_url": "https://jjt.ccccltd.cn/cgi-bin",
   "default_chatid": "",
   "webhook_url": "https://jjt.ccccltd.cn/cgi-bin/webhook/send?key=your_key_here",
-  "site_base_url": "https://ztb.139771.xyz"
+  "site_base_url": "https://ztb.139771.xyz",
+  "touser": "",
+  "toparty": ""
 }

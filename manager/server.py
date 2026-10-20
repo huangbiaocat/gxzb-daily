@@ -3226,6 +3226,13 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
             if target_type == "webhook":
                 cmd = [py_exe, "-u", "scripts/jjt_notify.py", "--webhook", webhook_url or "default"]
                 task_name = "测试交建通群机器人 Webhook 推送"
+            elif target_type == "agent":
+                cmd = [py_exe, "-u", "scripts/jjt_notify.py", "--agent-info"]
+                task_name = "测试交建通自建应用对接详情"
+            elif target_type == "app_msg":
+                test_msg = post_data.get("message", "交建通自建应用协同消息联调测试")
+                cmd = [py_exe, "-u", "scripts/jjt_notify.py", "--send-app-msg", test_msg]
+                task_name = "测试交建通自建应用工作台消息推送"
             else:
                 cmd = [py_exe, "-u", "scripts/jjt_notify.py", "--test"]
                 task_name = "测试交建通应用群消息推送"
@@ -3242,22 +3249,30 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                 "ok": True,
                 "configured": has_cfg,
                 "corpid": "",
+                "app_code": "",
+                "agentid": 0,
                 "has_corpsecret": False,
                 "api_base_url": "https://jjt.ccccltd.cn/cgi-bin",
                 "default_chatid": "",
                 "webhook_url": "",
-                "site_base_url": "https://ztb.139771.xyz"
+                "site_base_url": "https://ztb.139771.xyz",
+                "touser": "",
+                "toparty": ""
             }
             if has_cfg:
                 try:
                     with open(cfg_file, "r", encoding="utf-8") as f:
                         c = json.load(f)
                         cfg_data["corpid"] = c.get("corpid", "")
+                        cfg_data["app_code"] = c.get("app_code", "")
+                        cfg_data["agentid"] = c.get("agentid", 0)
                         cfg_data["has_corpsecret"] = bool(c.get("corpsecret"))
                         cfg_data["api_base_url"] = c.get("api_base_url", "https://jjt.ccccltd.cn/cgi-bin")
                         cfg_data["default_chatid"] = c.get("default_chatid", "")
                         cfg_data["webhook_url"] = c.get("webhook_url", "")
                         cfg_data["site_base_url"] = c.get("site_base_url", "https://ztb.139771.xyz")
+                        cfg_data["touser"] = c.get("touser", "")
+                        cfg_data["toparty"] = c.get("toparty", "")
                 except Exception:
                     pass
             self.send_json(cfg_data)
@@ -3275,28 +3290,40 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                     pass
 
             new_corpid = post_data.get("corpid", "").strip()
+            new_app_code = post_data.get("app_code", "").strip()
+            new_agentid_raw = post_data.get("agentid", 0)
+            try:
+                new_agentid = int(new_agentid_raw) if str(new_agentid_raw).strip() else 0
+            except (ValueError, TypeError):
+                new_agentid = old_cfg.get("agentid", 0)
             new_secret = post_data.get("corpsecret", "").strip()
             new_base = post_data.get("api_base_url", "").strip() or "https://jjt.ccccltd.cn/cgi-bin"
             new_chatid = post_data.get("default_chatid", "").strip()
             new_webhook = post_data.get("webhook_url", "").strip()
             new_site_base = post_data.get("site_base_url", "").strip() or "https://ztb.139771.xyz"
+            new_touser = post_data.get("touser", "").strip()
+            new_toparty = post_data.get("toparty", "").strip()
 
             # 如果 secret 为空且之前有值，则保留旧 secret
             final_secret = new_secret if new_secret else old_cfg.get("corpsecret", "")
 
             updated_cfg = {
                 "corpid": new_corpid,
+                "app_code": new_app_code or old_cfg.get("app_code", ""),
+                "agentid": new_agentid,
                 "corpsecret": final_secret,
                 "api_base_url": new_base,
                 "default_chatid": new_chatid,
                 "webhook_url": new_webhook,
-                "site_base_url": new_site_base
+                "site_base_url": new_site_base,
+                "touser": new_touser,
+                "toparty": new_toparty
             }
 
             try:
                 with open(cfg_file, "w", encoding="utf-8") as f:
                     json.dump(updated_cfg, f, ensure_ascii=False, indent=2)
-                self._audit("SAVE_JJT_CONFIG", "SUCCESS", f"保存交建通配置成功: corpid={new_corpid}, chatid={new_chatid}")
+                self._audit("SAVE_JJT_CONFIG", "SUCCESS", f"保存交建通配置成功: corpid={new_corpid}, agentid={new_agentid}, chatid={new_chatid}")
                 self.send_json({"ok": True, "msg": "交建通配置保存成功并已立即生效！"})
             except Exception as e:
                 self._audit("SAVE_JJT_CONFIG", "FAILED", f"保存交建通配置异常: {e}")
