@@ -183,6 +183,10 @@ BACKSCAN_DAYS = int(get("BACKSCAN_DAYS", "30"))
 BACKSCAN_MIN_DELAY = int(get("BACKSCAN_MIN_DELAY", "2"))
 # 是否在每日流水线中启用历史回扫
 BACKSCAN_ENABLED = get("BACKSCAN_ENABLED", "1").strip() not in ("0", "false", "False", "")
+# 历史回扫调度时段（早晚固定时段，多个以英文逗号分隔；默认 08:30 和 18:00）
+BACKSCAN_SCHEDULE_TIMES = get("BACKSCAN_SCHEDULE_TIMES", "08:30,18:00").strip()
+# 历史回扫窗口容差（分钟）：命中该时段后在该窗口内首轮执行一次，避免频繁每10分钟扫
+BACKSCAN_WINDOW_MINUTES = int(get("BACKSCAN_WINDOW_MINUTES", "20"))
 # 全局首次发现注册表（持久化存储 infoid 与首次发现时间、滞后判定元数据）
 DELAYED_REGISTRY_PATH = STATE_DIR / "delayed_registry.json"
 

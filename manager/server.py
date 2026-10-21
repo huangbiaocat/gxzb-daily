@@ -1513,6 +1513,8 @@ def read_config_env():
         "BACKSCAN_ENABLED": "true" if getattr(config, "BACKSCAN_ENABLED", True) else "false",
         "BACKSCAN_DAYS": getattr(config, "BACKSCAN_DAYS", 30),
         "BACKSCAN_MIN_DELAY": getattr(config, "BACKSCAN_MIN_DELAY", 2),
+        "BACKSCAN_SCHEDULE_TIMES": getattr(config, "BACKSCAN_SCHEDULE_TIMES", "08:30,18:00"),
+        "BACKSCAN_WINDOW_MINUTES": getattr(config, "BACKSCAN_WINDOW_MINUTES", 20),
     }
     return res
 
@@ -1754,6 +1756,8 @@ def save_config_env(data):
         "BACKSCAN_ENABLED": "1" if str(data.get("BACKSCAN_ENABLED", "true")).strip().lower() in ("true", "1") else "0",
         "BACKSCAN_DAYS": str(data.get("BACKSCAN_DAYS", "30")).strip(),
         "BACKSCAN_MIN_DELAY": str(data.get("BACKSCAN_MIN_DELAY", "2")).strip(),
+        "BACKSCAN_SCHEDULE_TIMES": str(data.get("BACKSCAN_SCHEDULE_TIMES", "08:30,18:00")).strip(),
+        "BACKSCAN_WINDOW_MINUTES": str(data.get("BACKSCAN_WINDOW_MINUTES", "20")).strip(),
     }
 
     admin_pw_input = str(data.get("ADMIN_PASSWORD", "")).strip()

@@ -122,6 +122,62 @@ def run(args, allow_codes=(0,)):
     return proc.returncode, proc.returncode in allow_codes
 
 
+def should_run_backscan(args, day: str) -> tuple:
+    """智能判定当前运行轮次是否触发 30 天历史回扫。
+
+    分工核心规则：
+    1. 日常监控（每 10 分钟）：仅采集当天（Today）公告，轻量极速，坚决跳过耗时漫长的 30 天历史回扫；
+    2. 历史回扫（每天 1~2 次）：在早晚固定时段（默认 08:30 / 18:00）或凌晨终版封存后跑一次即可。
+    """
+    if not getattr(config, "BACKSCAN_ENABLED", True):
+        return False, "全局配置已关闭历史回扫 (BACKSCAN_ENABLED=0)"
+    if getattr(args, "skip_backscan", False):
+        return False, "命令行传入 --skip-backscan 显式跳过"
+    if getattr(args, "backscan", False):
+        return True, "命令行传入 --backscan 显式强制执行"
+    if getattr(args, "final", False) or getattr(args, "yesterday_final", False):
+        return True, "终版归档封存流水线自动触发全量历史回扫"
+
+    # 常规监控模式（如每 10 分钟自动调度）：检查是否命中早晚固定时段窗口
+    sched_times = getattr(config, "BACKSCAN_SCHEDULE_TIMES", "08:30,18:00")
+    if not sched_times:
+        return False, "未配置固定回扫时段，常规监控极速跳过"
+
+    window_mins = getattr(config, "BACKSCAN_WINDOW_MINUTES", 20)
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    marker_file = config.STATE_DIR / ".backscan_schedule_runs.json"
+
+    runs_data = {}
+    if marker_file.exists():
+        try:
+            runs_data = json.loads(marker_file.read_text(encoding="utf-8"))
+        except Exception:
+            runs_data = {}
+
+    today_runs = set(runs_data.get(today_str, []))
+
+    for t_str in [x.strip() for x in sched_times.split(",") if x.strip()]:
+        try:
+            t_hour, t_min = map(int, t_str.split(":"))
+            t_target = now.replace(hour=t_hour, minute=t_min, second=0, microsecond=0)
+            if t_target <= now <= t_target + timedelta(minutes=window_mins):
+                if t_str not in today_runs:
+                    today_runs.add(t_str)
+                    runs_data = {today_str: list(today_runs)}
+                    try:
+                        marker_file.write_text(json.dumps(runs_data, ensure_ascii=False), encoding="utf-8")
+                    except Exception:
+                        pass
+                    return True, f"命中早晚固定回扫时段 ({t_str})，今日首轮触发"
+                else:
+                    return False, f"早晚固定回扫时段 ({t_str}) 今日已执行过，跳过重复回扫"
+        except Exception:
+            continue
+
+    return False, f"日常监控极速时段（仅采集当天，跳过历史回扫；早晚固定时段: {sched_times}，终版封存时亦会自动回扫）"
+
+
 # ------------------------------------------------------------------ 入库合并
 def reconcile(day, mode):
     """把当日全量采集中「页面还没有」的条目并入当日入库文件。
@@ -258,6 +314,7 @@ def main(argv=None):
     ap.add_argument("--final", action="store_true", help="将当前目标日期标记并保存为全天最终版")
     ap.add_argument("--skip-collect", action="store_true")
     ap.add_argument("--skip-backscan", action="store_true", help="跳过历史回扫排查")
+    ap.add_argument("--backscan", action="store_true", help="显式强制执行 30 天历史回扫（忽略时段限制）")
     ap.add_argument("--backscan-days", type=int, default=getattr(config, "BACKSCAN_DAYS", 30), help="历史回扫天数（默认 30）")
     ap.add_argument("--min-delay", type=int, default=getattr(config, "BACKSCAN_MIN_DELAY", 2), help="滞后公开判定阈值天数（默认 2）")
     ap.add_argument("--skip-archive", action="store_true")
@@ -376,9 +433,10 @@ def main(argv=None):
             except Exception as exc:
                 print("崇左告警推送异常：", exc)
 
-        # 1.2) 定时回扫过去 30 天公告（排查滞后公开/隐匿现身项目）
-        if getattr(config, "BACKSCAN_ENABLED", True) and not args.skip_backscan:
-            banner("1.2/8", f"定时回扫历史公告（排查过去 {args.backscan_days} 天滞后公开/隐匿现身项目）")
+        # 1.2) 历史回扫调度（根据日常监控 vs 早晚固定/终版封存分工）
+        need_bs, bs_reason = should_run_backscan(args, day)
+        if need_bs:
+            banner("1.2/8", f"历史公告回扫（{bs_reason}，排查过去 {args.backscan_days} 天滞后公开/隐匿现身项目）")
             try:
                 rc_bs, ok_bs = run([
                     PY, SCRIPT / "backscan_delayed.py",
@@ -401,6 +459,8 @@ def main(argv=None):
                     send_alert(day, f"历史回扫异常：{exc_bs}", "backscan_delayed")
                 except Exception as exc:
                     print("回扫告警推送异常：", exc)
+        else:
+            banner("1.2/8", f"跳过历史回扫（{bs_reason}）")
 
         if not ok:
             failed_steps.append("collect")
