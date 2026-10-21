@@ -126,6 +126,60 @@ def is_process_alive(pid: int, expected_keywords=("python", "run_daily", "collec
     return True
 
 
+def is_descendant_of(ancestor_pid: Optional[int]) -> bool:
+    """检查当前进程自身是否为目标 ancestor_pid 的子孙进程"""
+    if not ancestor_pid or ancestor_pid <= 1:
+        return False
+    curr_pid = os.getpid()
+    if curr_pid == ancestor_pid:
+        return True
+    try:
+        ppid = os.getppid()
+        if ppid == ancestor_pid:
+            return True
+        visited = {curr_pid, ppid}
+        p = ppid
+        while p and p > 1:
+            if p == ancestor_pid:
+                return True
+            next_p = None
+            if sys.platform.startswith("linux"):
+                stat_file = Path(f"/proc/{p}/stat")
+                if stat_file.exists():
+                    parts = stat_file.read_text().split(")")
+                    if len(parts) >= 2:
+                        fields = parts[1].split()
+                        next_p = int(fields[1])  # ppid is 4th field in stat
+            elif sys.platform == "darwin":
+                import subprocess
+                res = subprocess.run(["ps", "-o", "ppid=", "-p", str(p)], capture_output=True, text=True, timeout=0.5)
+                if res.returncode == 0 and res.stdout.strip():
+                    next_p = int(res.stdout.strip())
+            if not next_p or next_p in visited or next_p <= 1:
+                break
+            visited.add(next_p)
+            p = next_p
+    except Exception:
+        pass
+    return False
+
+
+def is_priority_process(lock_pid: Optional[int] = None) -> bool:
+    """检查当前进程自身是否属于高优先级任务（主控或其派生的子孙进程）"""
+    global _CURRENT_PROCESS_HOLDS_LOCK
+    if _CURRENT_PROCESS_HOLDS_LOCK:
+        return True
+    curr_pid = os.getpid()
+    if lock_pid and curr_pid == lock_pid:
+        return True
+    env_pid = os.environ.get("GXZB_PRIORITY_LOCK_PID")
+    if env_pid and (not lock_pid or str(lock_pid) == env_pid):
+        return True
+    if os.environ.get("GXZB_PRIORITY_TASK") == "1":
+        return True
+    return bool(lock_pid and is_descendant_of(lock_pid))
+
+
 def force_release_lock() -> bool:
     """一键强制清除优先级锁文件（用于运维和管理后台一键解除死锁）"""
     try:
@@ -172,6 +226,8 @@ class PriorityLock:
             LOCK_FILE.write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8")
             self.acquired = True
             _CURRENT_PROCESS_HOLDS_LOCK = True
+            os.environ["GXZB_PRIORITY_LOCK_PID"] = str(os.getpid())
+            os.environ["GXZB_PRIORITY_TASK"] = "1"
             atexit.register(self.release)
         except Exception:
             pass
@@ -219,6 +275,8 @@ class PriorityLock:
                 pass
             self.acquired = False
             _CURRENT_PROCESS_HOLDS_LOCK = False
+            os.environ.pop("GXZB_PRIORITY_LOCK_PID", None)
+            os.environ.pop("GXZB_PRIORITY_TASK", None)
 
 
 def get_running_lock_info(check_collecting_only: bool = False) -> Optional[Dict[str, Any]]:
@@ -258,9 +316,13 @@ def get_running_lock_info(check_collecting_only: bool = False) -> Optional[Dict[
 
 
 def is_priority_collecting() -> bool:
-    """判断当前是否有高优先级自动任务正在进行核心数据采集"""
+    """判断当前是否有高优先级自动任务正在进行核心数据采集（当前进程若属于该任务本身则返回 False）"""
     info = get_running_lock_info(check_collecting_only=True)
-    return info is not None
+    if not info:
+        return False
+    if is_priority_process(info.get("pid")):
+        return False
+    return True
 
 
 def wait_for_priority_task(logger=None, poll_interval: float = 2.0, context: str = "", stop_checker: Optional[Callable[[], bool]] = None) -> bool:
@@ -277,6 +339,9 @@ def wait_for_priority_task(logger=None, poll_interval: float = 2.0, context: str
 
     lock_info = get_running_lock_info(check_collecting_only=True)
     if not lock_info:
+        return False
+
+    if is_priority_process(lock_info.get("pid")):
         return False
 
     waited = False
