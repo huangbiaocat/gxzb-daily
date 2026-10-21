@@ -1,9 +1,27 @@
 {
-  "version": "v0.1.41",
-  "commit": "e347248",
+  "version": "v0.1.42",
+  "commit": "8bd4f40",
   "date": "2026-10-21",
-  "message": "chore(release): bump version v0.1.41",
+  "message": "chore(release): bump version v0.1.42",
   "commits": [
+    {
+      "commit": "8bd4f40",
+      "author": "黄彪",
+      "date": "2026-10-21",
+      "message": "chore(release): bump version v0.1.42"
+    },
+    {
+      "commit": "9444bc3",
+      "author": "黄彪",
+      "date": "2026-10-21",
+      "message": "feat: 重构监控与历史回扫分工策略（日常10分钟极速监控跳过回扫，早晚与终版自动回扫）"
+    },
+    {
+      "commit": "1a93673",
+      "author": "黄彪",
+      "date": "2026-10-21",
+      "message": "chore: 更新部署版本号"
+    },
     {
       "commit": "e347248",
       "author": "黄彪",
@@ -21,24 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-21",
       "message": "chore(release): bump version v0.1.40"
-    },
-    {
-      "commit": "24185de",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "fix(ui): 解决实时终端监视器划词选取复制时被定时刷新打断冲刷的问题"
-    },
-    {
-      "commit": "6d762e2",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "chore(version): bump to v0.1.39"
-    },
-    {
-      "commit": "993f76c",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "chore(release): bump version v0.1.39"
     }
   ]
 }
