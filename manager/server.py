@@ -371,6 +371,7 @@ class ProcessManager:
         self.task_name = ""
         self.exit_code = None
         self.current_event_id = None
+        self._cancelled = False
 
     def append_log(self, text):
         with self.lock:
@@ -402,6 +403,7 @@ class ProcessManager:
             self.end_time = None
             self.log_lines = []
             self.exit_code = None
+            self._cancelled = False
             # 自动提取关联的 event_id
             event_id = None
             if "--event-id" in cmd:
@@ -428,9 +430,16 @@ class ProcessManager:
                 # 若启动时处于避让挂起阶段，在后台 worker 中安全等待自动任务完成采集
                 try:
                     from scripts.priority_lock import wait_for_priority_task
-                    wait_for_priority_task(poll_interval=1.0, context=f"后台任务 {name}")
+                    wait_for_priority_task(
+                        poll_interval=1.0,
+                        context=f"后台任务 {name}",
+                        stop_checker=lambda: self._cancelled
+                    )
                 except Exception:
                     pass
+
+                if self._cancelled:
+                    return
 
                 with self.lock:
                     self.status = "running"
@@ -492,6 +501,21 @@ class ProcessManager:
 
     def stop_task(self):
         with self.lock:
+            if self.status == "waiting_priority":
+                self._cancelled = True
+                self.status = "error"
+                self.end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                eid = self.current_event_id
+                self.current_event_id = None
+                self.append_log("\n[用户手动取消挂起等待的任务]\n")
+                if eid:
+                    try:
+                        from scripts import task_event_db
+                        task_event_db.finish_event(eid, error_msg="用户手动取消挂起等待任务")
+                        task_event_db.heal_stale_running_events()
+                    except Exception:
+                        pass
+                return True, "已取消挂起等待的任务"
             if self.process and self.process.poll() is None:
                 try:
                     self.process.terminate()
@@ -510,6 +534,16 @@ class ProcessManager:
                 except Exception as e:
                     return False, str(e)
             return False, "当前无运行中任务"
+
+    def force_unlock(self):
+        """一键强制解除高优先级任务锁，允许被挂起的手动任务直接恢复运行"""
+        try:
+            from scripts.priority_lock import force_release_lock
+            force_release_lock()
+            self.append_log(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 管理员执行了一键强制解除高优先级锁，挂起等待将立即恢复。\n")
+            return True, "已解除优先级锁"
+        except Exception as e:
+            return False, str(e)
 
     def get_state(self):
         with self.lock:
@@ -2176,6 +2210,15 @@ class ManagerHandler(http.server.BaseHTTPRequestHandler):
             self.send_json(PROC_MGR.get_state())
             return
 
+        if path == "/api/priority_status":
+            try:
+                from scripts.priority_lock import get_running_lock_info
+                info = get_running_lock_info(check_collecting_only=False)
+                self.send_json({"ok": True, "locked": bool(info), "info": info})
+            except Exception as e:
+                self.send_json({"ok": False, "locked": False, "error": str(e)})
+            return
+
         if path == "/api/live_monitor":
             qs = parse_qs(parsed.query)
             source = qs.get("source", ["active"])[0]
@@ -2778,6 +2821,7 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
         # 敏感写操作与流水线触发鉴权拦截
         protected_paths = {
             "/api/abort_task", "/api/stop_task", "/api/save_config", "/api/rollback_config",
+            "/api/force_unlock_priority",
             "/api/delete_date", "/api/monitor_control", "/api/save_rules", "/api/save_master_rules",
             "/api/restore_master_rules", "/api/restore_snapshot", "/api/unmark_delayed",
             "/api/refresh_index", "/api/fix_tunnel", "/api/test_ssh", "/api/test_wechat",
@@ -3445,6 +3489,12 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
         if path == "/api/stop_task":
             ok, msg = PROC_MGR.stop_task()
             self._audit("STOP_TASK", "SUCCESS" if ok else "FAILED", f"终止后台任务: {msg}")
+            self.send_json({"ok": ok, "msg": msg})
+            return
+
+        if path == "/api/force_unlock_priority":
+            ok, msg = PROC_MGR.force_unlock()
+            self._audit("FORCE_UNLOCK_PRIORITY", "SUCCESS" if ok else "FAILED", f"强制解除优先级锁: {msg}")
             self.send_json({"ok": ok, "msg": msg})
             return
 

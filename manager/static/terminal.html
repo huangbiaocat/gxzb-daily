@@ -226,7 +226,7 @@
       </label>
       <button class="btn" onclick="fetchMetrics(true)" title="立即获取最新状态">🔄 刷新</button>
       <button class="btn" onclick="clearTerminal()" title="清空终端当前内容 (Ctrl+L)">🧹 清屏</button>
-      <button class="btn" onclick="copyTerminalText()" title="复制终端日志">📋 复制</button>
+      <button class="btn" id="term-copy-btn" onclick="copyTerminalText()" title="复制终端日志 (若划选了文字则优先复制选中部分)">📋 复制</button>
     </div>
   </header>
   <main>
@@ -308,7 +308,10 @@
         </div>
         <div class="term-window" id="terminal-window">连接中...</div>
         <div class="term-footer">
-          <span id="term-status-left">终端提示符: root@gxzb-server:~$ <span class="terminal-cursor"></span></span>
+          <span id="term-status-left">
+            终端提示符: root@gxzb-server:~$ <span class="terminal-cursor"></span>
+            <span id="term-selection-badge" style="display: none; color: #fbbf24; font-size: 11px; margin-left: 10px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); padding: 1px 6px; border-radius: 4px;">📋 正在选取中（已暂缓刷新以保护文字选区）</span>
+          </span>
           <span id="term-status-right">最后更新: --:--:--</span>
         </div>
       </div>
@@ -320,9 +323,77 @@
     let timerId = null;
     let isFetching = false;
     let userScrolledUp = false;
+    let isMouseDownInTerm = false;
+    let lastLogRawContent = null;
+    let lastSource = null;
+    let pendingLogData = null;
 
     const termWin = document.getElementById('terminal-window');
     const autoScrollToggle = document.getElementById('auto-scroll-toggle');
+
+    termWin.addEventListener('mousedown', () => {
+      isMouseDownInTerm = true;
+    });
+
+    window.addEventListener('mouseup', () => {
+      isMouseDownInTerm = false;
+      setTimeout(checkAndFlushPendingLog, 80);
+    });
+
+    document.addEventListener('selectionchange', () => {
+      updateSelectionIndicator();
+    });
+
+    window.addEventListener('copy', () => {
+      setTimeout(() => {
+        checkAndFlushPendingLog();
+      }, 600);
+    });
+
+    function hasTerminalSelection() {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) return false;
+      const range = sel.getRangeAt(0);
+      return termWin.contains(range.commonAncestorContainer) && sel.toString().trim().length > 0;
+    }
+
+    function isUserInteractingWithText() {
+      return isMouseDownInTerm || hasTerminalSelection();
+    }
+
+    function updateSelectionIndicator() {
+      const badge = document.getElementById('term-selection-badge');
+      if (!badge) return;
+      if (isUserInteractingWithText()) {
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+        if (pendingLogData) {
+          checkAndFlushPendingLog();
+        }
+      }
+    }
+
+    function checkAndFlushPendingLog() {
+      if (!isUserInteractingWithText() && pendingLogData) {
+        applyLogContent(pendingLogData.raw, pendingLogData.source);
+      }
+      updateSelectionIndicator();
+    }
+
+    function applyLogContent(raw, source) {
+      lastLogRawContent = raw;
+      lastSource = source;
+      pendingLogData = null;
+      updateSelectionIndicator();
+
+      const formatted = renderFormattedLog(raw);
+      termWin.innerHTML = formatted;
+
+      if (autoScrollToggle.checked && !userScrolledUp) {
+        termWin.scrollTop = termWin.scrollHeight;
+      }
+    }
 
     termWin.addEventListener('scroll', () => {
       const isAtBottom = termWin.scrollHeight - termWin.scrollTop - termWin.clientHeight < 30;
@@ -350,15 +421,43 @@
     }
 
     function clearTerminal() {
+      lastLogRawContent = '';
+      pendingLogData = null;
       termWin.innerHTML = '<span style="color: var(--text-muted);">[终端已清空，等待新日志流输入...]</span>\n';
     }
 
     function copyTerminalText() {
-      const text = termWin.innerText;
-      navigator.clipboard.writeText(text).then(() => {
-        alert('终端日志已成功复制到剪贴板！');
+      const sel = window.getSelection();
+      let textToCopy = '';
+      let isPartial = false;
+
+      if (sel && !sel.isCollapsed && hasTerminalSelection()) {
+        textToCopy = sel.toString();
+        isPartial = true;
+      } else {
+        textToCopy = termWin.innerText;
+      }
+
+      if (!textToCopy || !textToCopy.trim()) {
+        return;
+      }
+
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        const copyBtn = document.getElementById('term-copy-btn');
+        if (copyBtn) {
+          const origText = copyBtn.innerHTML;
+          copyBtn.innerHTML = `✅ 已复制${isPartial ? '选中内容' : '全部日志'}`;
+          setTimeout(() => { copyBtn.innerHTML = origText; }, 1800);
+        }
+        setTimeout(() => {
+          checkAndFlushPendingLog();
+        }, 500);
       }).catch(err => {
-        alert('复制失败，请手动选取复制。');
+        try {
+          document.execCommand('copy');
+        } catch (e) {
+          alert('复制失败，请按键盘 Ctrl+C / Cmd+C 复制。');
+        }
       });
     }
 
@@ -501,11 +600,18 @@
       }
 
       const logData = data.log || {};
-      const formatted = renderFormattedLog(logData.content || '');
-      termWin.innerHTML = formatted;
+      const rawContent = logData.content || '';
 
-      if (autoScrollToggle.checked && !userScrolledUp) {
-        termWin.scrollTop = termWin.scrollHeight;
+      // 1. 若内容无变化且源未切换，直接跳过 innerHTML 赋值，避免无意义重建 DOM 导致选区丢失
+      if (rawContent === lastLogRawContent && currentSource === lastSource) {
+        // 无新增输出，保持 DOM 选区完全稳定
+      } else if (isUserInteractingWithText()) {
+        // 2. 若用户正在划选或已有选中文本，暂缓覆盖 DOM，将数据缓存至 pending
+        pendingLogData = { raw: rawContent, source: currentSource };
+        updateSelectionIndicator();
+      } else {
+        // 3. 正常应用新日志渲染
+        applyLogContent(rawContent, currentSource);
       }
     }
 

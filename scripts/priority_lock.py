@@ -18,7 +18,7 @@ import time
 import json
 import atexit
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Callable
 
 try:
     import config
@@ -27,14 +27,75 @@ except Exception:
     LOCK_FILE = Path(__file__).resolve().parent.parent / "data" / ".priority_job.lock"
 
 # 采集阶段最大允许无心跳超时时间（秒），默认 15 分钟
-DEFAULT_LOCK_TTL_SECONDS = 900
+DEFAULT_LOCK_TTL_SECONDS = 300
 # 标记当前进程是否为主持锁者（防止子任务误挂起自己）
 _CURRENT_PROCESS_HOLDS_LOCK = False
 
-def is_process_alive(pid: int) -> bool:
-    """跨平台检查指定 PID 进程是否存活"""
+def is_process_alive(pid: int, expected_keywords=("python", "run_daily", "collect", "backscan", "gxzb")) -> bool:
+    """跨平台检查指定 PID 进程是否存活且为合法的采集相关进程（防止 Linux PID 复用与僵尸进程死锁）"""
     if not pid or pid <= 0:
         return False
+
+    # 1. Linux 环境（VPS 生产环境）：读取 /proc 深度校验进程状态与 cmdline
+    if sys.platform.startswith("linux"):
+        try:
+            proc_dir = Path(f"/proc/{pid}")
+            if not proc_dir.exists():
+                return False
+            # 检查是否为僵尸进程（Zombie / defunct）
+            status_file = proc_dir / "status"
+            if status_file.exists():
+                status_content = status_file.read_text(encoding="utf-8", errors="ignore")
+                for line in status_content.splitlines():
+                    if line.startswith("State:"):
+                        state = line.split(":", 1)[1].strip()
+                        if state.startswith("Z") or "zombie" in state.lower():
+                            return False
+                        break
+            # 检查 cmdline 命令行，防止 PID 被系统其他进程（如 sshd, nginx worker）复用
+            cmdline_file = proc_dir / "cmdline"
+            if cmdline_file.exists():
+                raw = cmdline_file.read_bytes()
+                cmd_str = raw.decode("utf-8", errors="ignore").lower()
+                if expected_keywords:
+                    matched = any(kw.lower() in cmd_str for kw in expected_keywords)
+                    if not matched:
+                        return False
+            return True
+        except (PermissionError, FileNotFoundError, ProcessLookupError):
+            return False
+        except Exception:
+            try:
+                os.kill(pid, 0)
+                return True
+            except Exception:
+                return False
+
+    # 2. macOS / BSD 环境：使用 ps 检查进程状态与参数
+    elif sys.platform == "darwin":
+        try:
+            import subprocess
+            res = subprocess.run(
+                ["ps", "-p", str(pid), "-o", "stat=,args="],
+                capture_output=True,
+                text=True,
+                timeout=1.5,
+            )
+            if res.returncode != 0 or not res.stdout.strip():
+                return False
+            out = res.stdout.strip()
+            parts = out.split(maxsplit=1)
+            stat = parts[0] if parts else ""
+            if "Z" in stat:
+                return False
+            args_str = parts[1].lower() if len(parts) > 1 else ""
+            if expected_keywords and not any(kw.lower() in args_str for kw in expected_keywords):
+                return False
+            return True
+        except Exception:
+            pass
+
+    # 3. Windows 环境与通用 fallback
     if sys.platform == "win32":
         try:
             import ctypes
@@ -61,6 +122,18 @@ def is_process_alive(pid: int) -> bool:
             return True
         except (OSError, ProcessLookupError):
             return False
+
+    return True
+
+
+def force_release_lock() -> bool:
+    """一键强制清除优先级锁文件（用于运维和管理后台一键解除死锁）"""
+    try:
+        if LOCK_FILE.exists():
+            LOCK_FILE.unlink(missing_ok=True)
+        return True
+    except Exception:
+        return False
 
 
 class PriorityLock:
@@ -190,7 +263,7 @@ def is_priority_collecting() -> bool:
     return info is not None
 
 
-def wait_for_priority_task(logger=None, poll_interval: float = 2.0, context: str = "") -> bool:
+def wait_for_priority_task(logger=None, poll_interval: float = 2.0, context: str = "", stop_checker: Optional[Callable[[], bool]] = None) -> bool:
     """
     在长周期手动任务（如 batch_scan / reapply_rules / collect / 后台手动任务）的关键执行间隙调用。
     规则：
@@ -208,6 +281,8 @@ def wait_for_priority_task(logger=None, poll_interval: float = 2.0, context: str
 
     waited = False
     while lock_info:
+        if stop_checker and stop_checker():
+            return False
         if not waited:
             task_desc = lock_info.get("task_name", "定时日更监控")
             started_at = lock_info.get("started_at", "")
@@ -224,6 +299,8 @@ def wait_for_priority_task(logger=None, poll_interval: float = 2.0, context: str
             waited = True
 
         time.sleep(poll_interval)
+        if stop_checker and stop_checker():
+            return False
         lock_info = get_running_lock_info(check_collecting_only=True)
 
     if waited:

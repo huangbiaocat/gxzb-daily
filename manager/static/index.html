@@ -3530,13 +3530,21 @@
                     if (logs) {
                         const logEl = document.getElementById("log-container");
                         if (logEl) {
-                            logEl.textContent = logs;
-                            logEl.scrollTop = logEl.scrollHeight;
+                            const sel = window.getSelection();
+                            const hasSelection = sel && !sel.isCollapsed && sel.rangeCount > 0 && logEl.contains(sel.getRangeAt(0).commonAncestorContainer) && sel.toString().trim().length > 0;
+                            if (logEl.textContent !== logs && !hasSelection) {
+                                logEl.textContent = logs;
+                                logEl.scrollTop = logEl.scrollHeight;
+                            }
                         }
                         const modalLog = document.getElementById("upgrade-modal-log");
                         if (modalLog) {
-                            modalLog.textContent = logs;
-                            modalLog.scrollTop = modalLog.scrollHeight;
+                            const sel = window.getSelection();
+                            const hasSelection = sel && !sel.isCollapsed && sel.rangeCount > 0 && modalLog.contains(sel.getRangeAt(0).commonAncestorContainer) && sel.toString().trim().length > 0;
+                            if (modalLog.textContent !== logs && !hasSelection) {
+                                modalLog.textContent = logs;
+                                modalLog.scrollTop = modalLog.scrollHeight;
+                            }
                         }
                     }
                 } catch (err) {
