@@ -1,9 +1,27 @@
 {
-  "version": "v0.1.37",
-  "commit": "fa6842f",
+  "version": "v0.1.38",
+  "commit": "975fbdb",
   "date": "2026-10-21",
-  "message": "chore(release): bump version v0.1.37",
+  "message": "chore(release): bump version v0.1.38",
   "commits": [
+    {
+      "commit": "975fbdb",
+      "author": "黄彪",
+      "date": "2026-10-21",
+      "message": "chore(release): bump version v0.1.38"
+    },
+    {
+      "commit": "3c55056",
+      "author": "黄彪",
+      "date": "2026-10-21",
+      "message": "fix(manager): 优化顶栏布局防止溢出并去重首页按钮与清理按钮"
+    },
+    {
+      "commit": "d9c0833",
+      "author": "黄彪",
+      "date": "2026-10-21",
+      "message": "chore(version): 同步版本发布信息"
+    },
     {
       "commit": "fa6842f",
       "author": "黄彪",
@@ -21,24 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-20",
       "message": "chore(release): bump version v0.1.36"
-    },
-    {
-      "commit": "c7b327e",
-      "author": "黄彪",
-      "date": "2026-10-20",
-      "message": "feat(scheduler): 实现自动定时采集与手动任务的优先级避让与双向协作机制 (ZTB-28)"
-    },
-    {
-      "commit": "40cebdd",
-      "author": "黄彪",
-      "date": "2026-10-20",
-      "message": "chore(release): bump version v0.1.35"
-    },
-    {
-      "commit": "e31a808",
-      "author": "黄彪",
-      "date": "2026-10-20",
-      "message": "feat(notify): 完成交建通私有化企业自建应用对接与工作台消息协同 (ZTB-27)"
     }
   ]
 }
