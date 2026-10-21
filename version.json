@@ -1,9 +1,21 @@
 {
-  "version": "v0.1.35",
-  "commit": "40cebdd",
+  "version": "v0.1.36",
+  "commit": "8ede813",
   "date": "2026-10-20",
-  "message": "chore(release): bump version v0.1.35",
+  "message": "chore(release): bump version v0.1.36",
   "commits": [
+    {
+      "commit": "8ede813",
+      "author": "黄彪",
+      "date": "2026-10-20",
+      "message": "chore(release): bump version v0.1.36"
+    },
+    {
+      "commit": "c7b327e",
+      "author": "黄彪",
+      "date": "2026-10-20",
+      "message": "feat(scheduler): 实现自动定时采集与手动任务的优先级避让与双向协作机制 (ZTB-28)"
+    },
     {
       "commit": "40cebdd",
       "author": "黄彪",
@@ -27,18 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-19",
       "message": "fix: 补充首页弹窗缺失的 switchFavTab 与 toggleBatchEdit 函数"
-    },
-    {
-      "commit": "1e24d83",
-      "author": "黄彪",
-      "date": "2026-10-19",
-      "message": "chore(release): bump version v0.1.33"
-    },
-    {
-      "commit": "8080e9d",
-      "author": "黄彪",
-      "date": "2026-10-19",
-      "message": "fix: 补充 pack_and_upload_i5.py 缺失的 datetime 导入"
     }
   ]
 }

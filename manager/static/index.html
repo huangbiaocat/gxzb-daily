@@ -1072,73 +1072,61 @@
                         </button>
 
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1">
-                            <button onclick="triggerTask('collect')" class="btn-action flex flex-col items-center justify-center p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
-                                <span class="text-xs font-semibold">仅抓取数据</span>
-                                <span class="text-[10px] text-slate-400 mt-0.5">collect.py</span>
+                            <button onclick="triggerTask('collect')" title="仅抓取各网站今日招标公告数据 (collect.py)" class="btn-action flex items-center justify-center min-h-[46px] p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
+                                <span class="text-xs font-semibold text-center">仅抓取数据</span>
                             </button>
-                            <button onclick="triggerTask('collect_cz')" class="btn-action flex flex-col items-center justify-center p-3 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 text-amber-800 transition">
-                                <span class="text-xs font-semibold">单采崇左阳光采购</span>
-                                <span class="text-[10px] text-amber-600 mt-0.5">collect_cz_ygcg.py</span>
+                            <button onclick="triggerTask('collect_cz')" title="单独采集崇左阳光采购平台公告 (collect_cz_ygcg.py)" class="btn-action flex items-center justify-center min-h-[46px] p-2.5 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 text-amber-800 transition">
+                                <span class="text-xs font-semibold text-center">单采崇左阳光采购</span>
                             </button>
-                            <button onclick="triggerTask('yesterday_final')" class="btn-action flex flex-col items-center justify-center p-3 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-300 text-emerald-800 transition shadow-xs">
-                                <div class="flex items-center space-x-1">
+                            <button onclick="triggerTask('yesterday_final')" title="封存昨日数据并生成最终归档版 (run_yesterday_final.py)" class="btn-action flex items-center justify-center min-h-[46px] p-2.5 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-300 text-emerald-800 transition shadow-xs">
+                                <div class="flex items-center space-x-1.5">
                                     <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                                     <span class="text-xs font-semibold">封存昨日最终版</span>
                                 </div>
-                                <span class="text-[10px] text-emerald-600 mt-0.5">run_yesterday_final.py</span>
                             </button>
-                            <button onclick="triggerTask('build')" class="btn-action flex flex-col items-center justify-center p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
-                                <span class="text-xs font-semibold">重新生成页面</span>
-                                <span class="text-[10px] text-slate-400 mt-0.5">build_daily.py</span>
+                            <button onclick="triggerTask('build')" title="重新编译并生成今日日报静态页面 (build_daily.py)" class="btn-action flex items-center justify-center min-h-[46px] p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
+                                <span class="text-xs font-semibold text-center">重新生成页面</span>
                             </button>
-                            <button onclick="triggerReapplyRules()" class="btn-action flex flex-col items-center justify-center p-3 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 text-amber-800 transition">
-                                <span class="text-xs font-semibold">历史重算标注</span>
-                                <span class="text-[10px] text-amber-600 mt-0.5">reapply_rules.py</span>
+                            <button onclick="triggerReapplyRules()" title="重算历史标注分类与标段规则 (reapply_rules.py)" class="btn-action flex items-center justify-center min-h-[46px] p-2.5 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 text-amber-800 transition">
+                                <span class="text-xs font-semibold text-center">历史重算标注</span>
                             </button>
-                            <button onclick="openBackscanModal()" class="btn-action flex flex-col items-center justify-center p-3 bg-purple-50 hover:bg-purple-100 rounded-xl border border-purple-200 text-purple-800 transition shadow-xs">
-                                <div class="flex items-center space-x-1">
+                            <button onclick="openBackscanModal()" title="回溯排查近几天可能延迟发布的历史公告 (backscan_delayed.py)" class="btn-action flex items-center justify-center min-h-[46px] p-2.5 bg-purple-50 hover:bg-purple-100 rounded-xl border border-purple-200 text-purple-800 transition shadow-xs">
+                                <div class="flex items-center space-x-1.5">
                                     <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     <span class="text-xs font-semibold">历史回扫排查</span>
                                 </div>
-                                <span class="text-[10px] text-purple-600 mt-0.5">backscan_delayed.py</span>
                             </button>
-                            <button onclick="triggerRebuildBaseline()" class="btn-action flex flex-col items-center justify-center p-3 bg-teal-50 hover:bg-teal-100 rounded-xl border border-teal-200 text-teal-800 transition shadow-xs">
-                                <div class="flex items-center space-x-1">
+                            <button onclick="triggerRebuildBaseline()" title="基于历史扫描记录校准底边基线 (scan_record_db.py)" class="btn-action flex items-center justify-center min-h-[46px] p-2.5 bg-teal-50 hover:bg-teal-100 rounded-xl border border-teal-200 text-teal-800 transition shadow-xs">
+                                <div class="flex items-center space-x-1.5">
                                     <svg class="w-3.5 h-3.5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v6m-3-3h6"></path></svg>
                                     <span class="text-xs font-semibold">校准底边基线</span>
                                 </div>
-                                <span class="text-[10px] text-teal-600 mt-0.5">scan_record_db.py</span>
                             </button>
-                            <button onclick="openBatchScanModal()" class="btn-action flex flex-col items-center justify-center p-3 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 text-indigo-700 transition">
-                                <span class="text-xs font-semibold">区间批量补扫</span>
-                                <span class="text-[10px] text-indigo-500 mt-0.5">batch_scan.py</span>
+                            <button onclick="openBatchScanModal()" title="指定日期区间批量执行采集与页面生成 (batch_scan.py)" class="btn-action flex items-center justify-center min-h-[46px] p-2.5 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 text-indigo-700 transition">
+                                <span class="text-xs font-semibold text-center">区间批量补扫</span>
                             </button>
-                            <button onclick="triggerTask('upload')" class="btn-action flex flex-col items-center justify-center p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
-                                <span class="text-xs font-semibold" id="btn-sync-vps-title">手动同步云端</span>
-                                <span class="text-[10px] text-slate-400 mt-0.5" id="btn-sync-vps-sub">upload_vps.py</span>
+                            <button onclick="triggerTask('upload')" id="btn-sync-vps" title="手动上传静态产物同步到云端 VPS (upload_vps.py)" class="btn-action flex items-center justify-center min-h-[46px] p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200/70 text-slate-700 transition">
+                                <span class="text-xs font-semibold text-center" id="btn-sync-vps-title">手动同步云端</span>
                             </button>
-                            <button onclick="refreshIndexPage(this)" class="btn-action flex flex-col items-center justify-center p-3 bg-blue-50/80 hover:bg-blue-100 rounded-xl border border-blue-200 text-blue-700 transition shadow-xs">
-                                <div class="flex items-center space-x-1">
+                            <button onclick="refreshIndexPage(this)" id="btn-refresh-index" title="重新计算归档索引，刷新首页大屏并即时生效" class="btn-action flex items-center justify-center min-h-[46px] p-2.5 bg-blue-50/80 hover:bg-blue-100 rounded-xl border border-blue-200 text-blue-700 transition shadow-xs">
+                                <div class="flex items-center space-x-1.5">
                                     <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                     <span class="text-xs font-semibold">刷新首页信息</span>
                                 </div>
-                                <span class="text-[10px] text-blue-500 mt-0.5" id="btn-refresh-index-sub">重算索引即时生效</span>
                             </button>
-                            <button onclick="openDeleteDateModal()" class="btn-action flex flex-col items-center justify-center p-3 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 text-rose-700 transition">
-                                <div class="flex items-center space-x-1">
+                            <button onclick="openDeleteDateModal()" title="打开删除指定日期数据或批量清理弹窗" class="btn-action flex items-center justify-center min-h-[46px] p-2.5 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 text-rose-700 transition">
+                                <div class="flex items-center space-x-1.5">
                                     <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     <span class="text-xs font-semibold">删除日期数据</span>
                                 </div>
-                                <span class="text-[10px] text-rose-500 mt-0.5">单日/批量删除</span>
                             </button>
-                            <button onclick="openUpgradeModal()" id="btn-dashboard-upgrade" class="btn-action flex flex-col items-center justify-center p-3 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200/80 text-emerald-800 transition col-span-2 sm:col-span-2">
+                            <button onclick="openUpgradeModal()" id="btn-dashboard-upgrade" title="从 GitHub 拉取最新代码并升级应用，自动保留本地数据与凭证 (upgrade_app.py)" class="btn-action flex items-center justify-center min-h-[46px] p-2.5 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200/80 text-emerald-800 transition col-span-2 sm:col-span-2">
                                 <div class="flex items-center space-x-1.5">
                                     <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                                     </svg>
                                     <span class="text-xs font-bold">从 GitHub 同步升级新版本</span>
                                 </div>
-                                <span class="text-[10px] text-emerald-600/80 mt-0.5">拉取最新代码并保留本地数据与凭证 (upgrade_app.py)</span>
                             </button>
                         </div>
                     </div>
@@ -2634,8 +2622,8 @@
                 const vpsTitle = document.getElementById("stat-vps-title");
                 const vpsBanner = document.getElementById("vps-env-banner");
                 const btnSyncTitle = document.getElementById("btn-sync-vps-title");
-                const btnSyncSub = document.getElementById("btn-sync-vps-sub");
-                const btnRefreshSub = document.getElementById("btn-refresh-index-sub");
+                const btnSyncBtn = document.getElementById("btn-sync-vps");
+                const btnRefreshBtn = document.getElementById("btn-refresh-index");
 
                 if (data.is_on_vps) {
                     if (vpsTitle) vpsTitle.textContent = "站点发布模式";
@@ -2651,11 +2639,14 @@
                     }
                     if (vpsBanner) vpsBanner.classList.remove("hidden");
                     if (btnSyncTitle) btnSyncTitle.textContent = "校验静态产物";
-                    if (btnSyncSub) btnSyncSub.textContent = "本地直接生效";
-                    if (btnRefreshSub) btnRefreshSub.textContent = "重算索引即时生效";
+                    if (btnSyncBtn) btnSyncBtn.title = "校验 dist 目录静态产物（本地直接生效，无需上传）";
+                    if (btnRefreshBtn) btnRefreshBtn.title = "重算归档索引，刷新首页大屏即时生效";
                 } else {
                     if (vpsTitle) vpsTitle.textContent = "云端同步 VPS";
                     if (vpsTimeLabel) vpsTimeLabel.textContent = "最后同步:";
+                    if (btnSyncTitle) btnSyncTitle.textContent = "手动同步云端";
+                    if (btnSyncBtn) btnSyncBtn.title = "手动上传静态产物同步到云端 VPS (upload_vps.py)";
+                    if (btnRefreshBtn) btnRefreshBtn.title = "重新计算归档索引，刷新首页大屏并即时同步";
                     if (data.vps && data.vps.auto_upload) {
                         vpsStatus.textContent = data.vps.host || "已开启";
                         vpsBadge.textContent = "自动同步";
