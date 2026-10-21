@@ -190,12 +190,6 @@
               </button>
            </nav>
 
-            <!-- 顶部跨日期全盘搜索快捷输入框 -->
-            <div class="hidden 2xl:flex items-center relative ml-1 mr-1 shrink-0">
-                <input type="text" id="top-quick-search" placeholder="🔍 跨所有日期检索..." onkeydown="if(event.key==='Enter'){switchTab('search'); document.getElementById('mgr-search-q').value=this.value; runMgrSearch();}" class="text-xs pl-3 pr-7 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-40 transition text-slate-800 placeholder-slate-400">
-                <button type="button" onclick="var v=document.getElementById('top-quick-search').value; switchTab('search'); document.getElementById('mgr-search-q').value=v; runMgrSearch();" class="absolute right-2 text-slate-400 hover:text-blue-600 text-xs font-bold" title="搜索">↵</button>
-            </div>
-
            <!-- 右侧操作栏：整齐优雅，杜绝折行与挤压 -->
            <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
                 <!-- 同步升级 -->
