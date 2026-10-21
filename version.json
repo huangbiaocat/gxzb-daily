@@ -1,9 +1,21 @@
 {
-  "version": "v0.1.40",
-  "commit": "d061307",
+  "version": "v0.1.41",
+  "commit": "e347248",
   "date": "2026-10-21",
-  "message": "chore(release): bump version v0.1.40",
+  "message": "chore(release): bump version v0.1.41",
   "commits": [
+    {
+      "commit": "e347248",
+      "author": "黄彪",
+      "date": "2026-10-21",
+      "message": "chore(release): bump version v0.1.41"
+    },
+    {
+      "commit": "80a1a99",
+      "author": "黄彪",
+      "date": "2026-10-21",
+      "message": "fix(priority): 彻底解决高优先级避让锁在Linux VPS下因僵尸进程与PID重用导致的死锁挂起问题，新增管理后台一键强制解锁与挂起终止控制"
+    },
     {
       "commit": "d061307",
       "author": "黄彪",
@@ -27,18 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-21",
       "message": "chore(release): bump version v0.1.39"
-    },
-    {
-      "commit": "34bcd2b",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "fix(manager): 移除管理后台顶栏跨日期搜索框"
-    },
-    {
-      "commit": "a528aa4",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "chore(version): bump to v0.1.38"
     }
   ]
 }
