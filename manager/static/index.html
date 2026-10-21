@@ -145,7 +145,7 @@
             </div>
 
             <!-- Tab 切换导航 -->
-            <nav class="hidden md:flex items-center p-1 bg-slate-100/90 rounded-xl space-x-0.5 sm:space-x-1 border border-slate-200/60 shadow-2xs shrink-0">
+            <nav class="hidden md:flex items-center p-1 bg-slate-100/90 rounded-xl space-x-0.5 sm:space-x-1 border border-slate-200/60 shadow-2xs shrink min-w-0 overflow-x-auto no-scrollbar">
                 <button id="tab-btn-business" onclick="switchTab('business')" class="tab-btn active px-2.5 sm:px-3 py-1.5 text-xs font-medium flex items-center space-x-1.5 whitespace-nowrap">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
@@ -198,14 +198,6 @@
 
            <!-- 右侧操作栏：整齐优雅，杜绝折行与挤压 -->
            <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
-                <!-- 清理指定日期内容（图标按钮，带明确提示） -->
-                <button onclick="openDeleteDateModal()" class="hidden md:flex p-1.5 sm:px-2.5 sm:py-1.5 bg-white text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-slate-200 transition items-center space-x-1 shadow-2xs whitespace-nowrap" title="彻底删除指定日期的全部采集数据与日报">
-                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                    <span class="hidden 2xl:inline text-xs font-medium">清理</span>
-                </button>
-
                 <!-- 同步升级 -->
                 <button onclick="openUpgradeModal()" id="btn-top-upgrade" class="hidden md:flex text-xs font-medium px-2 sm:px-2.5 py-1.5 bg-white text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg border border-slate-200 transition items-center space-x-1 shadow-2xs whitespace-nowrap" title="检查并从 GitHub 同步升级新版本">
                     <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,26 +214,18 @@
                 </button>
 
                <!-- 实时终端独立大屏窗口快捷入口 -->
-               <a href="/admin/terminal" target="_blank" class="hidden sm:flex text-xs font-semibold px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 hover:text-emerald-300 rounded-lg transition items-center space-x-1.5 shadow-xs border border-slate-700 whitespace-nowrap" title="在新窗口中全屏打开实时终端监视器">
+               <a href="/admin/terminal" target="_blank" class="hidden xl:flex text-xs font-semibold px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 hover:text-emerald-300 rounded-lg transition items-center space-x-1.5 shadow-xs border border-slate-700 whitespace-nowrap" title="在新窗口中全屏打开实时终端监视器">
                    <span class="text-sm">🖥️</span>
-                   <span class="hidden md:inline">实时终端</span>
+                   <span>实时终端</span>
                </a>
 
                 <!-- 分割线 -->
                 <div class="hidden md:block h-4 w-px bg-slate-200 mx-0.5"></div>
 
-                <!-- 打开看板（主行动按钮） -->
-                <a href="/" target="_blank" class="flex text-xs font-semibold px-2 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition items-center space-x-1 shadow-xs whitespace-nowrap" title="在浏览器新标签页打开数据看板">
+                <!-- 打开公开首页/看板（新标签页打开） -->
+                <a href="/" target="_blank" class="flex text-xs font-semibold px-2.5 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition items-center space-x-1 shadow-xs whitespace-nowrap" title="在浏览器新标签页打开招标简报公开首页">
                     <svg class="w-3.5 h-3.5 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                    </svg>
-                    <span class="hidden sm:inline">打开</span><span>看板</span>
-                </a>
-
-                <!-- 公开首页 -->
-                <a href="/" class="hidden lg:flex text-xs font-medium px-2.5 sm:px-3 py-1.5 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition items-center space-x-1 shadow-2xs whitespace-nowrap" title="返回招标简报公开首页">
-                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                     </svg>
                     <span>公开首页</span>
                 </a>
