@@ -1,9 +1,27 @@
 {
-  "version": "v0.1.39",
-  "commit": "993f76c",
+  "version": "v0.1.40",
+  "commit": "d061307",
   "date": "2026-10-21",
-  "message": "chore(release): bump version v0.1.39",
+  "message": "chore(release): bump version v0.1.40",
   "commits": [
+    {
+      "commit": "d061307",
+      "author": "黄彪",
+      "date": "2026-10-21",
+      "message": "chore(release): bump version v0.1.40"
+    },
+    {
+      "commit": "24185de",
+      "author": "黄彪",
+      "date": "2026-10-21",
+      "message": "fix(ui): 解决实时终端监视器划词选取复制时被定时刷新打断冲刷的问题"
+    },
+    {
+      "commit": "6d762e2",
+      "author": "黄彪",
+      "date": "2026-10-21",
+      "message": "chore(version): bump to v0.1.39"
+    },
     {
       "commit": "993f76c",
       "author": "黄彪",
@@ -21,24 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-21",
       "message": "chore(version): bump to v0.1.38"
-    },
-    {
-      "commit": "975fbdb",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "chore(release): bump version v0.1.38"
-    },
-    {
-      "commit": "3c55056",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "fix(manager): 优化顶栏布局防止溢出并去重首页按钮与清理按钮"
-    },
-    {
-      "commit": "d9c0833",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "chore(version): 同步版本发布信息"
     }
   ]
 }

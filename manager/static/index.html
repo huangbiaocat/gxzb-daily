@@ -1155,6 +1155,8 @@
                             <span class="text-xs text-slate-400 font-mono ml-2">Console Output</span>
                         </div>
                         <div class="flex items-center space-x-2">
+                            <button id="force-unlock-btn" onclick="forceUnlockPriority()" class="hidden text-xs text-amber-300 hover:text-amber-100 px-2 py-0.5 rounded bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/40 transition font-medium">⚡ 强制解除避让并执行</button>
+                            <button id="stop-task-btn" onclick="stopCurrentTask()" class="hidden text-xs text-rose-300 hover:text-rose-100 px-2 py-0.5 rounded bg-rose-600/30 hover:bg-rose-600/50 border border-rose-500/40 transition font-medium">⏹ 终止任务</button>
                             <span id="task-status-pill" class="text-[11px] px-2 py-0.5 rounded font-mono bg-slate-700 text-slate-300">IDLE</span>
                             <button onclick="clearLogs()" class="text-xs text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 transition">清空</button>
                         </div>
@@ -3162,6 +3164,36 @@
             document.getElementById("log-container").textContent = "";
         }
 
+        async function forceUnlockPriority() {
+            if (!confirm("确认强制解除高优先级锁？当前挂起等待的任务将立刻恢复执行。")) return;
+            try {
+                const res = await fetch("/api/force_unlock_priority", { method: "POST" });
+                const data = await res.json();
+                if (data.ok) {
+                    showToast("已强制解除高优先级锁，任务正在恢复执行！", "success");
+                } else {
+                    showToast("解除失败: " + (data.msg || data.error), "error");
+                }
+            } catch (e) {
+                showToast("网络请求异常: " + e.message, "error");
+            }
+        }
+
+        async function stopCurrentTask() {
+            if (!confirm("确认终止当前任务？")) return;
+            try {
+                const res = await fetch("/api/stop_task", { method: "POST" });
+                const data = await res.json();
+                if (data.ok) {
+                    showToast("已成功发送终止/取消信号", "success");
+                } else {
+                    showToast("终止失败: " + (data.msg || data.error), "error");
+                }
+            } catch (e) {
+                showToast("网络请求异常: " + e.message, "error");
+            }
+        }
+
         function showToast(message, type = "info", duration = 3500) {
             const container = document.getElementById("toast-container");
             if (!container) return;
@@ -3502,14 +3534,24 @@
                     const res = await fetch("/api/task_state");
                     const data = await res.json();
 
-                    const isRunning = data.running ?? (data.status === "running");
+                    const isWaiting = data.status === "waiting_priority";
+                    const isRunning = data.running ?? (data.status === "running" || isWaiting);
                     const logs = data.logs ?? data.log ?? "";
                     const exitCode = data.exit_code;
 
                     const pill = document.getElementById("task-status-pill");
-                    if (isRunning) {
+                    const forceUnlockBtn = document.getElementById("force-unlock-btn");
+                    const stopTaskBtn = document.getElementById("stop-task-btn");
+
+                    if (forceUnlockBtn) forceUnlockBtn.classList.toggle("hidden", !isWaiting);
+                    if (stopTaskBtn) stopTaskBtn.classList.toggle("hidden", !isRunning);
+
+                    if (isWaiting) {
+                        pill.textContent = "WAITING (避让挂起中)";
+                        pill.className = "text-[11px] px-2 py-0.5 rounded font-mono bg-amber-500/20 text-amber-300 font-semibold animate-pulse";
+                    } else if (isRunning) {
                         pill.textContent = "RUNNING";
-                        pill.className = "text-[11px] px-2 py-0.5 rounded font-mono bg-amber-500/20 text-amber-400 font-semibold animate-pulse";
+                        pill.className = "text-[11px] px-2 py-0.5 rounded font-mono bg-blue-500/20 text-blue-400 font-semibold animate-pulse";
                     } else {
                         // 在前 3 次轮询内若状态依然是 idle，给后台进程启动预留缓冲时间，防止因偶发网络延迟导致首秒误判停止
                         if ((data.status === "idle" || !data.start_time) && pollCount <= 3) {
