@@ -1,9 +1,21 @@
 {
-  "version": "v0.1.45",
-  "commit": "34cb8ad",
+  "version": "v0.1.46",
+  "commit": "32a015a",
   "date": "2026-10-25",
-  "message": "chore(release): bump version v0.1.45",
+  "message": "chore(release): bump version v0.1.46",
   "commits": [
+    {
+      "commit": "32a015a",
+      "author": "黄彪",
+      "date": "2026-10-25",
+      "message": "chore(release): bump version v0.1.46"
+    },
+    {
+      "commit": "d58c9f4",
+      "author": "黄彪",
+      "date": "2026-10-25",
+      "message": "fix(ui): 移除管理后台已生成历史日报卡片"
+    },
     {
       "commit": "34cb8ad",
       "author": "黄彪",
@@ -27,18 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-21",
       "message": "fix(scheduler): 增加高优先级子进程继承与进程树回溯识别，彻底消除让道死锁 (ZTB-29)"
-    },
-    {
-      "commit": "b2a1e71",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "chore(version): bump to v0.1.43"
-    },
-    {
-      "commit": "22f38ef",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "chore(release): bump version v0.1.43"
     }
   ]
 }
