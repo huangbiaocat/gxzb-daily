@@ -1,9 +1,21 @@
 {
   "version": "v0.1.45",
-  "commit": "4fbf069",
+  "commit": "34cb8ad",
   "date": "2026-10-25",
-  "message": "fix(batch_scan): 优化 build_daily_page 超时机制与全盘索引性能，防止成功采集被误判失败",
+  "message": "chore(release): bump version v0.1.45",
   "commits": [
+    {
+      "commit": "34cb8ad",
+      "author": "黄彪",
+      "date": "2026-10-25",
+      "message": "chore(release): bump version v0.1.45"
+    },
+    {
+      "commit": "c48f772",
+      "author": "黄彪",
+      "date": "2026-10-25",
+      "message": "fix(batch_scan): 优化 build_daily_page 超时机制与全盘索引性能，防止成功采集被误判失败"
+    },
     {
       "commit": "51d84cf",
       "author": "黄彪",
@@ -27,18 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-21",
       "message": "chore(release): bump version v0.1.43"
-    },
-    {
-      "commit": "7b52be7",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "fix(manager): 移除管理后台顶栏刷新与实时终端按钮"
-    },
-    {
-      "commit": "7dd0e8a",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "chore(version): sync version.json v0.1.42"
     }
   ]
 }

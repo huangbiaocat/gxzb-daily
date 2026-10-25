@@ -1100,41 +1100,6 @@
                             </button>
                         </div>
                     </div>
-
-                    <!-- 历史页面快速查看 -->
-                    <div class="pt-4 border-t border-slate-100">
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="flex items-center space-x-2">
-                                <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">已生成历史日报</h3>
-                            </div>
-                            <div class="flex items-center space-x-1.5">
-                                <button type="button" onclick="refreshIndexPage(this)" class="px-2 py-1 text-[11px] font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition flex items-center space-x-1" title="重新计算归档索引，刷新首页大屏并同步VPS">
-                                    <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                                    <span>刷新首页</span>
-                                </button>
-                                <button type="button" id="btn-batch-delete-pages" onclick="batchDeleteSelectedPages()" class="hidden px-2.5 py-1 text-[11px] font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-md shadow-xs transition">
-                                    批量删除 (<span id="selected-pages-count">0</span>)
-                                </button>
-                            </div>
-                        </div>
-                        <div class="overflow-hidden border border-slate-100 rounded-lg">
-                            <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
-                                <thead class="bg-slate-50 text-slate-500 font-medium">
-                                    <tr>
-                                        <th class="px-2 py-2 w-7 text-center">
-                                            <input type="checkbox" id="select-all-pages" onchange="toggleSelectAllPages(this)" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5" title="全选/取消全选">
-                                        </th>
-                                        <th class="px-3 py-2">发布日期</th>
-                                        <th class="px-3 py-2">大小</th>
-                                        <th class="px-3 py-2 text-right">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="pages-table-body" class="divide-y divide-slate-100 text-slate-700">
-                                    <tr><td colspan="4" class="px-3 py-3 text-center text-slate-400">正在获取...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- 实时终端日志 -->
@@ -2736,30 +2701,6 @@
                     }
                 }
 
-                const tbody = document.getElementById("pages-table-body");
-                if (data.recent_pages && data.recent_pages.length > 0) {
-                    tbody.innerHTML = data.recent_pages.map(p => {
-                        const sizeDisplay = p.size_kb ? (p.size_kb + ' KB') : (p.size ? (p.size / 1024).toFixed(1) + ' KB' : '-');
-                        const targetName = p.filename || p.name || (p.date + '.html');
-                        return `
-                        <tr>
-                            <td class="px-2 py-2 text-center">
-                                <input type="checkbox" class="page-select-checkbox rounded border-slate-300 text-blue-600 focus:ring-blue-500 h-3.5 w-3.5" value="${p.date}" onchange="updateBatchDeleteBtn()">
-                            </td>
-                            <td class="px-3 py-2 font-medium">${p.date}</td>
-                            <td class="px-3 py-2 text-slate-500">${sizeDisplay}</td>
-                            <td class="px-3 py-2 text-right">
-                                <a href="/preview/${targetName}" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium">查看</a>
-                                <button type="button" onclick="openBatchScanModal('${p.date}', '${p.date}')" class="ml-2 text-indigo-600 hover:text-indigo-800 font-medium">补扫</button>
-                                <button type="button" onclick="deleteDateContent('${p.date}')" class="ml-2 text-rose-600 hover:text-rose-800 font-medium">删除</button>
-                            </td>
-                        </tr>
-                        `;
-                    }).join("");
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="4" class="px-3 py-3 text-center text-slate-400">暂无生成的日报页面</td></tr>';
-                }
-                updateBatchDeleteBtn();
             } catch (err) {
                 console.error("获取状态失败", err);
             }
