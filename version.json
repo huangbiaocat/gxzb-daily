@@ -1,9 +1,27 @@
 {
-  "version": "v0.1.43",
-  "commit": "22f38ef",
-  "date": "2026-10-21",
-  "message": "chore(release): bump version v0.1.43",
+  "version": "v0.1.45",
+  "commit": "4fbf069",
+  "date": "2026-10-25",
+  "message": "fix(batch_scan): 优化 build_daily_page 超时机制与全盘索引性能，防止成功采集被误判失败",
   "commits": [
+    {
+      "commit": "51d84cf",
+      "author": "黄彪",
+      "date": "2026-10-21",
+      "message": "chore(release): bump version v0.1.44"
+    },
+    {
+      "commit": "8aabb19",
+      "author": "黄彪",
+      "date": "2026-10-21",
+      "message": "fix(scheduler): 增加高优先级子进程继承与进程树回溯识别，彻底消除让道死锁 (ZTB-29)"
+    },
+    {
+      "commit": "b2a1e71",
+      "author": "黄彪",
+      "date": "2026-10-21",
+      "message": "chore(version): bump to v0.1.43"
+    },
     {
       "commit": "22f38ef",
       "author": "黄彪",
@@ -21,24 +39,6 @@
       "author": "黄彪",
       "date": "2026-10-21",
       "message": "chore(version): sync version.json v0.1.42"
-    },
-    {
-      "commit": "8bd4f40",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "chore(release): bump version v0.1.42"
-    },
-    {
-      "commit": "9444bc3",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "feat: 重构监控与历史回扫分工策略（日常10分钟极速监控跳过回扫，早晚与终版自动回扫）"
-    },
-    {
-      "commit": "1a93673",
-      "author": "黄彪",
-      "date": "2026-10-21",
-      "message": "chore: 更新部署版本号"
     }
   ]
 }

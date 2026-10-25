@@ -34,6 +34,18 @@ def generate_search_index() -> Dict[str, Any]:
     all_records: List[Dict[str, Any]] = []
     seen_ids = set()
 
+    # 批量预载存证库中所有标记滞后的记录映射，消除高频 N+1 单条 SQL 查询
+    delayed_map: Dict[str, Dict[str, Any]] = {}
+    try:
+        with db._connection() as conn:
+            cur = conn.execute(
+                "SELECT infoid, is_delayed, delay_days, delay_hours, delay_label FROM scan_records WHERE is_delayed = 1"
+            )
+            for row in cur.fetchall():
+                delayed_map[row["infoid"]] = dict(row)
+    except Exception as e_map:
+        print(f"[提示] 预载存证滞后映射跳过: {e_map}")
+
     json_files = sorted(daily_dir.glob("*.json"), reverse=True)
     for f in json_files:
         file_date = f.stem
@@ -45,8 +57,8 @@ def generate_search_index() -> Dict[str, Any]:
                     continue
                 seen_ids.add(iid)
                 
-                # 优先校准存证库状态
-                rec = db.get_record(iid)
+                # 优先校准存证库状态（O(1) 内存字典命中）
+                rec = delayed_map.get(iid)
                 is_del = 1 if (rec and rec.get("is_delayed")) else it.get("is_delayed", 0)
                 d_days = rec.get("delay_days", 0) if rec else it.get("delay_days", 0)
                 d_hours = rec.get("delay_hours", 0) if rec else it.get("delay_hours", 0)

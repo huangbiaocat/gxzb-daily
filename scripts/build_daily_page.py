@@ -51,6 +51,7 @@ def parse_args(argv=None):
     ap.add_argument("--all", action="store_true", help="批量重新生成所有已有日期的明细页")
     ap.add_argument("--refetch", action="store_true", help="只列出日志中待重取的条目")
     ap.add_argument("--no-vps", action="store_true", help="跳过自动同步上传 VPS")
+    ap.add_argument("--skip-archive", action="store_true", help="跳过归档首页与搜索索引的重新构建")
     ap.add_argument("--final", action="store_true", help="标记为全天最终版封存页面")
     ap.add_argument("--scan-time", default="", help="指定本次扫描/封版时间戳 (YYYY-MM-DD HH:MM:SS)")
     return ap.parse_args(argv)
@@ -63,7 +64,7 @@ if ARGS.all:
     dates = [p.stem for p in all_json if re.match(r"^\d{4}-\d{2}-\d{2}$", p.stem)]
     print(f"=== 开始全量重构所有每日页面 (共 {len(dates)} 天) ===")
     for idx, d in enumerate(dates, 1):
-        cmd = [sys.executable, str(Path(__file__).resolve()), "--date", d, "--no-vps"]
+        cmd = [sys.executable, str(Path(__file__).resolve()), "--date", d, "--no-vps", "--skip-archive"]
         if ARGS.final:
             cmd.append("--final")
         if ARGS.scan_time:
@@ -2980,32 +2981,35 @@ if problems:
 print("自检通过")
 
 # ------------------------------------------------------------------ 联动更新归档首页
-print("正在同步更新首页/归档索引...")
-try:
-    import run_daily
-    run_daily.refresh_archive(DAY)
+if getattr(ARGS, "skip_archive", False):
+    print("[提示] 已指定 --skip-archive，跳过归档首页与全盘检索索引更新")
+else:
+    print("正在同步更新首页/归档索引...")
     try:
-        import run_archive
-        rc = run_archive.main() if hasattr(run_archive, 'main') else 0
-    except ImportError:
-        archive_script = _REPO / "scripts" / "build_archive_page.py"
-        if getattr(sys, 'frozen', False):
-            import runpy
-            runpy.run_path(str(archive_script), run_name="__main__")
-            rc = 0
+        import run_daily
+        run_daily.refresh_archive(DAY)
+        try:
+            import run_archive
+            rc = run_archive.main() if hasattr(run_archive, 'main') else 0
+        except ImportError:
+            archive_script = _REPO / "scripts" / "build_archive_page.py"
+            if getattr(sys, 'frozen', False):
+                import runpy
+                runpy.run_path(str(archive_script), run_name="__main__")
+                rc = 0
+            else:
+                rc = subprocess.run([sys.executable, str(archive_script)]).returncode
+        if rc == 0:
+            print("归档首页同步完成")
         else:
-            rc = subprocess.run([sys.executable, str(archive_script)]).returncode
-    if rc == 0:
-        print("归档首页同步完成")
-    else:
-        print("WARN: 归档首页生成返回异常码 %d" % rc)
+            print("WARN: 归档首页生成返回异常码 %d" % rc)
 
-    # 联动同步 VPS
-    if getattr(config, "IS_ON_VPS", False):
-        pass
-    elif getattr(config, "AUTO_UPLOAD_VPS", True) and not getattr(ARGS, "no_vps", False):
-        upload_script = _REPO / "scripts" / "upload_vps.py"
-        if upload_script.exists():
-            subprocess.run([sys.executable, str(upload_script)], check=False)
-except Exception as exc:
-    print("WARN: 同步归档首页失败: %s" % exc)
+        # 联动同步 VPS
+        if getattr(config, "IS_ON_VPS", False):
+            pass
+        elif getattr(config, "AUTO_UPLOAD_VPS", True) and not getattr(ARGS, "no_vps", False):
+            upload_script = _REPO / "scripts" / "upload_vps.py"
+            if upload_script.exists():
+                subprocess.run([sys.executable, str(upload_script)], check=False)
+    except Exception as exc:
+        print("WARN: 同步归档首页失败: %s" % exc)

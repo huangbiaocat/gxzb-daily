@@ -2916,6 +2916,12 @@ h2{{margin-top:0;color:#1e293b;font-size:20px;}}p{{color:#64748b;font-size:14px;
                 self.send_json({"ok": False, "msg": "请同时指定起始补扫日期与截止补扫日期！"})
                 return
 
+            import re
+            date_ptn = re.compile(r"^20\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$")
+            if not date_ptn.match(start_date) or not date_ptn.match(end_date):
+                self.send_json({"ok": False, "msg": "日期格式非法，必须为标准 4 位年份 YYYY-MM-DD（例如 2025-12-31）！"})
+                return
+
             event_id = ""
             event_title = custom_title
             try:

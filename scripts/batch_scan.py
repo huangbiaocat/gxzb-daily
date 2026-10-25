@@ -172,11 +172,11 @@ def main():
 
             # 3. 构建每日 HTML 页面（单日补扫跳过逐日上传 VPS，全量结束后统一发布）
             print(f"    [步骤 3/3] 构建每日日报 HTML 页面...", flush=True)
-            cmd_build = [py_exe, "-u", str(ROOT_DIR / "scripts" / "build_daily_page.py"), "--date", day_str, "--no-vps"]
+            cmd_build = [py_exe, "-u", str(ROOT_DIR / "scripts" / "build_daily_page.py"), "--date", day_str, "--no-vps", "--skip-archive"]
             try:
-                res2 = subprocess.run(cmd_build, env=sub_env, timeout=60)
+                res2 = subprocess.run(cmd_build, env=sub_env, timeout=180)
             except subprocess.TimeoutExpired:
-                print(f"    [超时] {day_str} 静态页生成超时 (60s)，跳过", flush=True)
+                print(f"    [超时] {day_str} 静态页生成超时 (180s)，检查产物...", flush=True)
                 res2 = None
             elapsed = time.time() - t_start
 
@@ -193,7 +193,11 @@ def main():
             except Exception:
                 pass
 
-            if res2 is not None and res2.returncode == 0:
+            # 容错判定：若 build_daily_page 返回码为 0，或产物 html 已实际生成且在本次任务启动后落盘
+            html_path = (getattr(config, "SITE_DIR", None) or (ROOT_DIR / "dist")) / f"{day_str}.html"
+            html_generated = html_path.exists() and html_path.stat().st_size > 1024 and html_path.stat().st_mtime >= (t_start - 2)
+
+            if (res2 is not None and res2.returncode == 0) or html_generated:
                 success_days.append(day_str)
                 print(f"[OK] 日期 {day_str} 采集并构建完成！(耗时: {elapsed:.1f}s)", flush=True)
                 try:
@@ -209,12 +213,12 @@ def main():
                         pass
             else:
                 failed_days.append(day_str)
-                err_msg = "build_daily_page 超时 (60s)" if res2 is None else f"build_daily_page exit code {res2.returncode}"
+                err_msg = "build_daily_page 超时 (180s)" if res2 is None else f"build_daily_page exit code {res2.returncode}"
                 print(f"[FAIL] 日期 {day_str} 构建失败: {err_msg} (耗时: {elapsed:.1f}s)", flush=True)
                 if task_event_db and event_id:
                     try:
                         task_event_db.update_day_progress(
-                            event_id, day_str, status="failed", duration=elapsed, error=err_msg
+                            event_id, day_str, status="failed", count=notice_cnt, focus=focus_cnt, duration=elapsed, error=err_msg
                         )
                     except Exception:
                         pass
@@ -224,7 +228,7 @@ def main():
             if task_event_db and event_id:
                 try:
                     task_event_db.update_day_progress(
-                        event_id, day_str, status="failed", duration=time.time() - t_start, error=str(e_day)
+                        event_id, day_str, status="failed", count=notice_cnt, focus=focus_cnt, duration=time.time() - t_start, error=str(e_day)
                     )
                 except Exception:
                     pass
